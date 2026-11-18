@@ -190,6 +190,296 @@ def test_three_u_complete_flags_have_a_transporter():
     assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
 
 
+def test_four_u_rank_four_partial_flag_transporter_preserves_both_terms():
+    """Pair exchange on 4U carries an (1,4)-flag to its opposite flag."""
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, basis[::2], (1, 4)))
+    target = category(_flag_marking_from_basis(ambient, basis[1::2], (1, 4)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for size in (1, 4):
+        target_term = ambient.primitive_isotropic_subobject(*basis[1::2][:size])
+        assert all(target_term.inclusion().is_in_image(witness(point)) for point in basis[::2][:size])
+    assert all((~witness)(witness(point)) == point for point in basis)
+
+
+def test_four_u_maximal_rank_four_isotropic_class_induction():
+    """A primitive maximal null summand of 4U has an integral hyperbolic completion."""
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (4,))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 4
+        assert all(ambient.b(left, right) == 0 for left in basis for right in basis)
+        assert ambient.primitive_isotropic_subobject(*basis).inclusion().is_primitive()
+
+
+def test_four_u_partial_one_four_flag_classes_preserve_intermediate_term():
+    """Integral hyperbolic completion and GL(4,ZZ) give one (1,4)-flag orbit."""
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (1, 4))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 4
+        assert ambient.primitive_isotropic_subobject(*basis[:1]).inclusion().is_primitive()
+        assert ambient.primitive_isotropic_subobject(*basis).inclusion().is_primitive()
+
+
+def test_four_u_partial_two_four_flag_classes_preserve_rank_jump():
+    """GL(4,ZZ) acts transitively on primitive rank-two summands of a null 4-plane."""
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (2, 4))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 4
+        for rank in (2, 4):
+            term = ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion()
+            assert int(term.domain().rank()) == rank and term.is_primitive()
+
+
+def test_four_u_maximal_null_plane_splits_into_two_special_orthogonal_orbits():
+    """The maximal-null stabilizer in O(4U) has determinant one."""
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    marked = ARROWS(ambient.primitive_isotropic_subobject(*basis[::2]).inclusion())
+    representatives = tuple(ambient.O().split_orbit(marked, ambient.SO()))
+    assert len(representatives) == 2
+    for representative in representatives:
+        arrow = representative.arrow()
+        assert arrow.codomain() is ambient
+        assert arrow.is_primitive()
+
+
+def test_four_u_complete_rank_four_flag_classes():
+    """Integral hyperbolic completion gives one O(4U)-orbit of complete null flags."""
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (1, 2, 3, 4))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 4
+        for rank in (1, 2, 3, 4):
+            term = ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion()
+            assert int(term.domain().rank()) == rank and term.is_primitive()
+
+
+def test_public_four_u_complete_rank_four_flag_classes():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    zero_four = lattice([[0] * 4 for _ in range(4)])
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    shape_category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    shape_arrows = _flag_marking_from_basis(zero_four, tuple(zero_four.module_generators()), (1, 2, 3, 4))
+    shape = shape_category(shape_arrows[:-1])
+    representatives = tuple(primitive_marking_classes(category, shape, ambient))
+    assert len(representatives) == 1
+    for marked in representatives:
+        arrows = _flag_arrows(marked)
+        assert tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2, 3, 4)
+        assert all(arrow.is_primitive() for arrow in arrows)
+
+
+def test_public_flag_classification_accepts_full_marked_diagram_as_shape():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, tuple(ambient.module_generators())[::2], (1, 2)))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
+
+
+def test_public_flag_shape_does_not_discard_a_nonambient_terminal_isotropic_term():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    # Two arrows between three isotropic terms are not a full flag diagram
+    # with a terminal inclusion into the ambient rank-eight lattice.
+    complete = _flag_marking_from_basis(ambient, tuple(ambient.module_generators())[::2], (1, 2, 3, 4))
+    source = category((complete[0], complete[1]))
+    with pytest.raises(ValueError, match="exactly the target flag's ranks"):
+        primitive_marking_classes(category, source, ambient)
+
+
+def test_full_flag_shape_from_a_distinct_ambient_parent_keeps_its_null_ranks():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    gram = matrix(SageZZ, [[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    source_ambient = lattice(gram.rows())
+    change = matrix(SageZZ, [[1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    target = lattice((change * gram * change.transpose()).rows())
+    assert source_ambient is not target
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(source_ambient, tuple(source_ambient.module_generators())[::2], (1, 2)))
+    classes = tuple(primitive_marking_classes(category, source, target))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
+
+
+def test_zero_form_primitive_full_flags_have_one_gl_orbit():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, tuple(ambient.module_generators())[:2], (1, 2)))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
+
+
+def test_zero_form_primitive_flags_have_exact_integral_transporters():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (e, f), (1, 2)))
+    second = category(_flag_marking_from_basis(ambient, (f, e), (1, 2)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(e) in (f, -f)
+    assert all((~witness)(witness(x)) == x for x in (e, f))
+
+
+def test_zero_form_primitive_flags_transport_across_distinct_ambient_parents():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    first_ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    second_ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, f, u = tuple(first_ambient.module_generators())
+    v, w, z = tuple(second_ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(first_ambient, (e, f), (1, 2)))
+    second = category(_flag_marking_from_basis(second_ambient, (z, v), (1, 2)))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness.domain() is first_ambient and witness.codomain() is second_ambient
+    line = second_ambient.primitive_isotropic_subobject(z).inclusion()
+    plane = second_ambient.primitive_isotropic_subobject(z, v).inclusion()
+    assert line.is_in_image(witness(e))
+    assert all(plane.is_in_image(witness(point)) for point in (e, f))
+    assert all((~witness)(witness(point)) == point for point in (e, f, u))
+
+
+def test_zero_form_noncoordinate_three_stage_flag_transport_by_integral_frames():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = Lattices(ZZ)([[0] * 4 for _ in range(4)])
+    e, f, u, v = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source_basis = (e + 3 * f, f + 2 * u, u + v)
+    target_basis = (f + 2 * u, u + v, e + 3 * f)
+    source = category(_flag_marking_from_basis(ambient, source_basis, (1, 2, 3)))
+    target = category(_flag_marking_from_basis(ambient, target_basis, (1, 2, 3)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for rank in (1, 2, 3):
+        target_term = ambient.primitive_isotropic_subobject(*target_basis[:rank]).inclusion()
+        assert all(target_term.is_in_image(witness(point)) for point in source_basis[:rank])
+    assert all((~witness)(witness(point)) == point for point in (e, f, u, v))
+
+
+def test_zero_form_flag_stabilizer_is_actual_integral_parabolic():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, (e, f), (1, 2)))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    assert all(g in ambient.O() for g in generators)
+    assert all(g(e) in (e, -e) for g in generators)
+    assert all(ambient.b(g(x), g(y)) == 0 for g in generators for x in (e, f) for y in (e, f))
+    assert any(g(f) != f for g in generators)
+
+
+def test_zero_form_rank_three_complete_flags_have_integral_transport_and_stabilizer():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, f, u = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (e, f, u), (1, 2, 3)))
+    second = category(_flag_marking_from_basis(ambient, (u, e, f), (1, 2, 3)))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness(e) in (u, -u)
+    assert ambient.primitive_isotropic_subobject(u, e).inclusion().is_in_image(witness(f))
+    generators = tuple(automorphism_group_generators(category, first))
+    assert generators
+    assert all(g(e) in (e, -e) for g in generators)
+    assert all(ambient.primitive_isotropic_subobject(e, f).inclusion().is_in_image(g(f)) for g in generators)
+
+
+def test_two_stage_flag_accepts_a_single_isotropic_source_inclusion():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    source = _flag_marking_from_basis(ambient, tuple(ambient.module_generators())[::2], (1, 2))[0]
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
+
+
+def test_public_four_u_complete_flag_classes_split_under_special_orthogonal_group():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, tuple(ambient.module_generators())[::2], (1, 2, 3, 4)))
+    classes = tuple(primitive_marking_classes(category, source, ambient, acting_group=ambient.SO()))
+    assert len(classes) == 2
+    assert all(tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(marked)) == (1, 2, 3, 4)
+               for marked in classes)
+
+
 def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits():
     r"""A maximal isotropic stabilizer has determinant det(A) det(A^-T)=1.
 
@@ -315,6 +605,59 @@ def test_three_u_general_induction_classifies_complete_and_partial_flags():
                 assert ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion().domain().rank() == rank
 
 
+def test_adapted_flag_action_rejects_inconsistent_rank_sequences():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    generator = next(iter(ambient.module_generators()))
+    induction = IsotropicInduction(EichlerRecursion())
+    for dimensions in ((), (2,), (0, 1), (1, 1)):
+        with pytest.raises(ValueError, match="strictly increasing positive ranks"):
+            induction.basis_flag_action(ambient, (generator,), dimensions)
+
+
+def test_flag_marking_constructor_rejects_inconsistent_rank_sequences():
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    ambient = lattice([[0, 1], [1, 0]])
+    generator = next(iter(ambient.module_generators()))
+    for dimensions in ((), (2,), (0, 1), (1, 1)):
+        with pytest.raises(ValueError, match="strictly increasing"):
+            _flag_marking_from_basis(ambient, (generator,), dimensions)
+
+
+def test_public_flag_classifier_validates_zero_rank_before_impossible_ambient_bound():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U")
+    zero = Lattices(ZZ)(0)
+    oversized = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    invalid = zero.hom([], codomain=oversized)
+    with pytest.raises(ValueError, match="positive and strictly increasing"):
+        primitive_marking_classes(FLAGS, invalid, ambient)
+
+
+def test_mixed_degenerate_arrow_shape_is_not_misclassified_as_totally_isotropic():
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = lattice([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    mixed = lattice([[0, 0], [0, 1]])
+    with pytest.raises(ValueError, match="mixed degenerate Gram sublattices"):
+        tuple(primitive_marking_classes(ARROWS, mixed, ambient))
+
+
+def test_nonisotropic_flag_shape_is_not_classified_by_null_flag_induction():
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = lattice([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    formed_plane = lattice([[0, 0], [0, 1]])
+    line = formed_plane.primitive_isotropic_subobject(next(iter(formed_plane.module_generators())))
+    with pytest.raises(ValueError, match="nonisotropic flag shapes"):
+        tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient))
+
+
 def test_public_partial_two_three_flag_classes_in_three_u():
     r"""O(3U) has one primitive isotropic flag class of ranks (2,3).
 
@@ -434,3 +777,455 @@ def test_zero_isotropic_marking_is_the_unique_empty_embedding():
         basis = tuple(ambient.module_generators())
         assert all((~witness)(witness(point)) == point for point in basis)
         assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
+
+
+def test_four_u_complete_flag_transporter_preserves_all_four_ranks():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, basis[::2], (1, 2, 3, 4)))
+    second = category(_flag_marking_from_basis(ambient, basis[1::2], (1, 2, 3, 4)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for size in (1, 2, 3, 4):
+        target = ambient.primitive_isotropic_subobject(*basis[1::2][:size])
+        assert all(target.inclusion().is_in_image(witness(point)) for point in basis[::2][:size])
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in basis for y in basis)
+
+
+def test_four_u_complete_flag_stabilizer_preserves_every_prefix():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, automorphism_group_generators
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    isotropic = basis[::2]
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, isotropic, (1, 2, 3, 4)))
+    family = tuple(automorphism_group_generators(category, marked))
+    for size in (1, 2, 3, 4):
+        term = ambient.primitive_isotropic_subobject(*isotropic[:size])
+        assert all(term.inclusion().is_in_image(g(point)) for g in family for point in isotropic[:size])
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in family for x in basis for y in basis)
+
+
+def test_four_u_partial_flag_with_rank_jump_has_integral_transporter_and_stabilizer():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry, automorphism_group_generators
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, basis[::2], (1, 3, 4)))
+    target = category(_flag_marking_from_basis(ambient, basis[1::2], (1, 3, 4)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for size in (1, 3, 4):
+        target_term = ambient.primitive_isotropic_subobject(*basis[1::2][:size])
+        assert all(target_term.inclusion().is_in_image(witness(point)) for point in basis[::2][:size])
+    for g in automorphism_group_generators(category, source):
+        for size in (1, 3, 4):
+            term = ambient.primitive_isotropic_subobject(*basis[::2][:size])
+            assert all(term.inclusion().is_in_image(g(point)) for point in basis[::2][:size])
+
+
+def test_isotropic_rank_above_rational_witt_index_is_empty_not_unsupported():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    classes = primitive_marking_classes(ARROWS, source, ambient)
+    assert classes.cardinality() == cardinal(0)
+
+
+def test_recursive_levi_image_uses_owned_integral_parabolic_image(monkeypatch):
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[2]])
+    vector = ambient.module_generators()[0]
+    reduction = ambient.primitive_isotropic_subobject(vector).isotropic_reduction()
+    image = RECURSION.levi_image(vector)
+    assert image is reduction.levi_image()
+    assert all(generator in image for generator in reduction.levi_image_generators())
+
+
+def test_isotropic_induction_rank_zero_is_unique_in_every_ambient_rank():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    induction = IsotropicInduction(EichlerRecursion())
+    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+        assert induction.isotropic_flag_bases(ambient, (0,)) == ((),)
+
+
+def test_rank_zero_isotropic_subspace_stabilizer_is_full_orthogonal_group():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    recursion = EichlerRecursion()
+    induction = IsotropicInduction(recursion)
+    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+        zero = ambient.primitive_isotropic_subobject()
+        generators = induction.plane_automorphism_generators(zero)
+        expected = recursion.orthogonal_group_generators(ambient)
+        assert generators == expected
+        assert all(generator.domain() is ambient and generator.codomain() is ambient
+                   for generator in generators)
+
+
+def test_rank_zero_isotropic_subspace_transporter_is_ambient_isometry():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    induction = IsotropicInduction(EichlerRecursion())
+    source = Lattices(ZZ)("U")
+    target = Lattices(ZZ)([[0, -1], [-1, 0]])
+    witness = induction.plane_isometry(source.primitive_isotropic_subobject(),
+                                      target.primitive_isotropic_subobject())
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
+    definite = Lattices(ZZ)([[2, 0], [0, 2]])
+    assert induction.plane_isometry(source.primitive_isotropic_subobject(),
+                                   definite.primitive_isotropic_subobject()) is None
+
+
+def test_line_stabilizer_rejects_nonnull_and_reduces_imprimitive_generator():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = Lattices(ZZ)("U")
+    e, f = tuple(ambient.module_generators())
+    recursion = EichlerRecursion()
+    induction = IsotropicInduction(recursion)
+    for invalid in (ambient.zero(), e + f):
+        with pytest.raises(ValueError, match="nonzero isotropic"):
+            recursion.line_stabilizer_generators(invalid)
+        with pytest.raises(ValueError, match="nonzero isotropic"):
+            induction.line_automorphism_generators(ambient, invalid)
+    assert recursion.line_stabilizer_generators(2 * e) == recursion.line_stabilizer_generators(e)
+    assert induction.line_automorphism_generators(ambient, 2 * e) == induction.line_automorphism_generators(ambient, e)
+
+
+def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    basis = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, basis[::2], (1, 3, 5)))
+    second = category(_flag_marking_from_basis(ambient, basis[1::2], (1, 3, 5)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for rank in (1, 3, 5):
+        target = ambient.primitive_isotropic_subobject(*basis[1::2][:rank])
+        assert all(target.inclusion().is_in_image(witness(point)) for point in basis[::2][:rank])
+    labels = tuple(ambient.module_generating_set())
+    action = matrix(SageZZ, [[int(witness(point).to_vector()(label))
+        for label in labels] for point in ambient.module_generators()])
+    # The five disjoint hyperbolic exchanges have determinant (-1)^5.
+    # Their transporter belongs to O(L), but not to SO(L).
+    assert action.det() == -1
+
+
+def test_three_u_cyclic_coordinate_flag_transporter_preserves_dual_pairs():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j)
+                        for j in range(6)] for i in range(6)])
+    e, f, u, v, a, b = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (e, u, a), (1, 2, 3)))
+    second = category(_flag_marking_from_basis(ambient, (u, a, e), (1, 2, 3)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert (witness(e), witness(u), witness(a)) == (u, a, e)
+    assert (witness(f), witness(v), witness(b)) == (v, b, f)
+    labels = tuple(ambient.module_generating_set())
+    action = matrix(SageZZ, [[int(witness(point).to_vector()(label))
+        for label in labels] for point in ambient.module_generators()])
+    assert action.det() == 1
+
+
+def test_three_u_signed_coordinate_flag_transport_preserves_hyperbolic_pairings():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j)
+                        for j in range(6)] for i in range(6)])
+    e, f, u, v, a, b = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (e, u, a), (1, 2, 3)))
+    second = category(_flag_marking_from_basis(ambient, (-u, a, -e), (1, 2, 3)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for rank in (1, 2, 3):
+        target_term = ambient.primitive_isotropic_subobject(*(-u, a, -e)[:rank]).inclusion()
+        assert all(target_term.is_in_image(witness(point)) for point in (e, u, a)[:rank])
+    assert witness(e) in (u, -u)
+    assert witness(u) in (a, -a)
+    assert witness(a) in (e, -e)
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+
+def test_coordinate_flag_transporter_respects_named_generator_labels():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = Lattices(ZZ)([[int(i // 2 == j // 2 and i != j)
+                            for j in range(6)] for i in range(6)],
+                           module_generators=("zeta", "eta", "alpha", "beta", "mu", "nu"))
+    e, f, u, v, a, b = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, (e, u, a), (1, 2, 3)))
+    target = category(_flag_marking_from_basis(ambient, (u, a, e), (1, 2, 3)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    assert (witness(e), witness(u), witness(a)) == (u, a, e)
+    assert (witness(f), witness(v), witness(b)) == (v, b, f)
+
+
+def test_public_five_u_partial_flag_rank_jumps_one_three_five_classes():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, tuple(ambient.module_generators())[::2], (1, 3, 5)))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 3, 5)
+
+
+def test_public_partial_flag_classes_split_by_actual_special_orthogonal_group():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    shape = lattice([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    first = shape.primitive_isotropic_subobject(*tuple(shape.module_generators())[:2])
+    full = tuple(primitive_marking_classes(FLAGS, first.inclusion(), ambient))
+    special = tuple(primitive_marking_classes(FLAGS, first.inclusion(), ambient, acting_group=ambient.SO()))
+    assert len(full) == 1
+    assert len(special) == 2
+
+
+def test_odd_rank_unoriented_isotropic_flag_so_and_o_moving_orbits_agree():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[2]])
+    plane = Lattices(ZZ)([[0, 0], [0, 0]])
+    line = plane.primitive_isotropic_subobject(next(iter(plane.module_generators())))
+    full = tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient))
+    special = tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient, acting_group=ambient.SO()))
+    assert full and len(full) == len(special)
+
+
+def test_induction_partial_rank_one_three_flag_stabilizer_generators_preserve_each_term():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    basis = tuple(ambient.module_generators())[::2]
+    flag = IsotropicFlag(ambient, basis, flag_type=FlagType((1, 3)))
+    generators = tuple(INDUCTION.flag_automorphism_generators(flag))
+    assert generators
+    assert all(all(term.inclusion().is_in_image(g(term.inclusion()(x)))
+                   for x in term.module_generators())
+               for g in generators for term in flag.terms())
+
+
+def test_rank_one_two_flag_stabilizer_descends_to_quotient_line_action():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j)
+                        for j in range(6)] for i in range(6)])
+    e, f, u, v, a, b = tuple(ambient.module_generators())
+    flag = IsotropicFlag(ambient, (e, u), flag_type=FlagType((1, 2)))
+    generators = tuple(INDUCTION.flag_automorphism_generators(flag))
+    assert generators
+    reduction = e.isotropic_reduction()
+    projection = reduction.projection()
+    quotient_line = reduction.quotient_lattice().primitive_isotropic_subobject(
+        projection(projection.domain().inclusion().lift(u)))
+    for generator in generators:
+        induced = reduction.levi_action()(generator)
+        assert induced.parent().domain() is reduction.quotient_lattice()
+        assert all(quotient_line.inclusion().is_in_image(induced(quotient_line.inclusion()(point)))
+                   for point in quotient_line.module_generators())
+
+
+def test_induction_complete_rank_three_flag_stabilizer_generators_preserve_all_terms():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    flag = IsotropicFlag(ambient, tuple(ambient.module_generators())[::2], flag_type=FlagType((1, 2, 3)))
+    generators = tuple(INDUCTION.flag_automorphism_generators(flag))
+    assert generators
+    assert all(all(term.inclusion().is_in_image(g(term.inclusion()(x)))
+                   for x in term.module_generators())
+               for g in generators for term in flag.terms())
+
+
+def test_induction_rank_five_partial_flag_stabilizer_generators_preserve_all_terms():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    flag = IsotropicFlag(ambient, tuple(ambient.module_generators())[::2], flag_type=FlagType((1, 3, 5)))
+    generators = tuple(INDUCTION.flag_automorphism_generators(flag))
+    assert generators
+    assert all(all(term.inclusion().is_in_image(g(term.inclusion()(x)))
+                   for x in term.module_generators())
+               for g in generators for term in flag.terms())
+
+
+def test_induction_rank_five_pointwise_flag_stabilizer_fixes_top_basis():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    basis = tuple(ambient.module_generators())[::2]
+    flag = IsotropicFlag(ambient, basis, flag_type=FlagType((1, 3, 5)))
+    generators = tuple(INDUCTION.flag_pointwise_automorphism_generators(flag))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+
+
+def test_public_rank_five_partial_flag_stabilizer_preserves_each_rank():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        _flag_marking_from_basis, automorphism_group_generators,
+    )
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j)
+                        for j in range(10)] for i in range(10)])
+    basis = tuple(ambient.module_generators())[::2]
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, basis, (1, 3, 5)))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    for rank in (1, 3, 5):
+        term = ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion()
+        assert all(term.is_in_image(g(point)) for g in generators for point in basis[:rank])
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+
+
+def test_pointed_reflection_witness_precedes_expensive_complement_group(monkeypatch):
+    """An integral root reflection is a complete witness without PARI qfauto."""
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[0, 1, 0], [1, 0, 0], [0, 0, -2]])
+    e, f, r = tuple(ambient.module_generators())
+    source, target = e + 2 * f + r, e + 2 * f - r
+    assert source.q() == target.q() == 2
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("a direct reflection must not compute the perpendicular isometry group")
+
+    monkeypatch.setattr(RECURSION, "isometry", forbidden)
+    witness = RECURSION.pointed_isometry(source, target)
+    assert witness is not None and witness(source) == target
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, r) for y in (e, f, r))
+    scaled = RECURSION.pointed_isometry(3 * source, 3 * target)
+    assert scaled is not None and scaled(3 * source) == 3 * target
+
+
+def test_nonintegral_difference_reflection_does_not_fake_a_pointed_transporter():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[2, 0], [0, 2]])
+    e, f = tuple(ambient.module_generators())
+    source, target = e + 8 * f, 4 * e + 7 * f
+    assert source.q() == target.q() == 130
+    assert not (source - target).primitive_part().is_integral_reflection_vector()
+    assert RECURSION.pointed_isometry(source, target) is None
+
+
+def test_e10_root_reflection_pointed_witness_avoids_pari_qfauto(monkeypatch):
+    """The pinned E10 reflection has an exact witness without its rank-nine complement group."""
+    from sage.all import ZZ as SageZZ, vector
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+    from tests.acceptance.consumer import element
+    from tests.fixtures.oracle_fixtures import load_e10_fundamental_domain
+
+    fixture = load_e10_fundamental_domain()
+    ambient = lattice(fixture["gram"])
+    root = next(root for root in fixture["simple_roots"] if root["label"] == -1)
+    reflection = ambient.reflection(element(ambient, vector(SageZZ, root["vector"])))
+    def forbidden(*args, **kwargs):
+        raise AssertionError("E10 reflection witness must not request PARI qfauto")
+
+    monkeypatch.setattr(RECURSION, "isometry", forbidden)
+    nonfixed = 0
+    for record in fixture["orbit_representatives"]:
+        source = element(ambient, vector(SageZZ, record["vector"]))
+        target = reflection(source)
+        nonfixed += source != target
+        witness = RECURSION.pointed_isometry(source, target)
+        assert witness is not None and witness(source) == target
+    assert nonfixed > 0
+
+
+def test_flag_action_data_completes_noncoordinate_primitive_line_integrally():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    plane = ambient.primitive_isotropic_subobject(z, w)
+    inclusion = plane.inclusion()
+    line = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(2 * z + 3 * w))
+    basis, images = IsotropicInduction.flag_action_data(plane, (line,))
+    assert len(basis) == 2 and images
+    assert basis[0] in (2 * z + 3 * w, -2 * z - 3 * w)
+    assert all(image[0] in (basis[0], -basis[0]) for image in images)
+
+
+def test_flag_action_data_completes_nested_noncoordinate_rank_three_flag():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+    ambient = lattice([[2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    z, w, u = tuple(ambient.module_generators())[1:]
+    first, second = 2 * z + 3 * w + 5 * u, z + w + 2 * u
+    full = ambient.primitive_isotropic_subobject(z, w, u)
+    inclusion = full.inclusion()
+    line = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(first))
+    plane = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(first), inclusion.lift(second))
+    basis, images = IsotropicInduction.flag_action_data(full, (line, plane))
+    assert len(basis) == 3 and images
+    assert basis[0] in (first, -first)
+    plane_inclusion = ambient.primitive_isotropic_subobject(first, second).inclusion()
+    assert plane_inclusion.is_in_image(basis[1])
+    assert all(image[0] in (basis[0], -basis[0])
+               and plane_inclusion.is_in_image(image[1]) for image in images)

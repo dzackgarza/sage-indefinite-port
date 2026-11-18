@@ -63,15 +63,8 @@ def test_group_only_expansion_discards_facet_orbit_records(monkeypatch) -> None:
         complex_._traversal_representative_buckets = {key: [cell]}
         monkeypatch.setattr(
             backend,
-            "_facet_mask_data",
-            lambda _cell, *, use_owned_cone=True: (iter(()), (), None),
-        )
-        monkeypatch.setattr(
-            backend,
-            "_iter_facet_mask_orbits",
-            lambda _facets, _permutations, *, retain_words=True, canonical_keys=None: iter(
-                [[((True, (0,)), None)]]
-            ),
+            "_facet_mask_orbits_via_walk",
+            lambda _cell, *, retain_words=True: ((), [[((True, (0,)), None)]]),
         )
         monkeypatch.setattr(backend, "flip_across", lambda _cell, _facet: cell)
         monkeypatch.setattr(backend, "cell_transporter", lambda _source, _target: ambient.Aut().identity())
@@ -271,6 +264,82 @@ def test_integral_transporter_of_spanning_perfect_cells() -> None:
     assert abs(transform.det()) == 1
     assert transform * gram * transform.transpose() == gram
     assert set(map(tuple, source_rows * transform)) == set(map(tuple, target_rows))
+
+
+def test_large_reordered_identical_cell_has_immediate_integral_transporter() -> None:
+    ambient = lattice([[0, 1], [1, 0]])
+    rows = ((1, 0),) * 150 + ((0, 1),) * 150
+    source = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, tuple(reversed(rows)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    # The identity is already a complete multiset certificate; no expensive
+    # pairing-graph or basis-image computation is needed for this branch.
+    backend._integral_configuration_invariants = lambda cell: (_ for _ in ()).throw(
+        AssertionError("identical configurations must bypass signature search")
+    )
+    witness = backend.cell_transporter(source, target)
+    assert witness is not None
+    assert all(witness(x) == x for x in ambient.module_generators())
+
+
+def test_large_distinct_cells_use_certified_basis_symmetry_before_pairing_search() -> None:
+    ambient = lattice([[0, 1], [1, 0]])
+    rows = ((1, 0),) * 150 + ((0, 1),) * 150
+    source = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, tuple((-a, -b) for a, b in rows), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    backend._integral_configuration_invariants = lambda cell: (_ for _ in ()).throw(
+        AssertionError("certified basis symmetry must bypass signature search")
+    )
+    witness = backend.cell_transporter(source, target)
+    assert witness is not None
+    assert all(witness(x) == -x for x in ambient.module_generators())
+
+
+def test_large_distinct_cells_use_gram_compatible_coordinate_swap() -> None:
+    ambient = lattice([[0, 1], [1, 0]])
+    rows = ((1, 0),) * 170 + ((0, 1),) * 130
+    source = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, tuple((b, a) for a, b in rows), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    backend._integral_configuration_invariants = lambda cell: (_ for _ in ()).throw(
+        AssertionError("Gram-compatible coordinate swap must bypass signature search")
+    )
+    witness = backend.cell_transporter(source, target)
+    assert witness is not None
+    e, f = tuple(ambient.module_generators())
+    assert witness(e) == f and witness(f) == e
+
+
+def test_cell_transporter_rejects_distinct_moment_smith_factors_with_equal_determinant() -> None:
+    ambient = lattice([[1, 0], [0, -1]])
+    source_rows = ((1, 0), (2, 2))
+    target_rows = ((1, 1), (1, -1))
+    source_moment = matrix(ZZ, source_rows).transpose() * matrix(ZZ, source_rows)
+    target_moment = matrix(ZZ, target_rows).transpose() * matrix(ZZ, target_rows)
+    assert source_moment.det() == target_moment.det() == 4
+    assert source_moment.elementary_divisors() != target_moment.elementary_divisors()
+    source = LorentzianPerfectCell(ambient, source_rows, NONNEGATIVE_SQUARES)
+    target = LorentzianPerfectCell(ambient, target_rows, NONNEGATIVE_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    assert backend.cell_transporter(source, target) is None
+    assert backend.cell_transporter(source, target, all_images=True) == ()
+
+
+def test_equal_coordinate_cells_from_separate_parent_constructions_transport_exactly() -> None:
+    source_lattice = lattice([[0, 1], [1, 0]])
+    target_lattice = lattice([[0, 1], [1, 0]])
+    source = LorentzianPerfectCell(source_lattice, ((1, 0), (0, 1)), ZERO_SQUARES)
+    target = LorentzianPerfectCell(target_lattice, ((0, 1), (1, 0)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    backend._integral_configuration_invariants = lambda cell: (_ for _ in ()).throw(
+        AssertionError("coordinate identity must bypass configuration search")
+    )
+    witness = backend.cell_transporter(source, target)
+    assert witness is not None
+    assert all(witness(x) == y for x, y in zip(
+        source_lattice.module_generators(), target_lattice.module_generators(), strict=True
+    ))
 
 
 def test_all_integral_transporters_extend_exact_anchor_signatures() -> None:
@@ -796,6 +865,9 @@ def test_complex_isometry_uses_cached_coarse_key_for_large_route(monkeypatch) ->
     ambient = lattice(gram.rows())
     source = LorentzianPerfectComplex(ambient, ZERO_SQUARES)
     target = LorentzianPerfectComplex(ambient, ZERO_SQUARES)
+    initial = source.local_backend().initial_cell(ambient, ZERO_SQUARES)
+    monkeypatch.setattr(source.local_backend(), "initial_cell", lambda _lattice, _squares: initial)
+    monkeypatch.setattr(target.local_backend(), "initial_cell", lambda _lattice, _squares: initial)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
     monkeypatch.setattr(
@@ -1207,6 +1279,43 @@ def test_facet_flip_uses_pinned_gap_normals(monkeypatch) -> None:
     assert critical[0] != rows[0]  # GAP Set changes the first critical vector.
     assert direction == lorentzian_cells._source_remove_fraction(vector(QQ, [0, *pinned_direction]))
     assert base == lorentzian_cells._source_remove_fraction(pinned_base)
+
+
+def test_facet_flip_nullspace_uses_only_independent_incident_rays(monkeypatch) -> None:
+    from sage.all import QQ
+
+    ambient = lattice([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+    rows = ((1, 1, 0), (1, 0, 1), (1, -1, 0), (1, 1, 0))
+    cell = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    observed = []
+    original = lorentzian_cells._pinned_nullspace_matrix
+
+    def record_nullspace(work):
+        observed.append(work.ncols())
+        return original(work)
+
+    monkeypatch.setattr(lorentzian_cells, "_pinned_nullspace_matrix", record_nullspace)
+    monkeypatch.setattr(lorentzian_cells, "_kernel_flipping", lambda _l, _c, base, direction, _s: (rows, base, direction, QQ.one()))
+    assert backend.flip_across(cell, frozenset((0, 1, 3))) is not None
+    assert observed[0] == 2  # rank-1 independent rows, not three incident rows
+
+
+def test_gap_tuple_stabilizer_equals_successive_pointwise_stabilizers():
+    from sage.all import SymmetricGroup
+    from sage.libs.gap.libgap import libgap
+
+    group = SymmetricGroup(6)
+    for points in ((1,), (1, 3), (1, 3, 5)):
+        expected = group
+        for point in points:
+            expected = expected.stabilizer(point)
+        actual = libgap.Stabilizer(libgap(group), libgap(list(points)), libgap.OnTuples)
+        assert int(actual.Size()) == int(expected.order())
+        for candidate in range(1, 7):
+            assert {int(point) for point in libgap.Orbit(actual, candidate, libgap.OnPoints)} == {
+                int(point) for point in expected.orbit(candidate)
+            }
 
 
 def test_rank_three_minimized_halfspaces_pair_against_basis_elements() -> None:

@@ -470,6 +470,75 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
     return morphism_parent(tuple(images))
 
 
+
+def _fair_unimodular_matrices(n: int):
+    r"""Enumerate GL_n(Z) exactly by increasing elementary-generator word length.
+
+    Elementary row additions, basis swaps and a sign change generate
+    GL_n(Z).  Breadth-first enumeration is therefore exhaustive.  This
+    procedure must be called only after an independent *exact positive*
+    isometry decision; otherwise it need not terminate.
+    """
+    from collections import deque
+
+    identity = identity_matrix(SageZZ, n)
+    if n == 0:
+        # GL_0(ZZ) is the trivial group. In particular there is no first
+        # basis coordinate on which to apply the sign generator below.
+        yield identity
+        return
+    generators = []
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                for sign in (-1, 1):
+                    elementary = identity_matrix(SageZZ, n)
+                    elementary[i, j] = sign
+                    generators.append(elementary)
+    for i in range(n - 1):
+        swap = identity_matrix(SageZZ, n)
+        swap.swap_rows(i, i + 1)
+        generators.append(swap)
+    sign = identity_matrix(SageZZ, n)
+    sign[0, 0] = -1
+    generators.append(sign)
+    frontier = deque((identity,))
+    seen = {tuple(identity.list())}
+    while frontier:
+        candidate = frontier.popleft()
+        yield candidate
+        for generator in generators:
+            next_candidate = candidate * generator
+            key = tuple(next_candidate.list())
+            if key not in seen:
+                seen.add(key)
+                frontier.append(next_candidate)
+
+
+
+def _fair_unimodular_isometry_witness(source: Lattices.ParentMethods, target: Lattices.ParentMethods):
+    r"""First exact integral witness, after an independently certified positive decision."""
+    source_gram = _gram_in_label_order(source)
+    target_gram = _gram_in_label_order(target)
+    for candidate in _fair_unimodular_matrices(int(source_gram.nrows())):
+        if candidate * target_gram * candidate.transpose() == source_gram:
+            return _isometry_from_row_matrix(source, target, candidate)
+
+
+def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
+    r"""Fair, nontruncated enumeration of all integral isometries of a finite-rank lattice.
+
+    The output is a stream of owned O(L)-elements, not a finite generating
+    family.  Every GL_n(Z) element occurs once in the matrix stream, so
+    every integral isometry eventually occurs.  For an infinite orthogonal
+    group this stream is infinite; for a finite group it may never halt.
+    """
+    gram = _gram_in_label_order(lattice)
+    for candidate in _fair_unimodular_matrices(int(gram.nrows())):
+        if candidate * gram * candidate.transpose() == gram:
+            yield _isometry_from_row_matrix(lattice, lattice, candidate)
+
+
 def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
     r"""The integer coordinate tuples of a lattice with `max |entry| = height`, in a fixed order.
 
@@ -1128,6 +1197,11 @@ class EichlerRecursion:
         return tuple(inclusion(kernel.module_generator(label)) for label in kernel.module_generating_set())
 
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
+        if int(lattice.rank()) == 0:
+            # O(0) is trivial. In particular, PARI's definite qfauto
+            # normalization divides by the gcd of the empty Gram matrix,
+            # so it is not an algorithm for this boundary object.
+            return ()
         if lattice.is_definite():
             # IndefiniteForms.g:1275-1310 INDEF_FORM_AutomorphismGroup_Memoize
             # covers the definite kernel (:1435) too: a group computed
@@ -1138,7 +1212,20 @@ class EichlerRecursion:
                 cached = self._groupoid.cached_group(lattice)
                 if cached is not None:
                     return cached
-            definite_generators = tuple(lattice.O().group_generators())
+            # PARI qfauto is sensitive to the Gram presentation: a badly
+            # conditioned perpendicular complement can overflow its stack
+            # even though the lattice's finite orthogonal group is small.
+            # Reduce the *integral* definite Gram before invoking the
+            # provider's exact qfauto kernel, then conjugate its generators
+            # through the certified unimodular LLL isometry.
+            reduction = lattice.lll_reduction()
+            reduced = reduction.reduced
+            reduced_generators = self._groupoid.cached_group(reduced) if cacheable else None
+            if reduced_generators is None:
+                reduced_generators = tuple(reduced.O().group_generators())
+                if cacheable:
+                    self._groupoid.record_group(reduced, reduced_generators)
+            definite_generators = _conjugated(reduction.isometry, reduced_generators)
             if cacheable:
                 self._groupoid.record_group(lattice, definite_generators)
             return definite_generators
@@ -1256,14 +1343,17 @@ class EichlerRecursion:
         source_profile = AttackProfile.from_lattice(source)
         target_profile = AttackProfile.from_lattice(target)
         signed_source, signed_target = source_profile.signed_view, target_profile.signed_view
-        if source_profile.positive_index != 1 and int(source.witt_index()) < 2:
-            # The approximate model needs two rational hyperbolic planes (#40).
-            from sage_extensions.categories.lattice_engines import isometric_within_genus
-            from sage_indefinite_port.indefinite.low_witt import low_witt_isometry_witness
-
-            if source.genus() != target.genus() or not isometric_within_genus(source, target):
-                return None
-            return low_witt_isometry_witness(source, target)
+        if source_profile.positive_index >= 2 and (int(source.witt_index()) < 2 or int(target.witt_index()) < 2):
+            decision = source.Isom(target).is_empty()
+            if decision is True:
+                result = None
+            elif decision is False:
+                result = _fair_unimodular_isometry_witness(source, target)
+            else:
+                raise ArithmeticError("low-Witt integral isometry decision is not exact")
+            if cacheable:
+                self._groupoid.record_isometry(source, target, result)
+            return result
         if spinor_decided:
             # Departure from IndefiniteForms.g:1320-1359 and
             # ApproximateModels.h:1305-1390 (#68): the source decides a
@@ -1486,8 +1576,141 @@ class EichlerRecursion:
         return result
 
     def line_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
-        r"""Generators of Aut((L, Zv)) for primitive isotropic v: Gamma = {+-1} on the line."""
+        r"""Generators of Aut((L, Zv)) for nonzero isotropic v, via its primitive saturation."""
         lattice = vector.parent()
+        if vector == lattice.zero() or vector.q() != lattice.base_ring().zero():
+            raise ValueError("a line stabilizer requires a nonzero isotropic vector")
+        if int(vector.content()) > 1:
+            # Stab(Z(c*v)) = Stab(Zv) for every nonzero integer c.
+            return self.line_stabilizer_generators(vector.primitive_part())
+        if self.vector_lies_in_radical(vector):
+            # The radical is characteristic. Its exact pointed stabilizer
+            # is already the split C+R block group; central -id_L adds
+            # the missing sign and gives the entire moving-line group.
+            minus = _isometry_from_row_matrix(
+                lattice, lattice, -identity_matrix(SageZZ, int(lattice.rank()))
+            )
+            return (*self.pointed_automorphism_generators(vector), minus)
+        if not lattice.is_nondegenerate():
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            gram = _gram_in_label_order(reduced)
+            n, size = int(gram.rank()), int(gram.nrows())
+            labels = tuple(reduced.module_generating_set())
+            coordinates = (~reduction.isometry)(vector).to_vector()
+            x = tuple(_integer(coordinates(label)) for label in labels[:n])
+            r = tuple(_integer(coordinates(label)) for label in labels[n:])
+            if n and gcd(*x) > 1:
+                # Write v=(c*x0,r), x0 primitive. Pointwise fixation is
+                # x0*A=x0, r*D=r (mod c), x0*B=(r-r*D)/c.
+                # The GL(R) congruence stabilizer has index at most c^k.
+                # Use the owned *integral* finite-index Schreier algorithm,
+                # not the finite residue-image stabilizer: the latter
+                # omits the infinite congruence kernel. The free shear
+                # kernel is Hom(C/Zx0,R); -id_L adds the line reversal.
+                c = gcd(*x)
+                x0 = tuple(entry // c for entry in x)
+                k = size - n
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                projected = complement.linear_combination({
+                    label: complement.base_ring()(entry)
+                    for label, entry in zip(c_labels, x0, strict=True) if entry
+                })
+                _, _, change = matrix(SageZZ, [x0]).smith_form()
+                blocks = []
+                for generator in self.pointed_automorphism_generators(projected):
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    blocks.append(block)
+                linear = OwnedGroups().GL(k, reduced.base_ring())
+
+                def radical_matrix(generator):
+                    return linear._to_engine(generator).matrix()
+
+                def preserves_residue(generator):
+                    action = radical_matrix(generator)
+                    return all((sum(r[i] * _integer(action[i, j]) for i in range(k)) - r[j]) % c == 0
+                               for j in range(k))
+
+                stabilizer = linear.predicate_subgroup(
+                    preserves_residue, lambda: f"stabilizer of radical residue {r} modulo {c}"
+                )
+                for generator in stabilizer.finite_index_schreier_generators(
+                    index_bound=c ** k, generators=linear.group_generators()
+                ):
+                    action = radical_matrix(generator)
+                    block = identity_matrix(SageZZ, size)
+                    for i in range(k):
+                        for j in range(k):
+                            block[n + i, n + j] = _integer(action[i, j])
+                    for j in range(k):
+                        delta = (r[j] - sum(r[i] * _integer(action[i, j]) for i in range(k))) // c
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, 0]) * delta
+                    blocks.append(block)
+                for i in range(1, n):
+                    for j in range(k):
+                        block = identity_matrix(SageZZ, size)
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, i])
+                        blocks.append(block)
+                blocks.append(-identity_matrix(SageZZ, size))
+                return _conjugated(reduction.isometry, tuple(
+                    _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
+                ))
+            if n and gcd(*x) == 1:
+                # For L=C+R, every isometry is [A B; 0 D]. If x is
+                # primitive, choose u with x*u=1. The shear T=[I u*r;
+                # 0 I] carries (x,0) to (x,r). Its line stabilizer is
+                # T^-1 (Stab_O(C)(Zx) x GL(R) semidirect Hom(C/Zx,R)) T.
+                # This is exact: xB=0 is the sole constraint on B for
+                # (x,0) to span its own line.
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                projected = complement.linear_combination({
+                    label: complement.base_ring()(entry)
+                    for label, entry in zip(c_labels, x, strict=True) if entry
+                })
+                _, _, change = matrix(SageZZ, [x]).smith_form()
+                shear = identity_matrix(SageZZ, size)
+                for i in range(n):
+                    for j, entry in enumerate(r):
+                        shear[i, n + j] = int(change[i, 0]) * entry
+                blocks = []
+                for generator in self.line_stabilizer_generators(projected):
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    blocks.append(block)
+                radical_rank = size - n
+                general_linear = OwnedGroups().GL(radical_rank, reduced.base_ring())
+                for generator in general_linear.group_generators():
+                    action = general_linear._to_engine(generator).matrix()
+                    block = identity_matrix(SageZZ, size)
+                    for i in range(radical_rank):
+                        for j in range(radical_rank):
+                            block[n + i, n + j] = _integer(action[i, j])
+                    blocks.append(block)
+                for i in range(1, n):
+                    for j in range(radical_rank):
+                        block = identity_matrix(SageZZ, size)
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, i])
+                        blocks.append(block)
+                reduced_generators = tuple(_isometry_from_row_matrix(
+                    reduced, reduced, shear.inverse() * block * shear
+                ) for block in blocks)
+                return _conjugated(reduction.isometry, reduced_generators)
         action = self.isotropic_stabilizer_action((vector,), ((-vector,),))
         # The source supplies a stable containing module, so this is the
         # finite residue action (GroupAction.g:813-900), independently of
@@ -1583,11 +1806,14 @@ class EichlerRecursion:
             raise ArithmeticError("the candidate does not carry the source marking onto the target marking")
 
     def levi_image(self, vector: Lattices.ElementMethods) -> Parent:
-        r"""H, the image of Aut((L, Zv)) in O(K), K = v-perp/v, generated by the images of its computed generators."""
+        r"""H, the actual integral parabolic image on K = v-perp/v.
+
+        The isotropic-reduction owner computes the image, its membership
+        predicate, and its lift section. Do not replace this with a subgroup
+        generated by a potentially incomplete finite stabilizer resolution.
+        """
         reduction = vector.parent().primitive_isotropic_subobject(vector).isotropic_reduction()
-        levi = reduction.levi_action()
-        parabolic = reduction.parabolic_subgroup()
-        return reduction.quotient_lattice().O().subgroup(tuple(levi(parabolic(generator)) for generator in self.line_stabilizer_generators(vector)))
+        return reduction.levi_image()
 
     def _radical_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An isometry of `L` carrying the radical vector `source` onto `target`, or `None` (issues #41 and #62).
@@ -1763,6 +1989,26 @@ class EichlerRecursion:
             generators=generators,
             lifts=lifts,
             general_linear_order=int(GL(radical_rank, residue_ring).order()),
+        )
+
+    def radical_stabilizer_congruence_image(self, lattice, modulus: int, fixed_row):
+        r"""Actual mod-c image of the integral GL(R) stabilizer of a nonzero radical row.
+
+        Its finite generators are reductions of complete integral stabilizer
+        generators, with exact lifts retained for transporter words.  This
+        is generally smaller than the stabilizer of the row modulo c in
+        GL_k(Z/c), so using the latter would invent integral witnesses.
+        """
+        rank = len(fixed_row)
+        lifts = self._radical_stabilizer_of_row(fixed_row)
+        residue_ring = Zmod(modulus)
+        generators = tuple(matrix(residue_ring, [[int(g[i, j]) % modulus for j in range(rank)]
+            for i in range(rank)]) for g in lifts)
+        full = self.radical_congruence_image(lattice, modulus)
+        return RadicalCongruenceImage(
+            modulus=modulus, radical_rank=rank,
+            group=MatrixGroup(list(generators)), generators=generators,
+            lifts=lifts, general_linear_order=full.general_linear_order,
         )
 
     def _mixed_marking_residue_obstruction(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> bool:
@@ -2001,18 +2247,149 @@ class EichlerRecursion:
         exact description.
         """
         lattice = vector.parent()
+        if vector == lattice.zero():
+            # The zero vector imposes no stabilizer condition, including
+            # in the zero lattice and in degenerate ambient forms.
+            return self.orthogonal_group_generators(lattice)
+        # Stab(c*v) = Stab(v) for every nonzero integer c: the
+        # underlying free module is torsion-free.  In particular, do not
+        # pass an imprimitive isotropic vector to a primitive line action.
+        if int(vector.content()) > 1:
+            return self.pointed_automorphism_generators(vector.primitive_part())
         if self.vector_lies_in_radical(vector):
             return self._degenerate_radical_pointed_generators(vector)
+        if not lattice.is_nondegenerate() and vector.q() == lattice.base_ring().zero():
+            # Central -id_L reverses every nonzero line generator. Thus
+            # Stab(Zv) = Stab(v) x < -id_L >, and correcting each complete
+            # line generator by its sign yields a complete generating
+            # family for the pointwise stabilizer, without attempting a
+            # Witt extension across the ambient radical.
+            minus = _isometry_from_row_matrix(
+                lattice, lattice, -identity_matrix(SageZZ, int(lattice.rank()))
+            )
+            result = []
+            for generator in self.line_stabilizer_generators(vector):
+                image = generator(vector)
+                if image not in (vector, -vector):
+                    raise ArithmeticError("a claimed line stabilizer generator does not preserve the marked line")
+                result.append(generator if image == vector else minus * generator)
+            return tuple(result)
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
         return _integral_generator_set(lattice, action)
+
+    def _mixed_degenerate_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods, *, radical_action=None) -> LatticeIsometryMethods | None:
+        r"""Construct a mixed radical/shear transporter in the reduced split presentation.
+
+        For row coordinates ``(x,r)``, ``(y,s)`` on ``C+R``, every isometry
+        has block form ``[[A,B],[0,D]]``.  First solve ``xA=y`` in O(C),
+        then the exact finite-image congruence ``rD=s mod c``, where
+        ``c=content(x)``.  A Bezout column ``u`` with ``x*u=c`` gives
+        ``B=u*(s-rD)/c``.  The resulting matrix is integral unimodular,
+        and its full form and marked-vector action are verified.
+        """
+        source_lattice, target_lattice = source.parent(), target.parent()
+        if source_lattice is not target_lattice:
+            transport = self.isometry(source_lattice, target_lattice)
+            if transport is None:
+                return None
+            correction = self._mixed_degenerate_pointed_isometry(transport(source), target)
+            if correction is None:
+                return None
+            return correction * transport
+        lattice = source_lattice
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        gram = _gram_in_label_order(reduced)
+        n = int(gram.rank())
+        k = int(gram.nrows()) - n
+        if not k:
+            raise ArithmeticError("mixed radical transport requires a nonzero radical")
+        labels = tuple(reduced.module_generating_set())
+        inverse = reduction.isometry.inverse()
+        x = tuple(int(inverse(source).to_vector()(label)) for label in labels)
+        y = tuple(int(inverse(target).to_vector()(label)) for label in labels)
+        x_c, r = x[:n], x[n:]
+        y_c, t = y[:n], y[n:]
+        c = 0
+        for value in x_c:
+            c = gcd(c, value)
+        if not c:
+            return self._radical_pointed_isometry(source, target)
+        complement = reduced.lattice_category()([[int(gram[i, j]) for j in range(n)] for i in range(n)])
+        c_labels = tuple(complement.module_generating_set())
+        x_vector = complement.linear_combination({label: complement.base_ring()(value)
+            for label, value in zip(c_labels, x_c, strict=True) if value})
+        y_vector = complement.linear_combination({label: complement.base_ring()(value)
+            for label, value in zip(c_labels, y_c, strict=True) if value})
+        a_isometry = self.pointed_isometry(x_vector, y_vector)
+        if a_isometry is None:
+            return None
+        a = matrix(SageZZ, [[int(a_isometry(complement.module_generator(label)).to_vector()(key))
+            for key in c_labels] for label in c_labels])
+        d = (radical_action if radical_action is not None else
+             (self.radical_congruence_image(lattice, c).transporter(r, t)
+              if c > 1 else identity_matrix(SageZZ, k)))
+        if d is None:
+            return None
+        residual = matrix(SageZZ, [list(t)]) - matrix(SageZZ, [list(r)]) * d
+        if any(int(value) % c for value in residual.list()):
+            if radical_action is not None:
+                return None
+            raise ArithmeticError("the radical congruence witness does not satisfy its residue equation")
+        _, _, change = matrix(SageZZ, [list(x_c)]).smith_form()
+        bezout = change.column(0)
+        if sum(x_c[i] * int(bezout[i]) for i in range(n)) == -c:
+            bezout = -bezout
+        if sum(x_c[i] * int(bezout[i]) for i in range(n)) != c:
+            raise ArithmeticError("Smith form did not produce the required Bezout column")
+        block = identity_matrix(SageZZ, n + k)
+        for i in range(n):
+            for j in range(n):
+                block[i, j] = a[i, j]
+            for j in range(k):
+                block[i, n + j] = int(bezout[i]) * (int(residual[0, j]) // c)
+        for i in range(k):
+            for j in range(k):
+                block[n + i, n + j] = d[i, j]
+        witness = _conjugated(reduction.isometry, (_isometry_from_row_matrix(reduced, reduced, block),))[0]
+        if witness(source) != target:
+            raise ArithmeticError("the mixed radical/shear witness does not transport the marking")
+        return witness
 
     def pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An element of Isom((L, v), (M, w)), or None."""
         if VectorPrefilter.from_vector(source) != VectorPrefilter.from_vector(target):
             return None
+        # An integral isometry preserves content, and cancelling the
+        # common nonzero content is equivalent over torsion-free lattices.
+        source_content, target_content = int(source.content()), int(target.content())
+        if source_content != target_content:
+            return None
+        if source_content > 1:
+            return self.pointed_isometry(source.primitive_part(), target.primitive_part())
         source_lattice, target_lattice = source.parent(), target.parent()
+        if source == source_lattice.zero():
+            # Both vectors have content zero. Their pointed isometry
+            # problem is precisely the unmarked lattice isometry problem.
+            return self.isometry(source_lattice, target_lattice)
         if source_lattice is target_lattice and source == target:
             return source_lattice.O().identity()
+        if source_lattice is target_lattice:
+            # If q(x)=q(y), then for d=x-y one has
+            # 2 b(x,d)=q(d), hence s_d(x)=y whenever q(d)!=0.
+            # An integral reflection in the primitive line of d is
+            # therefore a complete transporter certificate.  Test it
+            # before constructing O(x^perp): in high-rank definite
+            # complements the latter can exhaust PARI's qfauto stack even
+            # when a single root reflection is already the answer.
+            difference = source - target
+            if difference.q() != source_lattice.base_ring().zero():
+                root = difference.primitive_part()
+                if root.is_integral_reflection_vector():
+                    reflection = source_lattice.reflection(root)
+                    if reflection(source) != target:
+                        raise ArithmeticError("the integral difference reflection failed to transport the marking")
+                    return reflection
         if source_lattice is not target_lattice and LatticePrefilter.from_lattice(source_lattice) != LatticePrefilter.from_lattice(target_lattice):
             return None
         if not source_lattice.is_nondegenerate() and self.vector_lies_in_radical(source):
@@ -2028,6 +2405,8 @@ class EichlerRecursion:
             # A proved obstruction: the radical residues cannot be matched modulo `content(x)`, so no isometry
             # carries one marking onto the other. Answering here is exact and skips the search below.
             return None
+        if not source_lattice.is_nondegenerate():
+            return self._mixed_degenerate_pointed_isometry(source, target)
         if source.q() == source_lattice.base_ring().zero():
             if source_lattice.is_even() and source.div() == source_lattice.base_ring().one():
                 return self._split_isotropic_isometry(source, target)
@@ -2249,6 +2628,26 @@ class EichlerRecursion:
             lambda label: split_map(source_splitting.codomain().module_generator(label))
         )
         return target_splitting.inverse() * split * source_splitting
+
+    def exact_vector_orbit_iterator(self, lattice: Lattices.ParentMethods, square: int, *, primitive_only: bool = False):
+        r"""Enumerate fixed-norm orbit representatives fairly without assuming finiteness.
+
+        Every integral vector occurs in one finite coordinate-height shell.
+        Exact pointed isometry decisions discard precisely those in an
+        earlier orbit.  The iterator may run forever after its last yield
+        when the orbit set is finite; it is not a finite-class certificate.
+        """
+        from itertools import count
+
+        seen = []
+        for height in count(0):
+            for coordinates in _coordinate_box(lattice, height):
+                point = _from_column(lattice, coordinates)
+                if int(point.q()) != int(square) or (primitive_only and int(point.content()) != 1):
+                    continue
+                if all(self.pointed_isometry(previous, point) is None for previous in seen):
+                    seen.append(point)
+                    yield point
 
     def primitive_vector_classes(self, lattice: Lattices.ParentMethods, square: int) -> tuple[VectorClass, ...]:
         r"""One class per O(L)-orbit of primitive vectors of the square, for L of positive index at least 2."""

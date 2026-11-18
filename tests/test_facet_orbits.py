@@ -64,6 +64,65 @@ def test_square_edge_stabilizer_has_the_exact_induced_action(reflection, orbit_s
         assert tuple(int(stabilizer.gen(0)(position)) for position in (1, 2)) == (2, 1)
 
 
+@pytest.mark.parametrize("reflection, expected_order", ((False, 1), (True, 2)))
+def test_square_edge_schreier_transversal_recovers_full_set_stabilizer(reflection, expected_order):
+    from sage.all import PermutationGroup
+    from sage_indefinite_port.indefinite.facet_orbits import _orbit
+
+    generators = [(1, 2, 3, 0)]
+    if reflection:
+        generators.append((1, 0, 3, 2))
+    group = PermutationGroup([[index + 1 for index in permutation] for permutation in generators], domain=(1, 2, 3, 4))
+    incidence = frozenset((0, 1))
+    words = _orbit(incidence, generators)
+    induced = _stabilizer_on_facet(group, incidence, len(words), orbit_words=words, permutations=generators)
+    stabilizer = PermutationGroup([[index + 1 for index in action] for action in induced], domain=(1, 2))
+    assert int(stabilizer.order()) == expected_order
+    reference = _stabilizer_on_facet(group, incidence, len(words))
+    reference_group = PermutationGroup([[index + 1 for index in action] for action in reference], domain=(1, 2))
+    assert stabilizer == reference_group
+
+
+@pytest.mark.parametrize("generators, incidence", (
+    (((1, 2, 3, 0), (1, 0, 3, 2)), (0, 1)),
+    (((1, 2, 3, 4, 0), (1, 0, 2, 3, 4)), (0, 1, 2)),
+    (((1, 0, 2, 3, 4, 5), (0, 2, 3, 1, 4, 5), (0, 1, 2, 3, 5, 4)), (0, 1, 4)),
+))
+def test_schreier_facet_stabilizer_matches_gap_onsets_for_nontrivial_orbits(generators, incidence):
+    from sage.all import PermutationGroup
+    from sage_indefinite_port.indefinite.facet_orbits import _orbit
+
+    group = PermutationGroup([[index + 1 for index in permutation] for permutation in generators], domain=tuple(range(1, len(generators[0]) + 1)))
+    incidence = frozenset(incidence)
+    words = _orbit(incidence, generators)
+    actual = _stabilizer_on_facet(group, incidence, len(words), orbit_words=words, permutations=generators)
+    expected = _stabilizer_on_facet(group, incidence, len(words))
+    domain = tuple(range(1, len(incidence) + 1))
+    actual_group = PermutationGroup([[index + 1 for index in action] for action in actual], domain=domain)
+    expected_group = PermutationGroup([[index + 1 for index in action] for action in expected], domain=domain)
+    assert actual_group == expected_group
+
+
+def test_large_recursive_facet_uses_exact_ridge_walk_beyond_depth_two():
+    """The complete orthant facet set survives deep splitting with many rays."""
+    rays = [(1, 0, 0)] * 340 + [(0, 1, 0)] * 340 + [(0, 0, 1)] * 340
+    records = tuple(orbit_representatives(rays, (), level=4))
+    assert len(records) == 3
+    assert {tuple(normal) for _incidence, normal in records} == {
+        (1, 0, 0), (0, 1, 0), (0, 0, 1)
+    }
+    assert all(is_facet_certificate(normal, incidence, rays) for incidence, normal in records)
+
+
+def test_deep_low_symmetry_recursive_facet_avoids_complete_h_description():
+    rays = [(1, 0, 0)] * 10 + [(0, 1, 0)] * 10 + [(0, 0, 1)] * 5
+    records = tuple(orbit_representatives(rays, (), level=5))
+    assert len(records) == 3
+    assert {tuple(normal) for _incidence, normal in records} == {
+        (1, 0, 0), (0, 1, 0), (0, 0, 1)
+    }
+
+
 def _cell(gram):
     backend = LorentzianPerfectLocalBackend()
     return backend, backend.initial_cell(lattice(gram), NONNEGATIVE_SQUARES)

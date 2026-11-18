@@ -6,7 +6,12 @@ to be *checked* rather than assumed resolved because the code moved. Each test b
 the reproducer for one row: it is written against the behaviour the defect would produce,
 so it fails if that behaviour returns.
 
-Rows not represented here are recorded in the issue rather than guessed at:
+The remaining edgewalk rows have their own focused red reproducers in
+``test_edgewalk_public_options.py`` and the branch-instrumented acceptance
+sample in ``test_reflective.sage``. In particular those checks cover
+spacelike root intersections, anisotropic terminal edges, multi-component
+cusps, and basis-independent split-binary handling. Rows not represented by
+an executable check remain recorded in the issue rather than guessed at:
 
 - the traversal signature (`perfect_domain_traversal` taking Gram rows) is checked by the
   frozen acceptance module, which passes a lattice and reads the owned result;

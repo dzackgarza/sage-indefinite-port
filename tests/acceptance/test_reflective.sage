@@ -214,6 +214,11 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
 
         def wrapped(self, *args, **kwargs):
             result = original(self, *args, **kwargs)
+            if name == "vertex_from_root" and result is not None:
+                assert self.norm(result.generator) <= 0, (
+                    "an edge-root intersection produced a spacelike vector, "
+                    "not a Lorentzian corner"
+                )
             observed[f"{cls.__name__}.{name}"] = True
             return result
 

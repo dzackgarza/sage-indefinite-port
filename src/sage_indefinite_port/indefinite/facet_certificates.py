@@ -68,15 +68,23 @@ def incidence_rank_certificate(rows, wanted: int) -> tuple[tuple[int, ...], tupl
         return (), ()
     if len(rows) < wanted or not rows:
         return None
-    integer_matrix = matrix(ZZ, rows)
-    if integer_matrix.rank() < wanted:
-        return None
-    pivot_columns = tuple(int(column) for column in integer_matrix.pivots())[:wanted]
+    # A positive rank certificate needs only `wanted` independent rows,
+    # not a matrix containing every incident ray. Grow the exact prefix
+    # geometrically until its transposed pivots certify enough independent
+    # rows, or until every input row has been examined. Thus a negative
+    # answer still examines the complete incidence, without a search bound.
+    prefix = min(len(rows), max(wanted, 16))
+    while True:
+        integer_matrix = matrix(ZZ, rows[:prefix])
+        pivot_rows = tuple(int(row) for row in integer_matrix.transpose().pivots())[:wanted]
+        if len(pivot_rows) == wanted:
+            break
+        if prefix == len(rows):
+            return None
+        prefix = min(len(rows), 2 * prefix)
+    restricted = integer_matrix.matrix_from_rows(pivot_rows)
+    pivot_columns = tuple(int(column) for column in restricted.pivots())[:wanted]
     if len(pivot_columns) < wanted:
-        return None
-    restricted = integer_matrix.matrix_from_columns(pivot_columns)
-    pivot_rows = tuple(int(row) for row in restricted.transpose().pivots())[:wanted]
-    if len(pivot_rows) < wanted:
         return None
     square = integer_matrix.matrix_from_rows_and_columns(pivot_rows, pivot_columns)
     if square.det() == 0:

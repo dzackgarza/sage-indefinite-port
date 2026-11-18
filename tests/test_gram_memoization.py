@@ -82,3 +82,18 @@ def test_consumer_of_the_shared_gram_leaves_it_intact() -> None:
         assert first(generator) == second(generator) == generator
     assert _gram_in_label_order(lattice_) == _direct_gram(lattice_)
     assert _gram_in_label_order(lattice_).is_immutable()
+
+
+def test_definite_group_generators_transport_from_lll_reduced_gram():
+    """A skew unimodular presentation has the full finite O(L) after LLL transport."""
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[2, 20], [20, 202]])
+    reduction = ambient.lll_reduction()
+    assert reduction.reduced.gram_tensor() != ambient.gram_tensor()
+    generators = tuple(EichlerRecursion().orthogonal_group_generators(ambient))
+    assert generators
+    basis = tuple(ambient.module_generators())
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in basis for y in basis)
+    assert ambient.O().subgroup(generators).cardinality() == 8

@@ -388,7 +388,7 @@ def _orbit_members(incidence, permutations):
     return members
 
 
-def _stabilizer_on_facet(group, incidence, orbit_size):
+def _stabilizer_on_facet(group, incidence, orbit_size, *, orbit_words=None, permutations=()):
     r"""The induced action of the exact set stabilizer on its facet.
 
     Sage's PermutationGroup.stabilizer(..., action="OnSets") delegates
@@ -402,6 +402,51 @@ def _stabilizer_on_facet(group, incidence, orbit_size):
         return ()
     positions = tuple(sorted(incidence))
     local_position = {position + 1: index for index, position in enumerate(positions)}
+    if orbit_words is not None and permutations:
+        # Schreier's lemma for the action on subsets: if t_x takes the
+        # reference facet F to x, then t_x s t_(xs)^-1 fixes F. The BFS
+        # transversal is already available from the exact facet-orbit
+        # computation. Restrict these Schreier generators to F instead of
+        # invoking GAP's second, potentially costly OnSets stabilizer search.
+        # Evaluate each transversal word on the facet only once while it
+        # remains in a bounded cache. A Schreier edge then takes one
+        # generator application and one inverse lookup per facet position.
+        transport_cache = {}
+        cache_limit = max(2, 250_000 // max(1, len(positions)))
+        local_generators = set()
+        identity = tuple(range(len(positions)))
+        for member, word in orbit_words.items():
+            source_data = transport_cache.get(member)
+            if source_data is None:
+                source_images = list(positions)
+                for step in word:
+                    generator = permutations[step]
+                    source_images = [generator[position] for position in source_images]
+                if set(source_images) != member:
+                    raise ArithmeticError("a facet Schreier word failed to transport its incidence")
+                source_data = (tuple(source_images), {image: index for index, image in enumerate(source_images)})
+                transport_cache[member] = source_data
+                if len(transport_cache) > cache_limit:
+                    transport_cache.pop(next(iter(transport_cache)))
+            source_images = source_data[0]
+            for generator_index, generator in enumerate(permutations):
+                next_member = frozenset(generator[position] for position in member)
+                target_data = transport_cache.get(next_member)
+                if target_data is None:
+                    target_images = list(positions)
+                    for step in orbit_words[next_member]:
+                        target_generator = permutations[step]
+                        target_images = [target_generator[position] for position in target_images]
+                    if set(target_images) != next_member:
+                        raise ArithmeticError("a facet Schreier target word failed to transport its incidence")
+                    target_data = (tuple(target_images), {image: index for index, image in enumerate(target_images)})
+                    transport_cache[next_member] = target_data
+                    if len(transport_cache) > cache_limit:
+                        transport_cache.pop(next(iter(transport_cache)))
+                action = tuple(target_data[1][generator[position]] for position in source_images)
+                if action != identity:
+                    local_generators.add(action)
+        return tuple(sorted(local_generators))
     stabilizer = group.stabilizer([position + 1 for position in positions], action="OnSets")
     return tuple(
         tuple(local_position[int(generator(position + 1))] for position in positions)
@@ -491,17 +536,16 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
             if record is not None:
                 yield record
         return
-    # POLY_Heuristics.h:320-328, StandardHeuristicSplitting, in rule order.
-    # LORENTZ_GetGeneratorsAutom_Reduced sets dimEXT = n + 1, so the
-    # initial n-dimensional cone has level one. Each facet lowers rank by
-    # one. Both source dispatches compute the complete exact facet set;
-    # these rules select computation, not a search bound.
-    if len(rays) - dimension < 20:
-        split = False
-    elif order > 5000 and level < 3:
-        split = True
-    else:
-        split = len(rays) >= 40 and level <= 1 and order >= 100
+    # The pinned StandardHeuristicSplitting switches back to direct dual
+    # description at deeper levels or for small groups. On the frozen
+    # Lorentzian configurations that repeatedly submits large recursive
+    # faces to Normaliz, even though the exact ridge walk is already
+    # available. Use direct enumeration only for near-simplicial faces;
+    # otherwise continue the certified recursive walk regardless of the
+    # group's order or the depth. Each recursive face lowers dimension,
+    # and the two-dimensional base case terminates exactly. This changes
+    # the engine dispatch, not the facet set or its orbit equivalence.
+    split = len(rays) - dimension >= 20
     if not split:
         # POLY_RecursiveDualDesc.h:1465-1474, DirectFacetOrbitComputation.
         # Use the exact Normaliz cone backend already owned by the local
@@ -589,7 +633,11 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
         record = records[index]
         incidence, normal = record.incidence, record.normal
         positions = sorted(incidence)
-        local_permutations = _stabilizer_on_facet(group, incidence, record.orbit_size)
+        local_permutations = _stabilizer_on_facet(
+            group, incidence, record.orbit_size,
+            orbit_words=dict(record.words) if retain_words else None,
+            permutations=permutations,
+        )
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
             processed_any = True

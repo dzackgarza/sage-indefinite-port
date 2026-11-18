@@ -233,6 +233,73 @@ Its name alone assigns no computation to research.
 Retain every finite-order case already present in the frozen suite.
 #18 remains accountable for full consumer acceptance and its indefinite dependency calls, while #397 tracks the reusable computation; neither issue is complete merely because work is routed to the other.
 
+### Degenerate zero-form branch
+
+For fixed positive content \(c\), pointed zero-norm markings in a pure
+zero-form rank-\(n>0\) lattice have one full-\(GL_n(\mathbb Z)\) orbit,
+represented by \(c e_1\). The fixed-content public coslice operation
+constructs this orbit through primitive based-frame classification before
+scaling, not through the nondegenerate Witt-index vector classifier.
+
+For the zero bilinear form on a free rank-\(n\) integral lattice \(L\),
+\(O(L)=GL_n(\mathbb Z)\) as *abstract groups of integral linear maps*.
+The equality does **not** identify the research runtime's module-automorphism
+parent with its owned orthogonal-group parent: convert each integral
+\(GL_n\)-generator into an actual \(O(L)\)-isometry at the port boundary.
+
+Every primitive ordered rank-\(k\) frame extends to a unimodular basis.
+Consequently \(GL_n(\mathbb Z)\) acts transitively on primitive based
+frames, primitive moving rank-\(k\) sublattices, and primitive flags with
+any fixed strictly increasing rank profile. An exhaustive unimodular search
+for a transporter **terminates positively** on these inputs; each candidate
+must still be checked on every marked generator or flag stage. The
+pointwise stabilizer of a completed rank-\(k\) frame is, in its adapted
+coordinates, \(\mathbb Z^{(n-k)k}\rtimes GL_{n-k}(\mathbb Z)\): the first
+\(k\) rows are fixed, while the remaining rows have arbitrary lower-left
+shears and a unimodular lower-right block. Conjugate its generators through
+the *integral* completion, not a rational complement. A nonprimitive based
+frame has the same pointwise stabilizer as its primitive saturation: if an
+integral linear map fixes \(m x\), torsion-freeness forces it to fix \(x\).
+
+For a **moving** finite-index sublattice \(J\subset S\subset L\) in a
+zero-form ambient lattice, first generate the integral parabolic
+\(\operatorname{Stab}_{GL(L)}(S)\). Its orbit of \(J\) is finite; Schreier
+generators from this *actual* parabolic action generate precisely
+\(\operatorname{Stab}_{GL(L)}(J)\). This includes nonhomothetic Smith types,
+without invoking nondegenerate isotropic-plane induction. For rank one,
+\(J=mS\) has the same setwise parabolic stabilizer as \(S\).
+The fixed-saturation classification of submodules of \(S\) likewise uses
+the action of this actual integral parabolic, transferred to the owned
+\(GL(S)\) action. In a pure zero-form ambient lattice it is the full
+\(GL(S)\), including when \(S\) is a proper summand of \(L\).
+
+For an unbased rank-\(k\) submodule, Smith normal form gives a complete
+\(GL_n(\mathbb Z)\)-orbit invariant: its positive elementary divisors
+\(d_1\mid\cdots\mid d_k\). Equality of these invariants guarantees an
+integral moving-sublattice transporter; inequality proves non-equivalence.
+For a **based** injective frame with row matrix \(A\in M_{k\times n}(\mathbb Z)\),
+the complete invariant under right multiplication by \(GL_n(\mathbb Z)\)
+is instead the column lattice \(A\mathbb Z^n\subseteq\mathbb Z^k\),
+canonically represented by the row Hermite form of \(A^t\). Indeed two
+surjections \(\mathbb Z^n\twoheadrightarrow H\) onto the same free
+subgroup \(H\subseteq\mathbb Z^k\) are related by an automorphism of
+\(\mathbb Z^n\): split both surjections and identify their free kernels.
+This distinction is essential: frames \((e,2f)\) and \((2e,f)\) have
+equal moving Smith type but different based column lattices.
+These invariants and transporter constructions remain valid when the two
+ambient zero-form lattice objects have distinct parents: compare coordinates
+in their respective integral framings and produce a map in
+\(\operatorname{Isom}(L,M)\), not merely an endomorphism of \(L\).
+Unbounded Smith-shell iterators must not infer that a finite quotient has
+ended merely because a search has not emitted another representative.
+
+**Arithmetic subgroups are different actions.** In particular, the three
+index-two sublattices of \(\mathbb Z^2\) form one full \(GL_2(\mathbb Z)\)
+orbit, but three separate orbits under the principal congruence kernel
+\(\Gamma(2)\), which acts trivially on their reductions modulo two. The
+full-group Smith classification is never a substitute for subgroup-correct
+orbit splitting, stabilizers or transporters.
+
 ## Boundary and acceptance
 
 Research imports this package at computational call sites.

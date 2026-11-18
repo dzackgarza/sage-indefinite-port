@@ -26,6 +26,41 @@ def test_fixed_null_vector_transporter_respects_special_orthogonal_subgroup():
     assert apex(e) == e and apex.determinant() == 1
 
 
+def test_composite_level_six_preimage_uses_actual_integral_image():
+    """O(U) has four elements; -I is in Gamma(2) but not Gamma(3) or Gamma(6)."""
+    ambient = lattice([[0, 1], [1, 0]])
+    group = ambient.O()
+    minus = ambient.Aut()({label: -ambient.module_generator(label)
+                           for label in ambient.module_generating_set()})
+    assert minus in group.congruence_preimage(2)
+    assert minus not in group.congruence_preimage(3)
+    image = group.congruence_representation(6)
+    kernel = group.congruence_preimage(6)
+    assert int(image.codomain().cardinality()) == 4
+    assert minus not in kernel
+    identity_image = image(group.identity())
+    assert all(image(generator) == identity_image for generator in kernel.group_generators())
+    assert kernel.index() == 4
+
+
+@pytest.mark.parametrize("modulus, expected_order", ((2, 72), (3, 1152), (4, 4608)))
+def test_two_hyperbolic_planes_congruence_representation_has_exact_image(modulus, expected_order):
+    r"""The split rank-four orthogonal action has the two SL_2 factors
+    and their factor-exchange involution. Over Z/m the corresponding
+    orders are 2*6^2, 2*24^2, and 2*48^2 for m=2,3,4. Check the
+    *actual generated image* instead of assuming independent characters.
+    """
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    group = ambient.O()
+    representation = group.congruence_representation(modulus)
+    assert int(representation.codomain().cardinality()) == expected_order
+    basis = tuple(ambient.module_generators())
+    for generator in group.group_generators():
+        assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+                   for x in basis for y in basis)
+        assert representation(generator) in representation.codomain()
+
+
 @pytest.mark.parametrize("kind, count", (("based", 4), ("moving", 2), ("flag", 2)))
 def test_joint_determinant_and_discriminant_conditions_use_the_actual_image(kind, count):
     r"""O(U(3)) consists of +/-I and +/-swap, all distinct modulo three.

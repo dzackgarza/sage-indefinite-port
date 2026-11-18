@@ -1840,11 +1840,16 @@ class LorentzianPerfectLocalBackend:
         facet_positions = tuple(sorted(facet))
         selected = matrix(SageQQ, [vectors[position] for position in facet_positions])
         # LORENTZ_DoFlipping uses GAP NullspaceMat(TransposedMat(ListIso{eInc})).
-        # That kernel is one line, and the direction below is oriented
-        # towards a nonincident vector and made primitive, so every basis of
-        # the line gives the same normal: Sage's exact kernel of the rows
-        # replaces the per-entry GAP conversion.
-        facet_nullspace = selected.right_kernel_matrix()
+        # A facet spans a codimension-one hyperplane. The nullspace is
+        # therefore one-dimensional and unchanged by replacing its many
+        # incident rays with any independent spanning subfamily. Select
+        # those rows exactly before the GAP call: the frozen large cells
+        # otherwise submit tens of thousands of dependent columns to
+        # NullspaceMat merely to obtain one normal direction.
+        independent_positions = tuple(int(i) for i in selected.transpose().pivots())
+        if len(independent_positions) != selected.ncols() - 1:
+            raise ArithmeticError("a perfect-cell facet must span a codimension-one hyperplane")
+        facet_nullspace = _pinned_nullspace_matrix(selected.matrix_from_rows(independent_positions).transpose())
         if facet_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must have one normal direction")
         direction = facet_nullspace.row(0)
@@ -2038,13 +2043,101 @@ class LorentzianPerfectLocalBackend:
         if not all_images:
             if source.lattice is target.lattice and source.rows == target.rows:
                 return source.lattice.Aut().identity()
+            # Equal configurations may arrive in different vertex orders or
+            # as distinct cell objects. Identity then transports the entire
+            # multiset, regardless of its size; do not enter the expensive
+            # exact basis-image search merely to rediscover that witness.
+            if source_gram == target_gram:
+                if n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
+                    same_configuration = Counter(source.rows) == Counter(target.rows)
+                else:
+                    # Large-cell transporters must not construct the two
+                    # complete Counter objects merely to try identity.
+                    # Cancel row multiplicities in one exact dictionary;
+                    # distinct rows and repeated rays are both supported.
+                    remaining_rows = {}
+                    for row in source.rows:
+                        remaining_rows[row] = remaining_rows.get(row, 0) + 1
+                    same_configuration = True
+                    for row in target.rows:
+                        if not remaining_rows.get(row, 0):
+                            same_configuration = False
+                            break
+                        remaining_rows[row] -= 1
+                    if same_configuration:
+                        same_configuration = not any(remaining_rows.values())
+                if same_configuration:
+                    if source.lattice is target.lattice:
+                        return source.lattice.Aut().identity()
+                    # Coordinate identity transports the complete multiset
+                    # between different parents with the same Gram form.
+                    labels = tuple(source.lattice.module_generating_set())
+                    target_labels = tuple(target.lattice.module_generating_set())
+                    return source.lattice.Isom(target.lattice)(
+                        {label: target.lattice.module_generator(target_label)
+                         for label, target_label in zip(labels, target_labels, strict=True)}
+                    )
+            # Try certified ambient basis symmetries before constructing the
+            # quadratic pairing data. This is a sufficient witness search,
+            # never a rejection criterion: a miss falls through to the full
+            # exact transporter. Component flips and integral reflections
+            # preserve the Gram form by construction.
+            if source_gram == target_gram and n > _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
+                target_counts = Counter(target.rows)
+                source_matrix = matrix(SageZZ, source.rows)
+                candidates = [*_gram_component_sign_flips(source_gram), *(
+                    reflection for index in range(rank)
+                    if (reflection := _integral_basis_reflection(source_gram, index)) is not None
+                )]
+                # The stabilizer seed search below already certifies these
+                # Gram-compatible coordinate swaps. Reuse that exact family
+                # for transporters between distinct cells as well.
+                for first in range(rank):
+                    for second in range(first + 1, rank):
+                        if source_gram[first, first] != source_gram[second, second]:
+                            continue
+                        if any(source_gram[first, other] != source_gram[second, other]
+                               for other in range(rank) if other not in (first, second)):
+                            continue
+                        action = identity_matrix(SageZZ, rank)
+                        action[first, first] = action[second, second] = 0
+                        action[first, second] = action[second, first] = 1
+                        candidates.append(action)
+                for action in candidates:
+                    if action * source_gram * action.transpose() != target_gram:
+                        raise ArithmeticError("a proposed basis symmetry failed Gram preservation")
+                    # Reject at the first missing/exhausted target row,
+                    # rather than allocating and counting an entire
+                    # transformed n-by-r matrix for every failed seed.
+                    remaining = target_counts.copy()
+                    for start in range(0, n, _configuration_pairing_block_size(n)):
+                        stop = min(start + _configuration_pairing_block_size(n), n)
+                        transformed = source_matrix.matrix_from_rows(range(start, stop)) * action
+                        for row in transformed.rows():
+                            image = tuple(int(entry) for entry in row)
+                            if not remaining[image]:
+                                break
+                            remaining[image] -= 1
+                        else:
+                            continue
+                        break
+                    else:
+                        # Equal source/target cardinality plus successful
+                        # cancellation certifies the full multiset exactly.
+                        source_labels = tuple(source.lattice.module_generating_set())
+                        target_labels = tuple(target.lattice.module_generating_set())
+                        return source.lattice.Isom(target.lattice)({
+                            label: target.lattice.linear_combination({
+                                target_label: target.lattice.base_ring()(int(entry))
+                                for target_label, entry in zip(target_labels, image_row, strict=True) if entry
+                            })
+                            for label, image_row in zip(source_labels, action.rows(), strict=True)
+                        })
             if (
                 n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT
                 and not self.cell_stabilizer.is_in_cache(source)
                 and not self.cell_stabilizer.is_in_cache(target)
             ):
-                if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
-                    return source.lattice.Aut().identity()
                 source_family = source.vector_family
                 target_family = target.vector_family
                 return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
@@ -2103,6 +2196,13 @@ class LorentzianPerfectLocalBackend:
         # basis-independent invariant. It is only rank-by-rank and rejects
         # some incompatible configurations before the large image search.
         if source_moment.det() != target_moment.det():
+            return () if all_images else None
+        # Congruence by an integral unimodular transporter also preserves
+        # the Smith invariant factors of the second-moment matrix. Equal
+        # determinants alone miss distinct integral congruence classes;
+        # these rank-sized factors reject such pairs before constructing
+        # auxiliary pairing columns or searching basis images.
+        if source_moment.elementary_divisors() != target_moment.elementary_divisors():
             return () if all_images else None
         # The auxiliary configuration form used by GetQmatrix (see
         # fund_domain_vertices.h:146) is the inverse second moment.  If
@@ -2266,8 +2366,9 @@ class LorentzianPerfectLocalBackend:
             if len(positions) != n:
                 raise ArithmeticError("the exact row-position certificate requires distinct configuration vectors")
         if reduce_basis_images:
-            symmetric = SymmetricGroup(n)
-            subgroup = symmetric.subgroup([])
+            symmetric = None
+            subgroup = None
+            gap_subgroup = None
             group_permutations = []
             # Seed the exact stabilizer subgroup with integral reflections in
             # the ambient basis vectors whenever they preserve this complete
@@ -2308,10 +2409,13 @@ class LorentzianPerfectLocalBackend:
                 # Retain the full integral subgroup of the source's GRP2,
                 # certified on the complete configuration. This group
                 # contains every cheap seed.
-                group_permutations.extend(
-                    symmetric([image + 1 for image in permutation])
-                    for permutation in self.cell_stabilizer_permutations(target)
-                )
+                retained_permutations = self.cell_stabilizer_permutations(target)
+                if retained_permutations:
+                    symmetric = SymmetricGroup(n)
+                    group_permutations.extend(
+                        symmetric([image + 1 for image in permutation])
+                        for permutation in retained_permutations
+                    )
                 candidate_actions = []
             for action in candidate_actions:
                 permutation_images = array(permutation_typecode)
@@ -2329,6 +2433,10 @@ class LorentzianPerfectLocalBackend:
                         break
                 if not preserves_configuration:
                     continue
+                if all(image == index + 1 for index, image in enumerate(permutation_images)):
+                    continue
+                if symmetric is None:
+                    symmetric = SymmetricGroup(n)
                 permutation = symmetric(list(permutation_images))
                 if permutation in group_permutations:
                     continue
@@ -2353,7 +2461,13 @@ class LorentzianPerfectLocalBackend:
             # permutation subgroup for each of the rank basis reflections
             # repeats the same expensive Schreier setup on the 49,861-ray A7
             # configuration without changing its generated subgroup.
-            subgroup = symmetric.subgroup(group_permutations)
+            # The empty generating family acts trivially. In that case
+            # constructing a degree-n GAP group (and its point stabilizers)
+            # has no mathematical effect on the image search. Delay that
+            # construction until there is a nonidentity certified action.
+            if group_permutations:
+                subgroup = symmetric.subgroup(group_permutations)
+                gap_subgroup = libgap(subgroup)
         # Pointwise stabilizers depend only on the generated subgroup version
         # and the set of already assigned target positions. Reusing them across
         # sibling search nodes avoids rebuilding the same GAP stabilizer chain.
@@ -2401,7 +2515,7 @@ class LorentzianPerfectLocalBackend:
         # configuration isomorphism. Retain both forms in each joint prefix
         # signature; their common determinant scaling was fixed above.
         def backtrack(images, source_columns, target_columns, certified_target_basis=None):
-            nonlocal subgroup, first_witness
+            nonlocal subgroup, gap_subgroup, first_witness, symmetric
             if first_witness is not None:
                 return first_witness
             if len(images) == rank:
@@ -2439,7 +2553,16 @@ class LorentzianPerfectLocalBackend:
                             if permutation_images is not None:
                                 permutation_images.append(position + 1)
                     if permutation_images is not None:
-                        permutation = symmetric(permutation_images)
+                        # The identity action contributes no stabilizer
+                        # generator. In particular, a cell with trivial
+                        # stabilizer need not instantiate a degree-n
+                        # permutation parent merely to certify identity.
+                        if all(image == index + 1 for index, image in enumerate(permutation_images)):
+                            permutation = None
+                        else:
+                            if symmetric is None:
+                                symmetric = SymmetricGroup(n)
+                            permutation = symmetric(permutation_images)
                 else:
                     transformed_rows = source_rows * action
                     if target_multiset is None or Counter(tuple(row) for row in transformed_rows.rows()) != target_multiset:
@@ -2453,11 +2576,12 @@ class LorentzianPerfectLocalBackend:
                     }
                 )
                 if generators_only:
-                    if permutation not in subgroup:
+                    if permutation is not None and (subgroup is None or permutation not in subgroup):
                         stabilizer_elements.append(witness)
                         stabilizer_actions.append(action)
                         group_permutations.append(permutation)
                         subgroup = symmetric.subgroup(group_permutations)
+                        gap_subgroup = libgap(subgroup)
                 elif first_only:
                     first_witness = witness
                     return witness
@@ -2565,30 +2689,34 @@ class LorentzianPerfectLocalBackend:
                     # The current sibling list was fixed before that
                     # discovery, so recompute the H_a-orbit partition.
                     if version != len(group_permutations):
-                        fixer_key = (len(group_permutations), tuple(sorted(images.values())))
-                        fixer = fixer_cache.get(fixer_key)
-                        if fixer is None:
-                            # One GAP pointwise stabilizer H_a = Stab_H(a, OnTuples)
-                            # on H's stabilizer chain, rather than one Sage
-                            # subgroup wrapper per assigned point.
-                            fixer = libgap.Stabilizer(
-                                subgroup.gap(),
-                                libgap([assigned_target + 1 for assigned_target in fixer_key[1]]),
-                                libgap.OnTuples,
-                            )
-                            fixer_cache[fixer_key] = fixer
-                            if len(fixer_cache) > 256:
-                                fixer_cache.pop(next(iter(fixer_cache)))
-                        orbit_minima = {}
-                        remaining_orbits = set(admissible)
-                        while remaining_orbits:
-                            candidate = min(remaining_orbits)
-                            orbit = {int(position) - 1 for position in libgap.Orbit(fixer, candidate + 1).sage()}
-                            if not orbit <= admissible:
-                                raise ArithmeticError("an integral pointwise stabilizer does not preserve the admissible image class")
-                            for member in orbit:
-                                orbit_minima[member] = candidate
-                            remaining_orbits.difference_update(orbit)
+                        if subgroup is None:
+                            orbit_minima = {candidate: candidate for candidate in admissible}
+                        else:
+                            fixer_key = (len(group_permutations), tuple(sorted(images.values())))
+                            fixer = fixer_cache.get(fixer_key)
+                            if fixer is None:
+                                # Fixing an ordered tuple is precisely the
+                                # intersection of its point stabilizers.
+                                # One GAP OnTuples call replaces a chain of
+                                # degree-n Schreier stabilizer computations.
+                                fixer = libgap.Stabilizer(
+                                    gap_subgroup,
+                                    libgap([position + 1 for position in fixer_key[1]]),
+                                    libgap.OnTuples,
+                                ) if fixer_key[1] else gap_subgroup
+                                fixer_cache[fixer_key] = fixer
+                                if len(fixer_cache) > 256:
+                                    fixer_cache.pop(next(iter(fixer_cache)))
+                            orbit_minima = {}
+                            remaining_orbits = set(admissible)
+                            while remaining_orbits:
+                                candidate = min(remaining_orbits)
+                                orbit = {int(position) - 1 for position in libgap.Orbit(fixer, candidate + 1, libgap.OnPoints)}
+                                if not orbit <= admissible:
+                                    raise ArithmeticError("an integral pointwise stabilizer does not preserve the admissible image class")
+                                for member in orbit:
+                                    orbit_minima[member] = candidate
+                                remaining_orbits.difference_update(orbit)
                         version = len(group_permutations)
                     if orbit_minima[j] != j:
                         continue

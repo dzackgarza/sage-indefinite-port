@@ -80,6 +80,16 @@ def test_rank_certificate_is_a_nonzero_minor_and_never_over_claims() -> None:
     assert incidence_rank_certificate([[0, 0], [0, 0]], 1) is None
 
 
+def test_incidence_rank_certificate_exhausts_dependent_prefixes_without_cutoff():
+    rows = [(1, 0, 0)] * 1024 + [(0, 1, 0), (0, 0, 1)]
+    certificate = incidence_rank_certificate(rows, 3)
+    assert certificate is not None
+    row_indices, column_indices = certificate
+    assert max(row_indices) >= 1024
+    assert matrix(ZZ, rows).matrix_from_rows_and_columns(row_indices, column_indices).det() != 0
+    assert incidence_rank_certificate(rows[:-1], 3) is None
+
+
 @pytest.mark.parametrize("name", sorted(SPECIMENS))
 def test_every_engine_facet_normal_is_recovered_from_its_incidence(name) -> None:
     """Two independent routes to the same normal: Normaliz's H-description, and the incidence's cofactors."""
@@ -228,6 +238,27 @@ def test_pointedness_functional_requires_both_rank_hypotheses() -> None:
     # A 3-row version in dimension 2 with the same defect: augmented rank 2, row rank 1.
     with pytest.raises(ArithmeticError):
         pointedness_functional(SimpleNamespace(rows=((1, 0), (3, 0), (-2, 0))))
+
+
+def test_facet_linear_algebra_keeps_sage_rings_after_owned_ring_initialization(monkeypatch):
+    """The provider's ZZ/QQ must not replace the Sage matrix base rings."""
+    from types import SimpleNamespace
+    import sage.all as sage_all
+    from sage.rings.integer_ring import ZZ as SageZZ
+    from sage.rings.rational_field import QQ as SageQQ
+    from sage_extensions.all import ZZ as OwnedZZ, QQ as OwnedQQ
+    from sage_indefinite_port.indefinite import facet_certificates, facet_orbits
+
+    monkeypatch.setattr(sage_all, "ZZ", OwnedZZ)
+    monkeypatch.setattr(sage_all, "QQ", OwnedQQ)
+    assert facet_certificates.ZZ is SageZZ
+    assert facet_certificates.QQ is SageQQ
+    assert facet_orbits.ZZ is SageZZ
+    assert facet_orbits.QQ is SageQQ
+    height, pairings = facet_certificates.pointedness_functional(
+        SimpleNamespace(rows=((1, 0), (0, 1))))
+    assert len(height) == 2 and all(value > 0 for value in pairings)
+    assert facet_orbits._span_basis(((1, 0), (0, 1))).rank() == 2
 
 
 def test_pointedness_functional_is_exact_on_a_fractional_kernel_basis() -> None:
