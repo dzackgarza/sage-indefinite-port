@@ -1268,14 +1268,14 @@ class IsotropicInduction:
                         ))
             if n and k and (not flag_dimensions or (
                 flag_basis and flag_dimensions[-1] == len(flag_basis)
-                and all(self.recursion.vector_lies_in_radical(point)
-                        for point in flag_basis[:flag_dimensions[0]])
-                and flag_dimensions[0] == int(inclusion.domain().rank())
-                + int(ambient.radical().rank())
-                - int(ambient.subobject_on((*self.plane_vectors(plane), *(
+                and any(all(self.recursion.vector_lies_in_radical(point)
+                            for point in flag_basis[:rank])
+                        and rank == int(inclusion.domain().rank())
+                        + int(ambient.radical().rank())
+                        - int(ambient.subobject_on((*self.plane_vectors(plane), *(
                     ambient.radical().inclusion()(point)
                     for point in ambient.radical().module_generators()
-                ))).rank())
+                ))).rank()) for rank in flag_dimensions[:-1])
             )):
                 # A primitive J with primitive projection I in C has
                 # radical intersection T=J∩R, and an integral shear
@@ -1357,8 +1357,18 @@ class IsotropicInduction:
                                 block[i, j] = _integer(image(label))
                         blocks.append(block)
                     linear = radical_module.general_linear_group()
+                    radical_terms = []
+                    if flag_dimensions:
+                        for rank in flag_dimensions[:-1]:
+                            points = tuple(radical_module.linear_combination({
+                                label: radical_module.base_ring()(int((~reduction.isometry)(point).to_vector()(labels[n + j])))
+                                for j, label in enumerate(r_labels)
+                                if (~reduction.isometry)(point).to_vector()(labels[n + j])
+                            }) for point in flag_basis[:rank])
+                            if all(self.recursion.vector_lies_in_radical(point) for point in flag_basis[:rank]):
+                                radical_terms.append(radical_module.primitive_isotropic_subobject(*points))
                     radical_generators = (
-                        linear.flag_stabilizer((radical_term,)).group_generators()
+                        linear.flag_stabilizer(tuple((*radical_terms, radical_term))).group_generators()
                         if t else linear.group_generators()
                     )
                     for generator in radical_generators:
@@ -1388,9 +1398,9 @@ class IsotropicInduction:
                         ) for block in blocks
                     ))
             if n and k and (not flag_dimensions or (
-                flag_basis and len(flag_dimensions) == 2
+                flag_basis and len(flag_dimensions) >= 2
                 and all(self.recursion.vector_lies_in_radical(point)
-                        for point in flag_basis[:flag_dimensions[0]])
+                        for point in flag_basis[:flag_dimensions[-2]])
                 and flag_dimensions[-1] == int(inclusion.domain().rank())
             )):
                 # Nonprimitive projection: the graph of J over its saturated
@@ -1425,15 +1435,22 @@ class IsotropicInduction:
                             for j, label in enumerate(labels) if row[j]})
                         for row in standard_rows.rows()))
                     if flag_dimensions:
-                        if int(trows.nrows()) != flag_dimensions[0] or not all(
+                        if int(trows.nrows()) != flag_dimensions[-2] or not all(
                             self.recursion.vector_lies_in_radical(point)
-                            for point in flag_basis[:flag_dimensions[0]]
+                            for point in flag_basis[:flag_dimensions[-2]]
                         ):
-                            raise ValueError("the rational graph flag requires its first stage to be the radical intersection")
+                            raise ValueError("the rational graph flag requires its penultimate stage to be the radical intersection")
+                        # The radical stages precede the projected part.  Their
+                        # adapted basis is integral even when the graph shear
+                        # is rational; preserve every intermediate stage.
+                        radical_prefix = tuple(
+                            (~reduction.isometry)(point) for point in flag_basis[:flag_dimensions[-2]]
+                        )
                         standard_basis = tuple(reduced.linear_combination({
                             label: reduced.base_ring()(int(row[j]))
                             for j, label in enumerate(labels) if row[j]
                         }) for row in (*standard_rows.rows()[s:], *standard_rows.rows()[:s]))
+                        standard_basis = radical_prefix + standard_basis[len(radical_prefix):]
                         standard_generators = self.plane_automorphism_generators(
                             standard, flag_dimensions=flag_dimensions, flag_basis=standard_basis)
                     else:

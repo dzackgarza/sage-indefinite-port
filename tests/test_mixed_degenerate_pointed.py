@@ -1043,6 +1043,29 @@ def test_nonprimitive_rank_two_projection_rank_two_radical_first_flag():
                for generator in generators for point in (z, w, 2 * e + t, u))
 
 
+def test_nonprimitive_projection_nested_radical_flag_public_stabilizer():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        automorphism_group_generators, _flag_marking_from_basis,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    flag = category(_flag_marking_from_basis(ambient, (z, w, 2 * e + t, u), (1, 2, 4)))
+    generators = tuple(automorphism_group_generators(category, flag))
+    assert generators
+    for rank in (1, 2, 4):
+        points = (z, w, 2 * e + t, u)[:rank]
+        term = ambient.primitive_isotropic_subobject(*points)
+        assert all(term.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in points)
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+
+
 def test_mixed_three_stage_flag_action_data_uses_sage_integer_matrices():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION

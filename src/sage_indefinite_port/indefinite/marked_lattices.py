@@ -1296,14 +1296,14 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 RECURSION.vector_lies_in_radical(point) for point in basis
             ):
                 generators = _degenerate_radical_flag_generators(ambient, dimensions, basis)
-            elif not ambient.is_nondegenerate() and len(dimensions) >= 2 and all(
-                RECURSION.vector_lies_in_radical(point) for point in basis[:dimensions[0]]
-            ) and (
-                dimensions[0] == dimensions[-1] + int(ambient.radical().rank())
+            elif not ambient.is_nondegenerate() and len(dimensions) >= 2 and any(
+                all(RECURSION.vector_lies_in_radical(point) for point in basis[:rank])
+                and rank == dimensions[-1] + int(ambient.radical().rank())
                 - int(ambient.subobject_on((*basis, *(
                     ambient.radical().inclusion()(point)
                     for point in ambient.radical().module_generators()
                 ))).rank())
+                for rank in dimensions[:-1]
             ):
                 # The initial term T is precisely J∩rad(L). It is
                 # characteristic inside J. For longer flags the remaining
