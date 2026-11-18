@@ -408,6 +408,14 @@ def test_isotropic_quotient_degenerate_null_orbits_include_primitive_shear_resid
         ), 6))
         assert len(primitive) == 6
         assert all(int(point.content()) == 1 for point in primitive)
+        labels = tuple(ambient.module_generating_set())
+        mixed = ambient.linear_combination({
+            labels[0]: 2,
+            labels[-1]: 1,
+        })
+        assert int(mixed.q()) == 0 and int(mixed.content()) == 1
+        assert any(RECURSION.pointed_isometry(mixed, representative) is not None
+                   for representative in classes)
 
 
 def test_definite_quotient_degenerate_nonzero_norm_orbits_are_complete():
