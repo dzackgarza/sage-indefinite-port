@@ -3684,6 +3684,15 @@ def test_nonhomothetic_based_isotropic_transport_with_nonprimitive_radical_kerne
     assert witness is not None
     assert all(witness(x) == y for x, y in zip(source_basis, target_basis, strict=True))
 
+    # Equal divisibility of each marked vector does not imply right
+    # GL(R,Z)-equivalence of the marked radical kernel. The column
+    # lattices have different indices, which column HNF detects.
+    source_basis = (2 * e + z, 2 * z, 2 * w)
+    target_basis = (2 * e + z, 2 * z, 2 * z + 4 * w)
+    source_marking = category(source.hom(list(source_basis), codomain=ambient))
+    target_marking = category(source.hom(list(target_basis), codomain=ambient))
+    assert isometry(category, source_marking, target_marking) is None
+
 
 def test_full_quotient_based_mixed_rank_four_gram_with_two_radical_generators():
     from sage_extensions.all import Lattices, ZZ
