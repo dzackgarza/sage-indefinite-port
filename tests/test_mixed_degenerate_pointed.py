@@ -776,12 +776,30 @@ def test_proper_radical_intersection_first_flag_stabilizer_is_top_stabilizer():
 
     ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
     e, f, z, w = tuple(ambient.module_generators())
-    flag = FLAGS(_flag_marking_from_basis(ambient, (z, e), (1, 2)))
-    generators = tuple(automorphism_group_generators(FLAGS, flag))
-    expected = INDUCTION.plane_automorphism_generators(ambient.primitive_isotropic_subobject(z, e))
-    assert generators and generators == expected
-    assert all(ambient.primitive_isotropic_subobject(z).inclusion().is_in_image(generator(z))
-               for generator in generators)
+    for top_vector in (e, e + w, e + 3 * w):
+        flag = FLAGS(_flag_marking_from_basis(ambient, (z, top_vector), (1, 2)))
+        generators = tuple(automorphism_group_generators(FLAGS, flag))
+        expected = INDUCTION.plane_automorphism_generators(
+            ambient.primitive_isotropic_subobject(z, top_vector)
+        )
+        assert generators and generators == expected
+        assert all(ambient.primitive_isotropic_subobject(z).inclusion().is_in_image(generator(z))
+                   for generator in generators)
+
+
+def test_proper_radical_intersection_first_flag_transporter_uses_top_subspace():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    first = FLAGS(_flag_marking_from_basis(ambient, (z, e + w), (1, 2)))
+    second = FLAGS(_flag_marking_from_basis(ambient, (w, f + z), (1, 2)))
+    witness = isometry(FLAGS, first, second)
+    assert witness is not None
+    assert ambient.primitive_isotropic_subobject(w).inclusion().is_in_image(witness(z))
+    top = ambient.primitive_isotropic_subobject(w, f + z)
+    assert all(top.inclusion().is_in_image(witness(point)) for point in (z, e + w))
 
 
 def test_mixed_degenerate_proper_radical_partial_flag_transporter():
