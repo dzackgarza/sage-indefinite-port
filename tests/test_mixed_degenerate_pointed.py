@@ -3657,6 +3657,7 @@ def test_nonhomothetic_based_mixed_primitive_projection_pointwise_stabilizer():
 
 
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
+    from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
 
@@ -3685,6 +3686,14 @@ def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabil
     assert all(higher.b(g(x), g(y)) == higher.b(x, y)
                for g in generators for x in higher.module_generators()
                for y in higher.module_generators())
+    labels = tuple(higher.module_generating_set())
+    radical_actions = [matrix(GF(2), [
+        [int(g(point).to_vector()(labels[j])) for j in (2, 3, 4, 5)]
+        for point in (z, w, t, s)
+    ]) for g in generators]
+    # The pointwise radical-plane stabilizer is
+    # Hom(F_2^2,F_2^2) semidirect GL_2(F_2), of order 16*6=96.
+    assert MatrixGroup(radical_actions).order() == 96
 
 
 def test_nonhomothetic_based_isotropic_transporter_in_nondegenerate_split_lattice():
