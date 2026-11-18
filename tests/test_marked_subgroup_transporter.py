@@ -43,6 +43,57 @@ def test_composite_level_six_preimage_uses_actual_integral_image():
     assert kernel.index() == 4
 
 
+def test_congruence_transporters_distinguish_based_null_vectors_mod_three():
+    ambient = lattice([[0, 1], [1, 0]])
+    source = lattice([[0]])
+    e = next(iter(ambient.module_generators()))
+    category = CosliceCategory(Lattices(ZZ), source)
+    positive = category.object(source.hom([e], codomain=ambient))
+    negative = category.object(source.hom([-e], codomain=ambient))
+    hom = category.Core().Mor(positive, negative)
+    assert hom.an_element() is not None
+    for modulus, expected in ((2, True), (3, False)):
+        kernel = ambient.O().congruence_preimage(modulus)
+        witness = hom.an_element_in(kernel)
+        assert (witness is not None) is expected
+        if witness is not None:
+            action = witness.forward().right()
+            assert action in kernel
+            assert action(e) == -e
+
+
+def test_nonnormal_finite_image_subgroup_splits_based_vector_orbits():
+    # O(I_2) is the dihedral group of order eight; the subgroup generated
+    # by the coordinate swap is not normal. Reduction modulo three is
+    # injective on this finite group.
+    ambient = lattice([[1, 0], [0, 1]])
+    group = ambient.O()
+    representation = group.congruence_representation(3)
+    image = representation.codomain()
+    e, f = tuple(ambient.module_generators())
+    source = lattice([[1]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    marked = category.object(source.hom([e], codomain=ambient))
+    swap = group({label: point for label, point in zip(ambient.module_generating_set(), (f, e), strict=True)})
+    target = image.subgroup((representation(swap),))
+    assert int(image.cardinality()) == 8
+    assert int(target.cardinality()) == 2
+    sign = group({label: point for label, point in zip(ambient.module_generating_set(), (-e, f), strict=True)})
+    assert representation(sign * swap * (~sign)) not in target
+    subgroup = group.congruence_preimage(3, target)
+    representatives = tuple(group.split_orbit(marked, subgroup))
+    assert len(representatives) == 2
+    assert all(rep in category for rep in representatives)
+    assert all(category.Core().Mor(representatives[0], rep).an_element_in(subgroup) is None
+               for rep in representatives[1:])
+    for representative in representatives:
+        stabilizer = subgroup.intersection(category.apex_stabilizer(representative))
+        assert all(generator in subgroup for generator in stabilizer.group_generators())
+        arrow = representative.arrow()
+        point = arrow(next(iter(source.module_generators())))
+        assert all(generator(point) == point for generator in stabilizer.group_generators())
+
+
 @pytest.mark.parametrize("modulus, expected_order", ((2, 72), (3, 1152), (4, 4608)))
 def test_two_hyperbolic_planes_congruence_representation_has_exact_image(modulus, expected_order):
     r"""The split rank-four orthogonal action has the two SL_2 factors
