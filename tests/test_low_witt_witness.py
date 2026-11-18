@@ -101,6 +101,21 @@ def test_exact_vector_orbit_iterator_exhausts_definite_norm_fibres():
         assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True)) == ()
 
 
+def test_definite_norm_orbits_use_generator_action_not_pointed_isometry(monkeypatch):
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[1, 0], [0, 2]])
+    def forbidden(*args, **kwargs):
+        raise AssertionError("finite definite orbits must use exact generator actions")
+
+    monkeypatch.setattr(RECURSION, "pointed_isometry", forbidden)
+    # The four solutions (+/-1,+/-1) of x^2+2y^2=3 form one
+    # O(L)-orbit.  The norm-2 fibre is another single orbit.
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 3))) == 1
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2))) == 1
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 3, primitive_only=True))) == 1
+
+
 def test_exact_vector_orbit_iterator_exhausts_primitive_zero_form_orbits():
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
 

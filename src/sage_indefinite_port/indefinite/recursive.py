@@ -47,6 +47,7 @@ from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.special import diagonal_matrix
 from sage.rings.finite_rings.integer_mod_ring import Zmod
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.structure.parent import Parent
 
@@ -2725,14 +2726,30 @@ class EichlerRecursion:
             inverse = (sign * gram).inverse()
             bounds = tuple(isqrt(int((abs(int(square)) * inverse[i, i]).floor()))
                            for i in range(int(lattice.rank())))
-            seen = []
+            # The finite group O(L) acts on the finite norm fibre.  Mark
+            # whole orbits using its exact generators instead of invoking
+            # a separate pointed-isometry decision for every pair of
+            # candidates (quadratically many expensive group problems).
+            from collections import deque
+
+            generators = tuple(_column_matrix(g) for g in lattice.O().group_generators())
+            seen: set[tuple[int, ...]] = set()
             for coordinates in itertools.product(*(range(-b, b + 1) for b in bounds)):
+                if coordinates in seen:
+                    continue
                 point = _from_column(lattice, coordinates)
                 if int(point.q()) != int(square) or (primitive_only and int(point.content()) != 1):
                     continue
-                if all(self.pointed_isometry(previous, point) is None for previous in seen):
-                    seen.append(point)
-                    yield point
+                seen.add(coordinates)
+                frontier = deque((coordinates,))
+                while frontier:
+                    current = frontier.popleft()
+                    for generator in generators:
+                        image = tuple(int(value) for value in generator * vector(SageZZ, current))
+                        if image not in seen:
+                            seen.add(image)
+                            frontier.append(image)
+                yield point
             return
         seen = []
         for height in count(0):
