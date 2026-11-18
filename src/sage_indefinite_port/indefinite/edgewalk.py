@@ -1502,7 +1502,10 @@ class _Edgewalk:
             if point.parent() is not self.lattice or self.norm(point) > 0:
                 raise ValueError("the starting vertex must be a nonspacelike vector of the walking lattice")
         if self.lattice.is_isotropic():
-            return self.report([], False, (), [])
+            # In rank two an isotropic starting ray has zero-dimensional
+            # perpendicular quotient. The source's get_simple_cone raises
+            # NonReflectivityException("list of roots is empty").
+            return self.report([], False, (), [], "list of roots is empty")
         if supplied is None:
             initial = self.initial_vertex()
         elif isinstance(supplied, tuple):

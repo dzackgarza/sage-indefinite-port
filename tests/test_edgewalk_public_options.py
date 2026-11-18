@@ -58,6 +58,17 @@ def test_public_binary_edgewalk_accepts_explicit_starting_wall():
     assert len(explicit.simple_roots()) == 2
 
 
+def test_isotropic_binary_edgewalk_records_source_nonreflectivity_reason():
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+
+    ambient = HyperbolicLattices(ZZ)(Lattices(ZZ)("U"))
+    report = ambient.allcock_edgewalk()
+    assert not report.is_reflective()
+    assert len(report.vertices()) == 0
+    assert len(report.simple_roots()) == 0
+    assert report.reason_non_reflective() == "list of roots is empty"
+
+
 def test_public_nonreflective_edgewalk_can_complete_without_early_termination():
     from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
 
