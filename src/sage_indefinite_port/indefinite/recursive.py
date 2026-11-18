@@ -2552,6 +2552,21 @@ class EichlerRecursion:
                 norm_content = gcd(norm_content, 2 * _integer(gram[i, j]))
         if norm_content and int(square) % norm_content:
             return
+        # A finite local obstruction is also an exact nonexistence
+        # certificate.  This bounded calculation is deliberately restricted
+        # to small ranks; it never rejects a norm on heuristic grounds.
+        # Primitive integral vectors must remain nonzero modulo each prime.
+        if int(lattice.rank()) <= 6:
+            for prime in (2, 3):
+                residues = range(prime)
+                target_residue = int(square) % prime
+                if not any(
+                    sum(int(gram[i, j]) * x[i] * x[j]
+                        for i in range(len(x)) for j in range(len(x))) % prime == target_residue
+                    for x in itertools.product(residues, repeat=int(lattice.rank()))
+                    if not primitive_only or any(x)
+                ):
+                    return
         seen = []
         for height in count(0):
             for coordinates in _coordinate_box(lattice, height):

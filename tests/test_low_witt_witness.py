@@ -24,6 +24,19 @@ def test_exact_vector_orbit_iterator_terminates_on_norm_ideal_obstruction():
         assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 1, primitive_only=True)) == ()
 
 
+def test_exact_vector_orbit_iterator_terminates_on_modular_obstruction():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    # q(x,y)=2*x^2-6*y^2 is 0 or 2 modulo 3, never 4=1.
+    ambient = lattice([[2, 0], [0, -6]])
+    assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 4)) == ()
+    assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 4, primitive_only=True)) == ()
+    # In U, q(x,y)=2xy; every primitive vector has an odd coordinate,
+    # so zero modulo 2 is possible and must not be rejected.
+    hyperbolic = lattice([[0, 1], [1, 0]])
+    assert next(RECURSION.exact_vector_orbit_iterator(hyperbolic, 0, primitive_only=True)).content() == 1
+
+
 def test_zero_rank_exact_integral_orthogonal_stream_has_one_identity():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
