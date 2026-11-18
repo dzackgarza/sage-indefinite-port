@@ -67,6 +67,8 @@ def test_public_nonreflective_edgewalk_can_complete_without_early_termination():
     early = ambient.allcock_edgewalk()
     complete = ambient.allcock_edgewalk(early_termination=False)
     assert not early.is_reflective() and not complete.is_reflective()
+    assert early.reason_non_reflective()
+    assert complete.reason_non_reflective() is None
     assert len(complete.vertices()) >= len(early.vertices()) == 3
 
 

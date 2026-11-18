@@ -1457,6 +1457,7 @@ class _Edgewalk:
         reflective: bool,
         simple_roots: _Roots,
         isometries: list[LatticeIsometryMethods],
+        reason_non_reflective: str | None = None,
     ) -> AllcockEdgewalkReport:
         cones = RationalPolyhedralCones(self.lattice)
         return AllcockEdgewalkReport(
@@ -1465,6 +1466,7 @@ class _Edgewalk:
             simple_roots=simple_roots,
             vertices=tuple(cones.from_rays([vertex.generator], wall_roots=vertex.roots) for vertex in vertices),
             isometry_generators=tuple(isometries),
+            reason_non_reflective=reason_non_reflective,
         )
 
     def edge_orbits(self, vertex: _Vertex, local_generators: tuple[LatticeIsometryMethods, ...]) -> tuple[tuple[_Roots, _Vector], ...]:
@@ -1548,10 +1550,11 @@ class _Edgewalk:
         isometries: list[LatticeIsometryMethods] = []
         invariant = self.lattice.subobject_on(list(_coordinate_basis(self.lattice)))
         nonreflective = False
+        nonreflective_reason = None
 
         def admit(isometry: LatticeIsometryMethods) -> bool:
             r"""Record a new symmetry of the polyhedron; False once the group they generate is infinite."""
-            nonlocal invariant, nonreflective
+            nonlocal invariant, nonreflective, nonreflective_reason
             key = self.isometry_key(isometry)
             if key in seen:
                 return True
@@ -1562,6 +1565,8 @@ class _Edgewalk:
             fixed = self.common_fixed_space(invariant, isometry)
             if fixed is None:
                 nonreflective = True
+                if self.early_termination:
+                    nonreflective_reason = "The generated chamber-isometry group has no nonzero common fixed vector"
                 return not self.early_termination
             invariant = fixed
             return True
@@ -1604,7 +1609,7 @@ class _Edgewalk:
             for automorphism in local_generators:
                 previous_generators = len(isometries)
                 if not admit(automorphism):
-                    return self.report(vertices, False, (), isometries)
+                    return self.report(vertices, False, (), isometries, nonreflective_reason)
                 if len(isometries) > previous_generators:
                     certificate = try_reflectivity_certificate()
                     if certificate is not None:
@@ -1626,7 +1631,7 @@ class _Edgewalk:
                 else:
                     previous_generators = len(isometries)
                     if not admit(transporter):
-                        return self.report(vertices, False, (), isometries)
+                        return self.report(vertices, False, (), isometries, nonreflective_reason)
                     if len(isometries) > previous_generators:
                         certificate = try_reflectivity_certificate()
                         if certificate is not None:
@@ -1639,7 +1644,7 @@ class _Edgewalk:
         # returns its vertices and a negative reflectivity certificate.
         simple_roots = () if nonreflective else certified_roots()
         return self.report(vertices, not nonreflective and self.root_chamber_certificate(simple_roots),
-                           simple_roots, isometries)
+                           simple_roots, isometries, nonreflective_reason)
 
 
 __all__ = ["edgewalk_fundamental_domain", "edgewalk_isometry"]
