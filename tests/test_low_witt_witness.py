@@ -2,6 +2,18 @@
 from tests.acceptance.consumer import lattice
 
 
+def test_exact_vector_orbit_iterator_terminates_on_certified_empty_and_singleton_null_fibres():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    zero = Lattices(ZZ)(0)
+    anisotropic = lattice([[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]])
+    for ambient in (zero, anisotropic):
+        assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0)) == (ambient.zero(),)
+        assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True)) == ()
+    assert tuple(RECURSION.exact_vector_orbit_iterator(zero, 2)) == ()
+
+
 def test_zero_rank_exact_integral_orthogonal_stream_has_one_identity():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries

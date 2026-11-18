@@ -2529,6 +2529,17 @@ class EichlerRecursion:
         """
         from itertools import count
 
+        # These are decidably empty or singleton fibres.  In particular,
+        # do not scan infinitely many nonzero vectors of an anisotropic
+        # lattice when the prescribed norm is zero.
+        if int(lattice.rank()) == 0:
+            if int(square) == 0 and not primitive_only:
+                yield lattice.zero()
+            return
+        if int(square) == 0 and lattice.is_nondegenerate() and not lattice.is_isotropic():
+            if not primitive_only:
+                yield lattice.zero()
+            return
         seen = []
         for height in count(0):
             for coordinates in _coordinate_box(lattice, height):
