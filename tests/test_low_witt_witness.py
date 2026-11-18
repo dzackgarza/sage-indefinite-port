@@ -329,6 +329,7 @@ def test_anisotropic_quotient_degenerate_null_orbits_are_radical_contents():
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
 
     for gram in (
+        [[1, 0, 0], [0, -2, 0], [0, 0, 0]],
         [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]],
         [[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, 0]],
         [[2, 0, 0, 0, 0], [0, 2, 0, 0, 0], [0, 0, -6, 0, 0],
