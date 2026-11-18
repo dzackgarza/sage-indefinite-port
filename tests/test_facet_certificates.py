@@ -240,6 +240,27 @@ def test_pointedness_functional_requires_both_rank_hypotheses() -> None:
         pointedness_functional(SimpleNamespace(rows=((1, 0), (3, 0), (-2, 0))))
 
 
+def test_facet_linear_algebra_keeps_sage_rings_after_owned_ring_initialization(monkeypatch):
+    """The provider's ZZ/QQ must not replace the Sage matrix base rings."""
+    from types import SimpleNamespace
+    import sage.all as sage_all
+    from sage.rings.integer_ring import ZZ as SageZZ
+    from sage.rings.rational_field import QQ as SageQQ
+    from sage_extensions.all import ZZ as OwnedZZ, QQ as OwnedQQ
+    from sage_indefinite_port.indefinite import facet_certificates, facet_orbits
+
+    monkeypatch.setattr(sage_all, "ZZ", OwnedZZ)
+    monkeypatch.setattr(sage_all, "QQ", OwnedQQ)
+    assert facet_certificates.ZZ is SageZZ
+    assert facet_certificates.QQ is SageQQ
+    assert facet_orbits.ZZ is SageZZ
+    assert facet_orbits.QQ is SageQQ
+    height, pairings = facet_certificates.pointedness_functional(
+        SimpleNamespace(rows=((1, 0), (0, 1))))
+    assert len(height) == 2 and all(value > 0 for value in pairings)
+    assert facet_orbits._span_basis(((1, 0), (0, 1))).rank() == 2
+
+
 def test_pointedness_functional_is_exact_on_a_fractional_kernel_basis() -> None:
     r"""Sage's kernel basis is rational, and int-casting it silently truncates.
 
