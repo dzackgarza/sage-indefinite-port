@@ -1036,6 +1036,48 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     source_flag_basis=source_basis,
                     target_flag_basis=target_basis,
                 )
+            if len(source_dimensions) >= 2 and all(
+                not owner.is_nondegenerate()
+                and (t := source_dimensions[-1] + int(owner.radical().rank())
+                     - int(owner.subobject_on((*basis, *(
+                         owner.radical().inclusion()(point)
+                         for point in owner.radical().module_generators()
+                     ))).rank())) > 0
+                and t < source_dimensions[-1] and t not in source_dimensions
+                for owner, basis in ((ambient, source_basis), (target_ambient, target_basis))
+            ):
+                # The characteristic radical intersection may be implicit
+                # in the supplied flag. Insert it only when it is nested
+                # with the given stages, adapting within each interval.
+                adapted_pairs = []
+                for owner, basis in ((ambient, source_basis), (target_ambient, target_basis)):
+                    t = (source_dimensions[-1] + int(owner.radical().rank())
+                         - int(owner.subobject_on((*basis, *(
+                             owner.radical().inclusion()(point)
+                             for point in owner.radical().module_generators()
+                         ))).rank()))
+                    previous = 0
+                    ordered = []
+                    for rank in source_dimensions:
+                        ordered.extend(sorted(basis[previous:rank], key=lambda point:
+                                              not RECURSION.vector_lies_in_radical(point)))
+                        previous = rank
+                    if not all(RECURSION.vector_lies_in_radical(point) for point in ordered[:t]):
+                        break
+                    adapted_pairs.append((t, tuple(ordered)))
+                if len(adapted_pairs) == 2 and adapted_pairs[0][0] == adapted_pairs[1][0]:
+                    t = adapted_pairs[0][0]
+                    augmented = tuple(sorted((*source_dimensions, t)))
+                    source_adapted, target_adapted = (pair[1] for pair in adapted_pairs)
+                    witness = INDUCTION.plane_isometry(
+                        ambient.primitive_isotropic_subobject(*source_adapted),
+                        target_ambient.primitive_isotropic_subobject(*target_adapted),
+                        flag_dimensions=augmented,
+                        source_flag_basis=source_adapted,
+                        target_flag_basis=target_adapted,
+                    )
+                    if witness is not None:
+                        return witness
             if all(
                 not owner.is_nondegenerate()
                 and source_dimensions[0] >= int(owner.radical().rank())
