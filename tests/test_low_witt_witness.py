@@ -37,6 +37,18 @@ def test_exact_vector_orbit_iterator_terminates_on_modular_obstruction():
     assert next(RECURSION.exact_vector_orbit_iterator(hyperbolic, 0, primitive_only=True)).content() == 1
 
 
+def test_exact_vector_orbit_iterator_detects_prime_power_and_primitive_obstructions():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    sums_of_two_squares = lattice([[1, 0], [0, 1]])
+    # 3 is representable modulo 2 but not modulo 4.
+    assert tuple(RECURSION.exact_vector_orbit_iterator(sums_of_two_squares, 3)) == ()
+    # 4 has integral representations, but every such representation
+    # is divisible by 2; the primitive residue obstruction is mod 4.
+    assert tuple(RECURSION.exact_vector_orbit_iterator(sums_of_two_squares, 4, primitive_only=True)) == ()
+    assert next(RECURSION.exact_vector_orbit_iterator(sums_of_two_squares, 4)).q() == 4
+
+
 def test_zero_rank_exact_integral_orthogonal_stream_has_one_identity():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries

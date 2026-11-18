@@ -2557,14 +2557,18 @@ class EichlerRecursion:
         # to small ranks; it never rejects a norm on heuristic grounds.
         # Primitive integral vectors must remain nonzero modulo each prime.
         if int(lattice.rank()) <= 6:
-            for prime in (2, 3):
-                residues = range(prime)
-                target_residue = int(square) % prime
+            for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3)):
+                # Exhaustive modular testing costs modulus**rank; keep
+                # this certificate bounded independently of the lattice.
+                if modulus ** int(lattice.rank()) > 4096:
+                    continue
+                residues = range(modulus)
+                target_residue = int(square) % modulus
                 if not any(
                     sum(int(gram[i, j]) * x[i] * x[j]
-                        for i in range(len(x)) for j in range(len(x))) % prime == target_residue
+                        for i in range(len(x)) for j in range(len(x))) % modulus == target_residue
                     for x in itertools.product(residues, repeat=int(lattice.rank()))
-                    if not primitive_only or any(x)
+                    if not primitive_only or any(value % prime for value in x)
                 ):
                     return
         seen = []
