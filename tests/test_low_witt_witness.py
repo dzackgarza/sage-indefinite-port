@@ -268,6 +268,8 @@ def test_nonsplit_binary_norm_orbit_iterator_terminates_with_exact_pell_classes(
     assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8, primitive_only=True)) == ()
     negative = tuple(RECURSION.exact_vector_orbit_iterator(ambient, -1))
     assert negative and all(int(point.q()) == -1 for point in negative)
+    primitive = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 1, primitive_only=True))
+    assert primitive and all(int(point.q()) == 1 and int(point.content()) == 1 for point in primitive)
     from sage.all import ZZ as SageZZ, matrix
     gram = matrix(SageZZ, [[1, 0], [0, -2]])
     change = matrix(SageZZ, [[1, 1], [0, 1]])
