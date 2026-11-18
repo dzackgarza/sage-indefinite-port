@@ -3714,6 +3714,7 @@ def test_based_mixed_nonprimitive_rank_two_projection_integral_parabolic():
 
 
 def test_based_mixed_rank_two_unequal_projection_indices_without_radical_kernel():
+    from sage.all import GF, MatrixGroup
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
 
@@ -3733,10 +3734,16 @@ def test_based_mixed_rank_two_unequal_projection_indices_without_radical_kernel(
     # the distinct projection indices impose separate congruences.
     from sage.all import matrix, ZZ as SageZZ
     labels = tuple(ambient.module_generating_set())
-    assert all(abs(matrix(SageZZ, [
+    radical_actions = [matrix(SageZZ, [
         [int(g(point).to_vector()(labels[j])) for j in (4, 5)]
         for point in (z, w)
-    ]).det()) == 1 for g in generators)
+    ]) for g in generators]
+    assert all(abs(action.det()) == 1 for action in radical_actions)
+    # The first radical row is fixed modulo 2, the second modulo 3.
+    # The corresponding full stabilizers in GL_2(F_2), GL_2(F_3)
+    # have orders 6/3 = 2 and 48/8 = 6, respectively.
+    assert MatrixGroup([action.change_ring(GF(2)) for action in radical_actions]).order() == 2
+    assert MatrixGroup([action.change_ring(GF(3)) for action in radical_actions]).order() == 6
 
 
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
