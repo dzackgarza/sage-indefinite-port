@@ -223,6 +223,11 @@ def test_exact_integral_orthogonal_stream_higher_rank_radical_generators(monkeyp
     assert len({tuple(recursive._column_matrix(g).list()) for g in transported}) == 12
     assert all(twisted.b(g(x), g(y)) == twisted.b(x, y)
                for g in transported for x in twisted.module_generators() for y in twisted.module_generators())
+    mixed = lattice([[2, 0, 0, 0], [0, -6, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    mixed_family = tuple(islice(recursive.iter_exact_integral_orthogonal_isometries(mixed), 12))
+    assert len({tuple(recursive._column_matrix(g).list()) for g in mixed_family}) == 12
+    assert all(mixed.b(g(x), g(y)) == mixed.b(x, y)
+               for g in mixed_family for x in mixed.module_generators() for y in mixed.module_generators())
 
 
 def test_exact_integral_orthogonal_stream_exhausts_split_binary_indefinite_groups():
@@ -285,6 +290,11 @@ def test_exact_vector_orbit_iterator_rank_one_quotient_higher_radical():
         assert len(representatives) == 4
         assert all(int(v.q()) == 72 for v in representatives)
         assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 72, primitive_only=True))) == 1
+        negative = lattice([[-int(value) for value in row] for row in changed.rows()])
+        negative_representatives = tuple(RECURSION.exact_vector_orbit_iterator(negative, -72))
+        assert len(negative_representatives) == 4
+        assert all(int(v.q()) == -72 for v in negative_representatives)
+        assert tuple(RECURSION.exact_vector_orbit_iterator(negative, 72)) == ()
 
 
 def test_rank_one_quotient_radical_orbit_representatives_are_pairwise_inequivalent():

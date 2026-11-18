@@ -530,10 +530,11 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
     r"""Fair, nontruncated enumeration of all integral isometries of a finite-rank lattice.
 
     The output is a stream of owned O(L)-elements, not a finite generating
-    family.  Every GL_n(Z) element occurs once in the matrix stream, so
-    every integral isometry eventually occurs.  For an infinite orthogonal
-    group this stream is infinite.  For definite lattices the provider's
-    exact finite generating set permits exhaustive terminating enumeration.
+    family.  Explicit arithmetic parametrizations and breadth-first
+    enumeration of complete group generators cover the specialized cases;
+    otherwise the generic GL_n(ZZ) matrix stream is exhaustive.  Infinite
+    orthogonal groups produce infinite streams, while the finite definite
+    and split binary branches terminate after their last element.
     """
     gram = _gram_in_label_order(lattice)
     if int(gram.nrows()) == 0:
