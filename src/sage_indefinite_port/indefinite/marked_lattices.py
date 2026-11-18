@@ -1180,7 +1180,11 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 from sage.rings.integer_ring import ZZ as SageZZ
                 from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
 
-                generators = tuple(ambient.module_generators())
+                # The Gram matrix and the row-matrix isometry constructor
+                # both use coordinate-label order, which need not coincide
+                # with an arbitrary module-generator iteration order.
+                generators = tuple(ambient.module_generator(label)
+                                   for label in ambient.module_generating_set())
                 def signed_coordinate(point):
                     for index, generator in enumerate(generators):
                         if point == generator:
