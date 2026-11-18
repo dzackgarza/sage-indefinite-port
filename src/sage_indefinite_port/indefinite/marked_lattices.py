@@ -1423,11 +1423,15 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 adapted = tuple(reordered)
                 if not all(RECURSION.vector_lies_in_radical(point)
                            for point in adapted[:radical_rank]):
-                    raise ValueError("the radical intersection is not adapted to the supplied flag")
-                generators = INDUCTION.plane_automorphism_generators(
-                    ambient.primitive_isotropic_subobject(*adapted),
-                    flag_dimensions=augmented, flag_basis=adapted,
-                )
+                    generators = INDUCTION.plane_automorphism_generators(
+                        ambient.primitive_isotropic_subobject(*basis),
+                        flag_dimensions=dimensions, flag_basis=basis,
+                    )
+                else:
+                    generators = INDUCTION.plane_automorphism_generators(
+                        ambient.primitive_isotropic_subobject(*adapted),
+                        flag_dimensions=augmented, flag_basis=adapted,
+                    )
             elif (not ambient.is_nondegenerate()
                   and dimensions[0] >= int(ambient.radical().rank())
                   and dimensions[-1] > int(ambient.radical().rank())

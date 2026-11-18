@@ -1367,6 +1367,99 @@ class IsotropicInduction:
                 return _conjugated(reduction.isometry, tuple(
                     _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
                 ))
+            if n and k and len(flag_dimensions) == 2 and flag_dimensions[0] == 1 and (
+                flag_dimensions[-1] == int(inclusion.domain().rank())
+                and flag_basis and not self.recursion.vector_lies_in_radical(flag_basis[0])
+            ):
+                # A projected first line transverse to J∩R cannot be
+                # treated as a radical-first flag. For projection rank one,
+                # conjugate the exact split parabolic preserving the line
+                # and its radical intersection, then intersect integrally.
+                from sage.rings.rational_field import QQ as SageQQ
+                from sage_extensions.categories.modules.orbit_spans import OrbitSpanConstructions
+
+                rows = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                        for label in labels] for point in self.plane_vectors(plane)])
+                projection = rows[:, :n]
+                if int(projection.rank()) == 1:
+                    _smith, left, _right = projection.smith_form()
+                    adapted_rows = left * rows
+                    trows = adapted_rows[1:, n:]
+                    t = int(trows.nrows())
+                    if t and int(trows.rank()) == t:
+                        first = matrix(SageZZ, [[_integer((~reduction.isometry)(flag_basis[0]).to_vector()(label))
+                                                 for label in labels]])
+                        p = first[0, :n]
+                        from sage.arith.misc import gcd
+                        content = gcd(tuple(SageZZ(entry) for entry in p.list()))
+                        primitive = matrix(SageZZ, [[SageZZ(entry / content) for entry in p.list()]])
+                        cframe = primitive.stack(_source_subspace_completion_int(primitive, n))
+                        rframe = trows.stack(_source_subspace_completion_int(trows, k))
+                        complement = reduced.lattice_category()([
+                            [int(gram[i, j]) for j in range(n)] for i in range(n)
+                        ])
+                        c_labels = tuple(complement.module_generating_set())
+                        radical_module = reduced.lattice_category()([[0] * k for _ in range(k)])
+                        r_labels = tuple(radical_module.module_generating_set())
+                        line = complement.linear_combination({
+                            label: complement.base_ring()(int(primitive[0, j]))
+                            for j, label in enumerate(c_labels) if primitive[0, j]
+                        })
+                        radical_points = tuple(radical_module.linear_combination({
+                            label: radical_module.base_ring()(int(row[j]))
+                            for j, label in enumerate(r_labels) if row[j]
+                        }) for row in trows.rows())
+                        radical_term = radical_module.primitive_isotropic_subobject(*radical_points)
+                        standard_blocks = []
+                        for generator in self.recursion.line_stabilizer_generators(line):
+                            block = identity_matrix(SageZZ, size)
+                            for i, point in enumerate(complement.module_generators()):
+                                image = generator(point).to_vector()
+                                for j, label in enumerate(c_labels):
+                                    block[i, j] = _integer(image(label))
+                            standard_blocks.append(block)
+                        for generator in radical_module.general_linear_group().flag_stabilizer((radical_term,)).group_generators():
+                            block = identity_matrix(SageZZ, size)
+                            for i, point in enumerate(radical_module.module_generators()):
+                                image = generator(point).to_vector()
+                                for j, label in enumerate(r_labels):
+                                    block[n + i, n + j] = _integer(image(label))
+                            standard_blocks.append(block)
+                        for i in range(1, n):
+                            for j in range(k):
+                                shear = matrix(SageZZ, n, k, 0)
+                                shear[i, j] = 1
+                                block = identity_matrix(SageZZ, size)
+                                block[:n, n:] = cframe.inverse().change_ring(SageZZ) * shear * rframe
+                                standard_blocks.append(block)
+                        graph = matrix(SageQQ, n, k, 0)
+                        for j in range(k):
+                            graph[0, j] = SageQQ(first[0, n + j]) / SageQQ(content)
+                        normalizer = identity_matrix(SageQQ, size)
+                        normalizer[:n, n:] = cframe.inverse().change_ring(SageQQ) * graph
+                        inverse_normalizer = normalizer.inverse()
+                        rational = reduced.base_change(reduced.base_ring().fraction_field_map())
+                        inclusion_r = ModulesOverIntegralDomains(reduced.base_ring())(reduced).generic_fibre_map()
+                        conjugates = []
+                        for block in standard_blocks:
+                            conjugated = inverse_normalizer * block * normalizer
+                            conjugates.append(rational.Isom(rational)(tuple(
+                                rational.linear_combination({label: rational.base_ring()(conjugated[i, j])
+                                    for j, label in enumerate(labels) if conjugated[i, j]})
+                                for i in range(size))))
+                        action = IntegralStructureAction(rational.O().subgroup(tuple(conjugates)), inclusion_r)
+                        denominator = SageZZ(1)
+                        for entry in (*normalizer.list(), *inverse_normalizer.list()):
+                            denominator = denominator.lcm(SageZZ(entry.denominator()))
+                        bound = int(denominator) ** 2
+                        containing = Modules(reduced.base_ring()).Mono(reduced, inclusion_r.codomain())(
+                            lambda label: inclusion_r.codomain().wrap(
+                                rational.scalar_multiple(rational.base_ring().one() / rational.base_ring()(bound),
+                                    inclusion_r(reduced.module_generator(label)).underlying_element())))
+                        span = OrbitSpanConstructions(reduced.base_ring())(
+                            action.ambient_action_functor(), inclusion_r, containing=containing)
+                        return _conjugated(reduction.isometry, tuple(_integral_generator_set(
+                            reduced, action.with_stable_containing_bound(span.inclusion()))))
             if n and k and not flag_dimensions and int(inclusion.domain().rank()) >= 2:
                 # If J∩R=T and J/T is a primitive line in L/T, every
                 # isometry of L/T preserving J/T lifts by identity on T.
