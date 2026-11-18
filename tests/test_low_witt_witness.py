@@ -159,6 +159,16 @@ def test_exact_integral_orthogonal_stream_exhausts_rank_one_degenerate_group():
     assert all(element.domain() is ambient and element.codomain() is ambient for element in elements)
 
 
+def test_exact_integral_orthogonal_stream_exhausts_split_binary_indefinite_groups():
+    from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
+
+    for gram in ([[0, 1], [1, 0]], [[0, 3], [3, 0]], [[2, 0], [0, -2]]):
+        ambient = lattice(gram)
+        elements = tuple(iter_exact_integral_orthogonal_isometries(ambient))
+        assert len(elements) == 4
+        assert all(element.domain() is ambient and element.codomain() is ambient for element in elements)
+
+
 def test_low_witt_nonprimitive_isotropic_line_stream_preserves_saturation_index():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import iter_isotropic_line_content_classes

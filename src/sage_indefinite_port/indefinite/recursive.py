@@ -544,6 +544,16 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
         yield _isometry_from_row_matrix(lattice, lattice, identity_matrix(SageZZ, 1))
         yield _isometry_from_row_matrix(lattice, lattice, -identity_matrix(SageZZ, 1))
         return
+    if int(gram.nrows()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
+        # Every rational isometry of a split binary plane permutes its two
+        # rational null lines, scaling them by mutually inverse factors.
+        # For an integral unimodular isometry each primitive integral ray
+        # maps to a signed primitive ray; hence there are at most eight
+        # possibilities.  The pinned binary algorithm tests all eight.
+        from sage_indefinite_port.indefinite.lorentzian_cells import _binary_split_automorphisms
+
+        yield from _binary_split_automorphisms(lattice)
+        return
     if lattice.is_definite():
         # Closure of the exact definite O(L) generators is finite.  Matrix
         # multiplication takes place in the same labelled integral basis
