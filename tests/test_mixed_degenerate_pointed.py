@@ -3606,6 +3606,15 @@ def test_nonhomothetic_based_isotropic_stabilizer_in_nondegenerate_split_lattice
                for g in generators for x in ambient.module_generators()
                for y in ambient.module_generators())
 
+    higher = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v, a, b = tuple(higher.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marking = category(source.hom([2 * e, u, a], codomain=higher))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(e) == e and g(u) == u and g(a) == a for g in generators)
+
 
 def test_nonhomothetic_rank_two_based_isotropic_embedding_transporter():
     from sage_extensions.all import Lattices, ZZ
