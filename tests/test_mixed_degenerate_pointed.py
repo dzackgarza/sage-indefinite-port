@@ -3746,6 +3746,27 @@ def test_based_mixed_rank_two_unequal_projection_indices_without_radical_kernel(
     assert MatrixGroup([action.change_ring(GF(3)) for action in radical_actions]).order() == 6
 
 
+def test_based_mixed_maximal_rank_three_projection_with_graph():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, u, v, a, b, z = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    basis = (e + z, u, a)
+    marking = category(source.hom(list(basis), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+    # The radical has rank one. Both signs occur in its full integral
+    # action because the marked graph can be compensated by an integral shear.
+    assert {g(z) for g in generators} >= {z, -z}
+
+
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
