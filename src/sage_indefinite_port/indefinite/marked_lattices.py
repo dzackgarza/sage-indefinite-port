@@ -803,6 +803,36 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
             source_arrow, target_arrow = source.arrow(), target.arrow()
             ambient = source_arrow.codomain()
+            if (int(source_arrow.domain().rank()) == int(ambient.rank())
+                    and int(target_arrow.codomain().rank()) == int(ambient.rank())):
+                # A full-rank based frame determines the rational ambient
+                # isometry uniquely. Its integral existence is exactly the
+                # unimodularity of the change-of-frame matrix; there is no
+                # need to invoke general lattice isometry or glue induction.
+                from sage.matrix.constructor import matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
+                from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
+
+                left_labels = tuple(ambient.module_generating_set())
+                right_labels = tuple(target_arrow.codomain().module_generating_set())
+                left = matrix(SageZZ, [[int(source_arrow(point).to_vector()(label))
+                    for label in left_labels] for point in source_arrow.domain().module_generators()])
+                right = matrix(SageZZ, [[int(target_arrow(point).to_vector()(label))
+                    for label in right_labels] for point in target_arrow.domain().module_generators()])
+                if left.det() == 0 or right.det() == 0:
+                    return None
+                action = left.inverse() * right
+                if any(not entry.is_integral() for entry in action.list()) or abs(action.det()) != 1:
+                    return None
+                action = action.change_ring(SageZZ)
+                left_gram = matrix(SageZZ, [[int(ambient.b(x, y))
+                    for y in ambient.module_generators()] for x in ambient.module_generators()])
+                target_ambient = target_arrow.codomain()
+                right_gram = matrix(SageZZ, [[int(target_ambient.b(x, y))
+                    for y in target_ambient.module_generators()] for x in target_ambient.module_generators()])
+                if action * right_gram * action.transpose() != left_gram:
+                    return None
+                return _isometry_from_row_matrix(ambient, target_ambient, action)
             # Pure zero-form frames are included in the split-radical
             # Hermite transporter below (with zero-dimensional quotient).
             # No unbounded enumeration of GL_n(ZZ) is necessary.

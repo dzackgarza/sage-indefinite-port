@@ -693,6 +693,22 @@ def test_zero_form_arrow_transporter_allows_source_frame_automorphisms():
     assert isometry(ARROWS, first, obstructed) is None
 
 
+def test_zero_form_rank_one_arrow_transporter_respects_content_and_sign():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, g = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0]])
+    first = ARROWS.object(source.hom([2 * e + 2 * f], codomain=ambient))
+    second = ARROWS.object(source.hom([2 * f + 2 * g], codomain=ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert witness(2 * e + 2 * f) in (2 * f + 2 * g, -2 * f - 2 * g)
+    obstructed = ARROWS.object(source.hom([3 * f + 3 * g], codomain=ambient))
+    assert isometry(ARROWS, first, obstructed) is None
+
+
 def test_full_radical_plane_self_transporter_uses_full_rank_completion():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
@@ -3848,6 +3864,27 @@ def test_full_rank_based_mixed_gram_stabilizer_is_identity():
         assert len(generators) == 1
         assert generators[0] == ambient.O().identity()
         assert all(generators[0](point) == point for point in basis)
+
+
+def test_full_rank_based_mixed_gram_transporter_uses_unique_integral_action():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 2, 0], [2, 0, 0], [0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first_basis = (2 * e, f, z)
+    second_basis = (2 * e + 2 * z, f, z)
+    first = category(source.hom(list(first_basis), codomain=ambient))
+    second = category(source.hom(list(second_basis), codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert all(witness(x) == y for x, y in zip(first_basis, second_basis, strict=True))
+    assert all((~witness)(witness(point)) == point for point in ambient.module_generators())
+    obstructed_basis = (2 * e + z, f, z)
+    obstructed = category(source.hom(list(obstructed_basis), codomain=ambient))
+    assert isometry(category, first, obstructed) is None
 
 
 def test_noncoordinate_zero_form_based_frame_uses_integral_completion():
