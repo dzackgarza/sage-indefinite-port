@@ -17,6 +17,94 @@ from sage_extensions.categories.isotropic_parabolics import general_linear_image
 from sage_extensions.categories.lattices import Lattices
 
 
+def _full_projection_marking_generators(lattice, vectors, pointwise):
+    r"""Exact stabilizer of a marking complementary to the rational radical.
+
+    Let S be the integral span of the marked vectors and R=rad(L). Here
+    S_Q + R_Q = L_Q and S_Q intersect R_Q = 0. The stabilizer of S in O(L)
+    restricts rationally to O(S) x GL(R), with no shear kernel: S and R
+    together span L_Q. Conversely each pair is an isometry of the rational
+    form, and it preserves the integral lattice precisely when it belongs
+    to the integral-structure stabilizer of L inside this rational group.
+
+    The finite-index integral frame M=S+R is stable under the entire group,
+    and L lies in (1/d)M for d=exponent(L/M). Thus the existing bounded
+    integral-structure action gives complete Schreier generators of the
+    integral intersection. No primitiveness of the projection S->L/R is
+    assumed. Pointwise marking fixes S and removes its O(S) factor.
+    """
+    from sage_extensions.all import Modules
+    from sage_extensions.categories.modules.pure.modules import ModulesOverIntegralDomains
+    from sage_extensions.categories.rational_integral_stabilizers import IntegralStructureAction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _integral_generator_set
+
+    sub = lattice.subobject_on(tuple(vectors))
+    sub_inc = sub.inclusion()
+    radical = lattice.radical()
+    rad_inc = radical.inclusion()
+    s = sub_inc.domain()
+    r = rad_inc.domain()
+    s_basis = tuple(sub_inc(point) for point in s.module_generators())
+    r_basis = tuple(rad_inc(point) for point in r.module_generators())
+    n = int(lattice.rank())
+    if len(s_basis) + len(r_basis) != n:
+        raise ValueError("the marked subspace must complement the rational radical")
+    labels = tuple(lattice.module_generating_set())
+    frame = matrix(QQ, [
+        [int(point.to_vector()(label)) for label in labels]
+        for point in (*s_basis, *r_basis)
+    ])
+    if frame.det() == 0:
+        raise ValueError("the marked subspace must intersect the radical trivially")
+    s_labels = tuple(s.module_generating_set())
+    r_labels = tuple(r.module_generating_set())
+    actions = []
+    if not pointwise:
+        for generator in EichlerRecursion().orthogonal_group_generators(s):
+            block = identity_matrix(ZZ, n)
+            for i, point in enumerate(s.module_generators()):
+                coordinates = generator(point).to_vector()
+                for j, label in enumerate(s_labels):
+                    block[i, j] = int(coordinates(label))
+            actions.append(block)
+    for generator in r.general_linear_group().group_generators():
+        block = identity_matrix(ZZ, n)
+        for i, point in enumerate(r.module_generators()):
+            coordinates = generator(point).to_vector()
+            for j, label in enumerate(r_labels):
+                block[len(s_basis) + i, len(s_basis) + j] = int(coordinates(label))
+        actions.append(block)
+
+    rational = lattice.base_change(lattice.base_ring().fraction_field_map())
+    rational_labels = tuple(rational.module_generating_set())
+    extensions = []
+    for action in actions:
+        rows = frame.inverse() * action * frame
+        extensions.append(rational.Isom(rational)({
+            label: rational.linear_combination({
+                target: rational.base_ring()(rows[i, j])
+                for j, target in enumerate(rational_labels) if rows[i, j]
+            }) for i, label in enumerate(rational_labels)
+        }))
+    group = rational.O().subgroup(tuple(extensions) or (rational.O().identity(),))
+    inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+    split = lattice.subobject_on((*s_basis, *r_basis))
+    divisor = split.inclusion().cokernel().exponent()
+    containing = Modules(lattice.base_ring()).Mono(split, inclusion.codomain())(
+        lambda label: inclusion.codomain().wrap(
+            rational.scalar_multiple(
+                rational.base_ring().one() / rational.base_ring()(divisor),
+                inclusion(split.inclusion()(split.module_generator(label))).underlying_element()
+            )
+        )
+    )
+    integral = IntegralStructureAction(group, inclusion).with_stable_containing_bound(containing)
+    generators = _integral_generator_set(lattice, integral)
+    basis = tuple(lattice.module_generator(label) for label in labels)
+    return tuple(matrix(ZZ, [[int(generator(point).to_vector()(label)) for point in basis]
+                             for label in labels]) for generator in generators)
+
+
 def degenerate_marking_generators(lattice, vectors, pointwise):
     r"""Return generators of the stabilizer in `O(L)` of the span of ``vectors``, as matrices on the frame.
 
@@ -55,10 +143,13 @@ def degenerate_marking_generators(lattice, vectors, pointwise):
     lifts = rows[list(pivots), :]
     radical_part, projected = lifts[:, :rank_radical], lifts[:, rank_radical:]
     rho = projected.nrows()
+    quotient_rank = size - rank_radical
+    if (k0 == 0 and rho == quotient_rank and projected.denominator() == 1
+            and any(d != 1 for d in matrix(ZZ, projected).elementary_divisors())):
+        return _full_projection_marking_generators(lattice, vectors, pointwise)
     assert projected.denominator() == 1 and all(d == 1 for d in matrix(ZZ, projected).elementary_divisors()), (
         f"the projection of {vectors} to the nondegenerate quotient is not primitive"
     )
-    quotient_rank = size - rank_radical
     quotient_gram = complement * gram * complement.transpose()
     quotient = Lattices(lattice.base_ring())([[int(c) for c in row] for row in quotient_gram.rows()])
     quotient_frame = tuple(quotient.module_generators())
