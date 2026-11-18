@@ -966,6 +966,25 @@ def test_nonprimitive_projection_proper_radical_stabilizer_over_two_u():
                for y in (e, f, u, v, z, w))
 
 
+def test_nonprimitive_rank_two_projection_mixed_isotropic_subspace_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(z, 2 * e + w, u)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, 2 * e + w, u))
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, u, v, z, w)
+               for y in (e, f, u, v, z, w))
+    # The returned group is not required to contain a particular shear as
+    # one of its generators: Schreier reduction changes generating families.
+    assert any(generator(z) != z for generator in generators)
+
+
 def test_mixed_flag_transporter_rejects_intermediate_projection_smith_difference():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory

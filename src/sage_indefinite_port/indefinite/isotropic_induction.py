@@ -22,7 +22,7 @@ from collections.abc import Callable, Iterable, Iterator
 from functools import cache
 from math import lcm
 
-from sage_extensions.all import ZZ, Cat, Lattices
+from sage_extensions.all import ZZ, Cat, Lattices, Modules
 from sage_extensions.categories.abstract_categories.products import (
     FiniteOrdinalCategory,
 )
@@ -1386,6 +1386,65 @@ class IsotropicInduction:
                             reduced, reduced, normalizer * block * normalizer.inverse().change_ring(SageZZ)
                         ) for block in blocks
                     ))
+            if n and k and not flag_dimensions:
+                # Nonprimitive projection: the graph of J over its saturated
+                # projection is rational, not necessarily an integral shear.
+                # Conjugate the split primitive parabolic and intersect its
+                # rational group with the actual integral lattice.
+                from sage.rings.rational_field import QQ as SageQQ
+                from sage_extensions.categories.modules.orbit_spans import OrbitSpanConstructions
+
+                rows = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                        for label in labels] for point in self.plane_vectors(plane)])
+                diagonal, left, right = rows[:, :n].smith_form()
+                s = int(rows[:, :n].rank())
+                adapted = left * rows
+                trows = adapted[s:, n:]
+                if s and int(trows.rank()) == int(trows.nrows()):
+                    xframe = right.inverse().change_ring(SageZZ)[:s, :]
+                    cframe = xframe.stack(_source_subspace_completion_int(xframe, n))
+                    graph = matrix(SageQQ, n, k, 0)
+                    for i in range(s):
+                        for j in range(k):
+                            graph[i, j] = SageQQ(adapted[i, n + j]) / SageQQ(diagonal[i, i])
+                    shear = cframe.inverse().change_ring(SageQQ) * graph
+                    normalizer = identity_matrix(SageQQ, size)
+                    for i in range(n):
+                        for j in range(k):
+                            normalizer[i, n + j] = shear[i, j]
+                    standard_rows = xframe.augment(matrix(SageZZ, s, k, 0)).stack(
+                        matrix(SageZZ, trows.nrows(), n, 0).augment(trows))
+                    standard = reduced.primitive_isotropic_subobject(*(
+                        reduced.linear_combination({label: reduced.base_ring()(int(row[j]))
+                            for j, label in enumerate(labels) if row[j]})
+                        for row in standard_rows.rows()))
+                    standard_generators = self.plane_automorphism_generators(standard)
+                    field_map = reduced.base_ring().fraction_field_map()
+                    rational = reduced.base_change(field_map)
+                    inclusion_r = ModulesOverIntegralDomains(reduced.base_ring())(reduced).generic_fibre_map()
+                    conjugates = []
+                    inverse_normalizer = normalizer.inverse()
+                    for generator in standard_generators:
+                        action_rows = matrix(SageZZ, [[_integer(generator(reduced.module_generator(label)).to_vector()(target))
+                            for target in labels] for label in labels])
+                        conjugated = inverse_normalizer * action_rows * normalizer
+                        conjugates.append(rational.Isom(rational)(tuple(
+                            rational.linear_combination({label: rational.base_ring()(conjugated[i, j])
+                                for j, label in enumerate(labels) if conjugated[i, j]})
+                            for i in range(size))))
+                    action = IntegralStructureAction(rational.O().subgroup(tuple(conjugates)), inclusion_r)
+                    denominator = SageZZ(1)
+                    for entry in (*normalizer.list(), *inverse_normalizer.list()):
+                        denominator = denominator.lcm(SageZZ(entry.denominator()))
+                    bound = int(denominator) ** 2
+                    containing = Modules(reduced.base_ring()).Mono(reduced, inclusion_r.codomain())(
+                        lambda label: inclusion_r.codomain().wrap(
+                            rational.scalar_multiple(rational.base_ring().one() / rational.base_ring()(bound),
+                                inclusion_r(reduced.module_generator(label)).underlying_element())))
+                    span = OrbitSpanConstructions(reduced.base_ring())(
+                        action.ambient_action_functor(), inclusion_r, containing=containing)
+                    return _conjugated(reduction.isometry, _integral_generator_set(
+                        reduced, action.with_stable_containing_bound(span.inclusion())))
             radical = tuple(reduction.isometry(reduced.module_generator(label)) for label in labels[n:])
             if n and k and int(inclusion.domain().rank()) > k and all(
                 inclusion.is_in_image(point) for point in radical
