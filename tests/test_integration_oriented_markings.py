@@ -121,3 +121,31 @@ def test_oriented_classes_accept_an_unoriented_full_flag_shape():
     assert len(classes) == 1
     assert classes[0] in oriented
     assert classes[0].functor().oriented_flag().flag().flag_type().dimensions == (1, 2)
+
+
+def test_oriented_full_marked_flag_source_retains_special_orthogonal_split():
+    """In 2U, every maximal-null-plane stabilizer has determinant one.
+
+    Adding the complete (1,2) flag and its orientations cannot add a
+    determinant-minus-one stabilizer. Thus the one O(L)-orbit of oriented
+    complete flags splits into exactly two SO(L)-orbits, whether the source
+    is the null shape or an actual oriented marked object.
+    """
+    from sage_extensions.categories.isotropic_orbits import FlagType
+
+    lattices = Lattices(ZZ)
+    ambient = lattices("U") + lattices("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    category = OrientedIsotropicFlags(lattices, 2)
+    full_source = category(OrientedIsotropicFlag(
+        ambient, (e, u), flag_type=FlagType((1, 2))
+    ))
+    ambient_classes = tuple(primitive_marking_classes(category, full_source, ambient))
+    special_classes = tuple(primitive_marking_classes(
+        category, full_source, ambient, acting_group=ambient.SO()
+    ))
+    assert len(ambient_classes) == 1
+    assert len(special_classes) == 2
+    assert all(marked in category for marked in special_classes)
+    assert all(marked.functor().oriented_flag().flag().flag_type().dimensions == (1, 2)
+               for marked in special_classes)
