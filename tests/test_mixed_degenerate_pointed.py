@@ -1024,6 +1024,25 @@ def test_nonprimitive_rank_two_projection_radical_first_flag_stabilizer():
                for generator in public for point in (z, 2 * e + w, u))
 
 
+def test_nonprimitive_rank_two_projection_rank_two_radical_first_flag():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        FLAGS, automorphism_group_generators, _flag_marking_from_basis,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    flag = FLAGS(_flag_marking_from_basis(ambient, (z, w, 2 * e + t, u), (2, 4)))
+    generators = tuple(automorphism_group_generators(FLAGS, flag))
+    assert generators
+    radical = ambient.primitive_isotropic_subobject(z, w)
+    top = ambient.primitive_isotropic_subobject(z, w, 2 * e + t, u)
+    assert all(radical.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, w))
+    assert all(top.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, w, 2 * e + t, u))
+
+
 def test_mixed_flag_transporter_rejects_intermediate_projection_smith_difference():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory

@@ -1387,8 +1387,9 @@ class IsotropicInduction:
                         ) for block in blocks
                     ))
             if n and k and (not flag_dimensions or (
-                flag_basis and len(flag_dimensions) == 2 and flag_dimensions[0] == 1
-                and self.recursion.vector_lies_in_radical(flag_basis[0])
+                flag_basis and len(flag_dimensions) == 2
+                and all(self.recursion.vector_lies_in_radical(point)
+                        for point in flag_basis[:flag_dimensions[0]])
                 and flag_dimensions[-1] == int(inclusion.domain().rank())
             )):
                 # Nonprimitive projection: the graph of J over its saturated
@@ -1423,7 +1424,7 @@ class IsotropicInduction:
                             for j, label in enumerate(labels) if row[j]})
                         for row in standard_rows.rows()))
                     if flag_dimensions:
-                        if int(trows.nrows()) != 1 or not all(
+                        if int(trows.nrows()) != flag_dimensions[0] or not all(
                             self.recursion.vector_lies_in_radical(point)
                             for point in flag_basis[:flag_dimensions[0]]
                         ):
