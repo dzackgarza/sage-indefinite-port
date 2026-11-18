@@ -98,3 +98,16 @@ def test_public_edgewalk_isometry_uses_integral_vertex_transporters():
     assert conjugate_witness is not None
     assert all(conjugate.b(conjugate_witness(x), conjugate_witness(y)) == source.b(x, y)
                for x in source.module_generators() for y in source.module_generators())
+
+
+def test_public_edgewalk_isometry_of_isotropic_binary_lattices():
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+
+    first = HyperbolicLattices(ZZ)(Lattices(ZZ)("U"))
+    second = HyperbolicLattices(ZZ)(Lattices(ZZ)(
+        [[0, 1], [1, 0]], module_generators=("left", "right")))
+    witness = first.edgewalk_isometry(second)
+    assert witness is not None
+    assert witness.domain() is first and witness.codomain() is second
+    assert all(second.b(witness(x), witness(y)) == first.b(x, y)
+               for x in first.module_generators() for y in first.module_generators())

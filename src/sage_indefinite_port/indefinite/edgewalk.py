@@ -119,6 +119,14 @@ def edgewalk_isometry(
     if (_engine_component_matrix(source.gram_tensor()).det()
             != _engine_component_matrix(target.gram_tensor()).det()):
         return None
+    if int(source.rank()) == 2 and source.is_isotropic():
+        # The isotropic binary edgewalk has no finite starting vertex.
+        # Its complete integral equivalence is the exact split-binary
+        # branch of the Lorentzian isometry algorithm, not a false
+        # negative from the missing vertex configuration.
+        from sage_indefinite_port.indefinite.lorentzian_cells import lorentzian_isometry
+
+        return lorentzian_isometry(source, target)
     first, second = _Edgewalk(source), _Edgewalk(target)
     first_vertex, second_vertex = first.initial_vertex(), second.initial_vertex()
     if first_vertex is None or second_vertex is None:
