@@ -1612,6 +1612,7 @@ def test_mixed_imprimitive_transverse_projected_line_precedes_radical_intersecti
 
 
 def test_mixed_imprimitive_transverse_projected_line_stabilizer_generators():
+    from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
     from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators, _flag_marking_from_basis
@@ -1631,6 +1632,15 @@ def test_mixed_imprimitive_transverse_projected_line_stabilizer_generators():
         assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
                    for generator in generators
                    for x in ambient.module_generators() for y in ambient.module_generators())
+        labels = tuple(ambient.module_generating_set())
+        radical_actions = [matrix(GF(index), [
+            [int(generator(point).to_vector()(labels[j])) for j in (2, 3, 4)]
+            for point in (z, w, t)
+        ]) for generator in generators]
+        # Modulo the projection index, D preserves T=<z,w> and sends
+        # t to +/-t with no T component. Thus the image is
+        # GL_2(F_p) x {+/-1}, with the signs coinciding for p=2.
+        assert MatrixGroup(radical_actions).order() == {2: 6, 3: 96}[index]
 
 
 def test_mixed_imprimitive_transverse_line_and_radical_have_equal_rank():
