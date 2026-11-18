@@ -354,6 +354,43 @@ def test_anisotropic_quotient_degenerate_null_orbits_are_radical_contents():
     assert all(int(v.q()) == 0 for v in nulls)
 
 
+def test_definite_quotient_degenerate_nonzero_norm_orbits_are_complete():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for gram, expected in (
+        ([[1, 0, 0], [0, 1, 0], [0, 0, 0]], 2),
+        ([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], 2),
+    ):
+        ambient = lattice(gram)
+        representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8))
+        assert len(representatives) == expected
+        assert {int(v.content()) for v in representatives} == {1, 2}
+        assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8, primitive_only=True))) == 1
+        assert all(int(v.q()) == 8 for v in representatives)
+    ambient = lattice([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25))) == 3
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25, primitive_only=True))) == 2
+    assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, -1)) == ()
+
+
+def test_definite_quotient_degenerate_norm_orbits_under_basis_change():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    original = matrix(SageZZ, [[1, 0, 0, 0], [0, 1, 0, 0],
+                               [0, 0, 0, 0], [0, 0, 0, 0]])
+    change = matrix(SageZZ, [[1, 0, 0, 0], [0, 1, 0, 0],
+                             [1, 1, 1, 0], [0, 1, 0, 1]])
+    transformed = change * original * change.transpose()
+    ambient = lattice([[int(value) for value in row] for row in transformed.rows()])
+    representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25))
+    assert len(representatives) == 3
+    for i, first in enumerate(representatives):
+        for second in representatives[i + 1:]:
+            assert RECURSION.pointed_isometry(first, second) is None
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25, primitive_only=True))) == 2
+
+
 def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):
     from itertools import islice
     from sage_indefinite_port.indefinite import recursive

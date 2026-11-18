@@ -2807,6 +2807,47 @@ class EichlerRecursion:
                 for representative in binary_split_primitive_vector_classes(lattice, int(square) // (content * content)):
                     yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
             return
+        if int(square) != 0 and not lattice.is_nondegenerate():
+            # For L=C (+) R with definite nondegenerate C and zero radical
+            # R, O(L) is the semidirect product of O(C) x GL(R) with
+            # Hom(C,R).  A shear changes the radical component of (v,r)
+            # by any multiple of content(v).  For rank(R)=1, residual
+            # classes are r mod c up to sign; for rank(R)>=2, GL(R)
+            # orbits of residual vectors are indexed by gcd(c,r), hence
+            # by divisors of c.  This produces a *terminating* complete
+            # norm-fibre classification from the finite definite C orbits.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            quotient_rank = int(reduced_gram.rank())
+            radical_rank = int(lattice.rank()) - quotient_rank
+            if any(reduced_gram[i, j] for i in range(quotient_rank, int(lattice.rank()))
+                   for j in range(int(lattice.rank()))):
+                raise ArithmeticError("degenerate reduction did not isolate the radical")
+            quotient_gram = reduced_gram.matrix_from_rows_and_columns(
+                range(quotient_rank), range(quotient_rank)
+            )
+            complement = lattice.lattice_category()(
+                [[int(value) for value in row] for row in quotient_gram.rows()]
+            )
+            if complement.is_definite():
+                for representative in self.exact_vector_orbit_iterator(complement, square):
+                    c = int(representative.content())
+                    if not c:
+                        raise ArithmeticError("a nonzero-norm vector has zero content")
+                    coordinates = tuple(int(representative.to_vector()(label))
+                                        for label in complement.module_generating_set())
+                    if radical_rank == 1:
+                        residues = range(c // 2 + 1)
+                    else:
+                        residues = SageZZ(c).divisors()
+                    for residue in residues:
+                        if primitive_only and gcd(c, int(residue)) != 1:
+                            continue
+                        yield reduction.isometry(_from_column(
+                            reduced, coordinates + (int(residue),) + (0,) * (radical_rank - 1)
+                        ))
+                return
         # On a zero-form lattice every vector has norm zero, and GL_n(ZZ)
         # acts transitively on primitive vectors: Bezout completion extends
         # each primitive column to an integral unimodular basis.  Thus the
