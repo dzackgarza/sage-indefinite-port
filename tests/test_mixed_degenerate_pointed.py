@@ -3616,6 +3616,33 @@ def test_nonhomothetic_based_isotropic_stabilizer_in_nondegenerate_split_lattice
     assert all(g(e) == e and g(u) == u and g(a) == a for g in generators)
 
 
+def test_nonhomothetic_based_mixed_primitive_projection_pointwise_stabilizer():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    for basis in ((2 * e + z, 2 * z, w), (e + t, 2 * z, w)):
+        marking = category(source.hom(list(basis), codomain=ambient))
+        generators = tuple(automorphism_group_generators(category, marking))
+        assert generators
+        assert all(g(point) == point for g in generators for point in basis)
+        assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+                   for g in generators for x in ambient.module_generators()
+                   for y in ambient.module_generators())
+        labels = tuple(ambient.module_generating_set())
+        radical_actions = [matrix(GF(2), [
+            [int(g(point).to_vector()(labels[j])) for j in (2, 3, 4)]
+            for point in (z, w, t)
+        ]) for g in generators]
+        # Pointwise fixation of the saturated radical plane <z,w>
+        # leaves the two independent transvections of its complement.
+        assert MatrixGroup(radical_actions).order() == 4
+
+
 def test_nonhomothetic_based_isotropic_transporter_in_nondegenerate_split_lattice():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry

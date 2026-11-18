@@ -1572,7 +1572,83 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     if arrow.codomain().is_nondegenerate():
                         saturation = arrow.saturation()
                     else:
-                        raise ValueError("nonhomothetic based isotropic stabilizers require an integral source-module action")
+                        from sage.matrix.constructor import identity_matrix, matrix
+                        from sage.rings.integer_ring import ZZ as SageZZ
+                        from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+                        from sage_indefinite_port.indefinite.recursive import _conjugated, _gram_in_label_order, _isometry_from_row_matrix
+
+                        ambient = arrow.codomain()
+                        saturation = arrow.saturation()
+                        reduction = indefinite_reduced_presentation(ambient)
+                        reduced = reduction.reduced
+                        gram = _gram_in_label_order(reduced)
+                        n, size = int(gram.rank()), int(gram.nrows())
+                        k = size - n
+                        labels = tuple(reduced.module_generating_set())
+                        rows = matrix(SageZZ, [[int((~reduction.isometry)(saturation.inclusion()(point))
+                            .to_vector()(label)) for label in labels]
+                            for point in saturation.module_generators()])
+                        projected = rows[:, :n]
+                        smith, left, _right = projected.smith_form()
+                        if n and k and int(projected.rank()) == 1 and abs(int(smith[0, 0])) == 1:
+                            adapted = left * rows
+                            xrow, yrow = adapted.row(0)[:n], adapted.row(0)[n:]
+                            radical_rows = adapted[1:, n:]
+                            t = int(radical_rows.nrows())
+                            cframe = matrix(SageZZ, [list(xrow)]).stack(
+                                _source_subspace_completion_int(matrix(SageZZ, [list(xrow)]), n))
+                            rframe = radical_rows.stack(_source_subspace_completion_int(radical_rows, k))
+                            complement = reduced.lattice_category()([
+                                [int(gram[i, j]) for j in range(n)] for i in range(n)])
+                            c_labels = tuple(complement.module_generating_set())
+                            line = complement.linear_combination({label: complement.base_ring()(int(xrow[j]))
+                                for j, label in enumerate(c_labels) if xrow[j]})
+                            normalizer = identity_matrix(SageZZ, size)
+                            shear = matrix(SageZZ, n, k, 0)
+                            shear[0, :] = -yrow
+                            normalizer[:n, n:] = cframe.inverse() * shear
+                            blocks = []
+                            for action in RECURSION.pointwise_stabilizer_generators(line):
+                                block = identity_matrix(SageZZ, size)
+                                for i, point in enumerate(complement.module_generators()):
+                                    for j, label in enumerate(c_labels):
+                                        block[i, j] = int(action(point).to_vector()(label))
+                                blocks.append(block)
+                            for i in range(t, k):
+                                for j in range(t):
+                                    block = identity_matrix(SageZZ, size)
+                                    standard = identity_matrix(SageZZ, k)
+                                    standard[i, j] = 1
+                                    block[n:, n:] = rframe.inverse() * standard * rframe
+                                    blocks.append(block)
+                            if t < k:
+                                radical_complement = reduced.lattice_category()([[0] * (k - t) for _ in range(k - t)])
+                                r_labels = tuple(radical_complement.module_generating_set())
+                                for action in radical_complement.general_linear_group().group_generators():
+                                    standard = identity_matrix(SageZZ, k)
+                                    for i, point in enumerate(radical_complement.module_generators()):
+                                        for j, label in enumerate(r_labels):
+                                            standard[t + i, t + j] = int(action(point).to_vector()(label))
+                                    block = identity_matrix(SageZZ, size)
+                                    block[n:, n:] = rframe.inverse() * standard * rframe
+                                    blocks.append(block)
+                            for i in range(1, n):
+                                for j in range(k):
+                                    standard = matrix(SageZZ, n, k, 0)
+                                    standard[i, j] = 1
+                                    block = identity_matrix(SageZZ, size)
+                                    block[:n, n:] = cframe.inverse() * standard
+                                    blocks.append(block)
+                            generators = _conjugated(reduction.isometry, tuple(
+                                _isometry_from_row_matrix(reduced, reduced,
+                                    normalizer * block * normalizer.inverse())
+                                for block in blocks)) or (ambient.O().identity(),)
+                            if not all(generator(arrow(point)) == arrow(point)
+                                       for generator in generators
+                                       for point in arrow.domain().module_generators()):
+                                raise ArithmeticError("the mixed based pointwise stabilizer failed its frame certificate")
+                            return finite_ordered_set(tuple(generators))
+                        raise ValueError("nonhomothetic based isotropic stabilizers require a primitive rank-one quotient projection")
                 # Pointwise fixation of the marked finite-index frame is
                 # equivalent to pointwise fixation of its primitive
                 # saturation, since the ambient module is torsion-free.
