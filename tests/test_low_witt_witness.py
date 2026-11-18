@@ -568,6 +568,27 @@ def test_lorentzian_fixed_norm_iterator_uses_complete_perfect_cell_orbits():
     assert len(tuple(RECURSION.exact_vector_orbit_iterator(opposite, 0, primitive_only=True))) == len(isotropic)
 
 
+def test_higher_witt_fixed_norm_iterator_uses_complete_eichler_cover():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    plane = lattice([[0, 1], [1, 0]])
+    ambient = plane + plane
+    representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2))
+    assert representatives and all(int(point.q()) == 2 for point in representatives)
+    for i, first in enumerate(representatives):
+        for second in representatives[i + 1:]:
+            assert RECURSION.pointed_isometry(first, second) is None
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2, primitive_only=True))) == len(representatives)
+    nonprimitive = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8))
+    assert nonprimitive and all(int(point.q()) == 8 for point in nonprimitive)
+    assert all(int(point.content()) in (1, 2) for point in nonprimitive)
+    null_primitive = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True))
+    assert null_primitive and all(int(point.q()) == 0 and int(point.content()) == 1 for point in null_primitive)
+    nulls = tuple(islice(RECURSION.exact_vector_orbit_iterator(ambient, 0), 5))
+    assert [int(point.content()) for point in nulls] == [0, 1, 2, 3, 4]
+
+
 def test_exact_integral_orthogonal_stream_binary_radical_parametrization():
     from itertools import islice
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries, _column_matrix

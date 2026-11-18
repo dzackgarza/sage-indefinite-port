@@ -605,8 +605,10 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
 
         yield from _binary_split_automorphisms(lattice)
         return
+    signature = tuple(map(int, lattice.signature_pair()))
     if lattice.is_nondegenerate() and not lattice.is_definite() and (
-        int(lattice.witt_index()) > 0 or int(lattice.rank()) == 2
+        int(lattice.rank()) == 2
+        or (int(lattice.witt_index()) > 0 and (min(signature) == 1 or int(lattice.witt_index()) >= 2))
     ):
         # The pinned indefinite generation step supplies the full integral
         # orthogonal group in every supported signature: Lorentzian leaves
@@ -2874,6 +2876,38 @@ class EichlerRecursion:
                     representative = _from_column(lattice, coordinates)
                     if not primitive_only or int(representative.content()) == 1:
                         yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+            return
+        if (lattice.is_nondegenerate() and profile.positive_index >= 2
+                and int(lattice.witt_index()) >= 2):
+            # The higher-Witt Eichler covering model computes a complete
+            # finite transversal of primitive vector orbits at every
+            # represented norm.  Lift it to all vectors by the exact
+            # content decomposition: c^2 divides a nonzero norm, while
+            # isotropic contents are unbounded and are streamed in order.
+            if int(square) == 0:
+                primitive = tuple(
+                    vector_class.representative
+                    for vector_class in self.primitive_vector_classes(lattice, 0)
+                )
+                if primitive_only:
+                    yield from primitive
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    for representative in primitive:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                if primitive_only and content != 1:
+                    continue
+                for vector_class in self.primitive_vector_classes(
+                    lattice, int(square) // (content * content)
+                ):
+                    yield lattice.scalar_multiple(
+                        lattice.base_ring()(content), vector_class.representative
+                    )
             return
         if int(square) != 0 and not lattice.is_nondegenerate():
             # For L=C (+) R with definite nondegenerate C and zero radical
