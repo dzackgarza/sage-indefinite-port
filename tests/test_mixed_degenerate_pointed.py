@@ -1500,6 +1500,29 @@ def test_mixed_imprimitive_implicit_radical_stage_with_coarser_partial_flags():
                    for x in ambient.module_generators() for y in ambient.module_generators())
 
 
+def test_mixed_imprimitive_implicit_radical_stage_is_basis_independent():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators, _flag_marking_from_basis
+
+    ambient = (Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)("U")
+               + Lattices(ZZ)([[0] * 3 for _ in range(3)]))
+    e, f, u, v, a, b, z, w, t = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    original = (z, w, 2 * e + t, u, a)
+    # The characteristic radical generator w is only a sum of the two
+    # displayed middle generators, not itself a member of that basis.
+    changed = (z, 2 * e + t, w - 2 * e - t, u, a)
+    for basis in (original, changed):
+        marking = category(_flag_marking_from_basis(ambient, basis, (1, 3, 4, 5)))
+        generators = tuple(automorphism_group_generators(category, marking))
+        assert generators
+        for rank in (1, 3, 4, 5):
+            term = ambient.primitive_isotropic_subobject(*basis[:rank])
+            assert all(term.inclusion().is_in_image(generator(point))
+                       for generator in generators for point in basis[:rank])
+
+
 def test_mixed_imprimitive_rank_two_projection_flag_transporter():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
