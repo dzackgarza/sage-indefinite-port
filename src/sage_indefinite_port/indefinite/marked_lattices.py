@@ -1568,7 +1568,7 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                                   if arrow.is_primitive() else _nondegenerate_stabilizer_generators(arrow.saturation().inclusion(), based=True))
                     return finite_ordered_set(tuple(generators))
                 saturation = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
-                mixed_rank_one = False
+                mixed_projection = False
                 if not arrow.codomain().is_nondegenerate() and int(arrow.domain().rank()) >= 2:
                     from sage.matrix.constructor import matrix
                     from sage.rings.integer_ring import ZZ as SageZZ
@@ -1578,9 +1578,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     projected_rows = matrix(SageZZ, [[int((~reduction.isometry)(arrow(point))
                         .to_vector()(label)) for label in labels]
                         for point in arrow.domain().module_generators()])
-                    mixed_rank_one = int(projected_rows.rank()) == 1
+                    mixed_projection = int(projected_rows.rank()) > 0
                 if saturation is None or (not arrow.codomain().is_nondegenerate()
-                                          and mixed_rank_one):
+                                          and mixed_projection):
                     if arrow.codomain().is_nondegenerate():
                         saturation = arrow.saturation()
                     else:
@@ -1689,7 +1689,71 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                                        for point in arrow.domain().module_generators()):
                                 raise ArithmeticError("the mixed based pointwise stabilizer failed its frame certificate")
                             return finite_ordered_set(tuple(generators))
-                        raise ValueError("nonhomothetic based isotropic stabilizers require a primitive rank-one quotient projection")
+                        s = int(projected.rank())
+                        if n and k and s > 1 and all(abs(int(smith[i, i])) == 1 for i in range(s)):
+                            # A primitive projected plane splits off its graph
+                            # integrally.  Its pointwise Levi factor is the
+                            # actual isotropic stabilizer of the quotient,
+                            # not an assumed full orthogonal group.
+                            adapted = left * rows
+                            xrows, yrows = adapted[:s, :n], adapted[:s, n:]
+                            radical_rows = adapted[s:, n:]
+                            t = int(radical_rows.nrows())
+                            cframe = xrows.stack(_source_subspace_completion_int(xrows, n))
+                            rframe = radical_rows.stack(_source_subspace_completion_int(radical_rows, k))
+                            complement = reduced.lattice_category()([
+                                [int(gram[i, j]) for j in range(n)] for i in range(n)])
+                            c_labels = tuple(complement.module_generating_set())
+                            quotient_points = tuple(complement.linear_combination({
+                                label: complement.base_ring()(int(xrows[i, j]))
+                                for j, label in enumerate(c_labels) if xrows[i, j]
+                            }) for i in range(s))
+                            normalizer = identity_matrix(SageZZ, size)
+                            graph = matrix(SageZZ, n, k, 0)
+                            graph[:s, :] = -yrows
+                            normalizer[:n, n:] = cframe.inverse() * graph
+                            blocks = []
+                            for action in INDUCTION._stabilizer_generators(quotient_points, ()):
+                                block = identity_matrix(SageZZ, size)
+                                for i, point in enumerate(complement.module_generators()):
+                                    for j, label in enumerate(c_labels):
+                                        block[i, j] = int(action(point).to_vector()(label))
+                                blocks.append(block)
+                            for i in range(t, k):
+                                for j in range(t):
+                                    block = identity_matrix(SageZZ, size)
+                                    standard = identity_matrix(SageZZ, k)
+                                    standard[i, j] = 1
+                                    block[n:, n:] = rframe.inverse() * standard * rframe
+                                    blocks.append(block)
+                            if t < k:
+                                radical_complement = reduced.lattice_category()([[0] * (k - t) for _ in range(k - t)])
+                                r_labels = tuple(radical_complement.module_generating_set())
+                                for action in radical_complement.general_linear_group().group_generators():
+                                    standard = identity_matrix(SageZZ, k)
+                                    for i, point in enumerate(radical_complement.module_generators()):
+                                        for j, label in enumerate(r_labels):
+                                            standard[t + i, t + j] = int(action(point).to_vector()(label))
+                                    block = identity_matrix(SageZZ, size)
+                                    block[n:, n:] = rframe.inverse() * standard * rframe
+                                    blocks.append(block)
+                            for i in range(s, n):
+                                for j in range(k):
+                                    standard = matrix(SageZZ, n, k, 0)
+                                    standard[i, j] = 1
+                                    block = identity_matrix(SageZZ, size)
+                                    block[:n, n:] = cframe.inverse() * standard
+                                    blocks.append(block)
+                            generators = _conjugated(reduction.isometry, tuple(
+                                _isometry_from_row_matrix(reduced, reduced,
+                                    normalizer * block * normalizer.inverse()) for block in blocks))
+                            generators = generators or (ambient.O().identity(),)
+                            if not all(generator(arrow(point)) == arrow(point)
+                                       for generator in generators
+                                       for point in arrow.domain().module_generators()):
+                                raise ArithmeticError("the primitive projected plane stabilizer failed its frame certificate")
+                            return finite_ordered_set(tuple(generators))
+                        raise ValueError("based isotropic stabilizers require primitive higher-rank quotient projection")
                 # Pointwise fixation of the marked finite-index frame is
                 # equivalent to pointwise fixation of its primitive
                 # saturation, since the ambient module is torsion-free.

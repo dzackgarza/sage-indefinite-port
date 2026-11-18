@@ -3656,6 +3656,25 @@ def test_nonhomothetic_based_mixed_primitive_projection_pointwise_stabilizer():
                for y in higher.module_generators())
 
 
+def test_based_mixed_primitive_rank_two_projection_with_radical_kernel():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    basis = (e + z, u + w, z + w)
+    marking = category(source.hom(list(basis), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+    assert any(g(t) != t for g in generators)
+
+
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
