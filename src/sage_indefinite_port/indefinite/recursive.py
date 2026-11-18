@@ -2539,9 +2539,11 @@ class EichlerRecursion:
         # On a zero-form lattice every vector has norm zero, and GL_n(ZZ)
         # acts transitively on primitive vectors: Bezout completion extends
         # each primitive column to an integral unimodular basis.  Thus the
-        # primitive null fibre has exactly one orbit, with a finite
-        # completion certificate even though the unmarked null fibre has
-        # infinitely many content strata.
+        # primitive null fibre has exactly one orbit.  For arbitrary
+        # vectors, content c>=0 is a complete GL_n(ZZ)-orbit invariant:
+        # Bezout completion sends each vector to c times the first basis
+        # vector.  Enumerate those classes directly rather than repeatedly
+        # invoking the pointed transporter on an infinite coordinate walk.
         if all(
             lattice.b(x, y) == 0
             for x in lattice.module_generators()
@@ -2552,6 +2554,11 @@ class EichlerRecursion:
             if primitive_only:
                 yield lattice.module_generator(next(iter(lattice.module_generating_set())))
                 return
+            basis_vector = lattice.module_generator(next(iter(lattice.module_generating_set())))
+            yield lattice.zero()
+            for content in count(1):
+                yield lattice.scalar_multiple(lattice.base_ring()(content), basis_vector)
+            return
         if int(square) == 0 and lattice.is_nondegenerate() and not lattice.is_isotropic():
             if not primitive_only:
                 yield lattice.zero()

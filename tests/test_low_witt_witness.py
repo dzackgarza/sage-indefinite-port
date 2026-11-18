@@ -72,6 +72,17 @@ def test_exact_vector_orbit_iterator_exhausts_primitive_zero_form_orbits():
         assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2, primitive_only=True)) == ()
 
 
+def test_exact_vector_orbit_iterator_zero_form_content_stream_is_complete_and_ordered():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for rank in (1, 2, 4):
+        ambient = lattice([[0] * rank for _ in range(rank)])
+        classes = tuple(islice(RECURSION.exact_vector_orbit_iterator(ambient, 0), 6))
+        assert [int(point.content()) for point in classes] == list(range(6))
+        assert all(point.q() == 0 for point in classes)
+
+
 def test_zero_rank_exact_integral_orthogonal_stream_has_one_identity():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
