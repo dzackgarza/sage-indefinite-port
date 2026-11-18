@@ -1486,20 +1486,32 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
                     and all(target_ambient.b(x, y) == 0 for x in target_ambient.module_generators()
                             for y in target_ambient.module_generators())):
-                # On a zero-form lattice GL_n(ZZ) acts transitively on
-                # primitive flags of any fixed rank profile. A fair
-                # unimodular search therefore terminates positively; each
-                # candidate is certified against every marked flag term.
-                from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
+                # An adapted integral basis of each primitive top flag
+                # gives an explicit GL_n(ZZ) transporter. No unbounded
+                # unimodular enumeration is necessary.
+                from sage.all import ZZ as SageZZ, matrix
+                from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+                from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
 
+                source_labels = tuple(ambient.module_generating_set())
+                target_labels = tuple(target_ambient.module_generating_set())
+                source_rows = matrix(SageZZ, [[int(point.to_vector()(label))
+                    for label in source_labels] for point in source_basis])
+                target_rows = matrix(SageZZ, [[int(point.to_vector()(label))
+                    for label in target_labels] for point in target_basis])
+                source_frame = source_rows.stack(_source_subspace_completion_int(
+                    source_rows, int(ambient.rank())))
+                target_frame = target_rows.stack(_source_subspace_completion_int(
+                    target_rows, int(target_ambient.rank())))
+                rows = source_frame.inverse() * target_frame
+                witness = _isometry_from_row_matrix(ambient, target_ambient, rows)
                 target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_basis[:rank])
                                      for rank in source_dimensions)
-                for rows in _fair_unimodular_matrices(int(ambient.rank())):
-                    witness = _isometry_from_row_matrix(ambient, target_ambient, rows)
-                    if all(term.inclusion().is_in_image(witness(point))
-                           for rank, term in zip(source_dimensions, target_terms, strict=True)
-                           for point in source_basis[:rank]):
-                        return witness
+                if all(term.inclusion().is_in_image(witness(point))
+                       for rank, term in zip(source_dimensions, target_terms, strict=True)
+                       for point in source_basis[:rank]):
+                    return witness
+                raise ArithmeticError("integral adapted flag completion failed its transport certificate")
             return RECURSION.isotropic_subspace_isometry(source_basis, target_basis, target_images)
     raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
 
