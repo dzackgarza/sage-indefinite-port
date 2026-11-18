@@ -531,9 +531,33 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
     The output is a stream of owned O(L)-elements, not a finite generating
     family.  Every GL_n(Z) element occurs once in the matrix stream, so
     every integral isometry eventually occurs.  For an infinite orthogonal
-    group this stream is infinite; for a finite group it may never halt.
+    group this stream is infinite.  For definite lattices the provider's
+    exact finite generating set permits exhaustive terminating enumeration.
     """
     gram = _gram_in_label_order(lattice)
+    if int(gram.nrows()) == 0:
+        yield lattice.O().identity()
+        return
+    if lattice.is_definite():
+        # Closure of the exact definite O(L) generators is finite.  Matrix
+        # multiplication takes place in the same labelled integral basis
+        # as the owned isometry constructor; no heuristic cutoff is used.
+        from collections import deque
+
+        generators = tuple(_column_matrix(g) for g in lattice.O().group_generators())
+        identity = identity_matrix(SageZZ, int(gram.nrows()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
     for candidate in _fair_unimodular_matrices(int(gram.nrows())):
         if candidate * gram * candidate.transpose() == gram:
             yield _isometry_from_row_matrix(lattice, lattice, candidate)

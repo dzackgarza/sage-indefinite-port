@@ -135,6 +135,19 @@ def test_zero_rank_exact_integral_orthogonal_stream_has_one_identity():
     assert tuple(stream) == ()
 
 
+def test_exact_integral_orthogonal_stream_terminates_on_definite_lattices():
+    from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
+
+    for gram in ([[1, 0], [0, 1]], [[-1, 0], [0, -1]], [[2, 0], [0, 6]]):
+        ambient = lattice(gram)
+        elements = tuple(iter_exact_integral_orthogonal_isometries(ambient))
+        expected = 8 if abs(gram[0][0]) == abs(gram[1][1]) else 4
+        assert len(elements) == expected
+        assert len({tuple(element(next(iter(ambient.module_generators()))).to_vector()(label)
+                         for label in ambient.module_generating_set()) for element in elements}) >= 2
+        assert all(element.domain() is ambient and element.codomain() is ambient for element in elements)
+
+
 def test_low_witt_nonprimitive_isotropic_line_stream_preserves_saturation_index():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import iter_isotropic_line_content_classes
