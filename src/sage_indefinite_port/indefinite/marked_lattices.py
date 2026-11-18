@@ -1104,19 +1104,22 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     radical_pairs.append((t, ordered))
                 if len(radical_pairs) == 2 and radical_pairs[0][0] == radical_pairs[1][0]:
                     t = radical_pairs[0][0]
-                    witness = INDUCTION.plane_isometry(
-                        ambient.primitive_isotropic_subobject(*radical_pairs[0][1]),
-                        target_ambient.primitive_isotropic_subobject(*radical_pairs[1][1]),
-                        flag_dimensions=(t, source_dimensions[-1]),
-                        source_flag_basis=radical_pairs[0][1],
-                        target_flag_basis=radical_pairs[1][1],
-                    )
-                    if witness is not None:
-                        target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_basis[:rank])
-                                             for rank in source_dimensions)
-                        if all(term.inclusion().is_in_image(witness(point))
-                               for rank, term in zip(source_dimensions, target_terms, strict=True)
-                               for point in source_basis[:rank]):
+                    target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_basis[:rank])
+                                         for rank in source_dimensions)
+                    for dimensions in (tuple(sorted(set((*source_dimensions, t)))),
+                                       (t, source_dimensions[-1])):
+                        witness = INDUCTION.plane_isometry(
+                            ambient.primitive_isotropic_subobject(*radical_pairs[0][1]),
+                            target_ambient.primitive_isotropic_subobject(*radical_pairs[1][1]),
+                            flag_dimensions=dimensions,
+                            source_flag_basis=radical_pairs[0][1],
+                            target_flag_basis=radical_pairs[1][1],
+                        )
+                        if witness is not None and all(
+                            term.inclusion().is_in_image(witness(point))
+                            for rank, term in zip(source_dimensions, target_terms, strict=True)
+                            for point in source_basis[:rank]
+                        ):
                             return witness
             if all(
                 not owner.is_nondegenerate()
