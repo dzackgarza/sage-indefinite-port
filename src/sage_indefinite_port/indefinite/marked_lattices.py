@@ -1261,6 +1261,22 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 RECURSION.vector_lies_in_radical(point) for point in basis
             ):
                 generators = _degenerate_radical_flag_generators(ambient, dimensions, basis)
+            elif not ambient.is_nondegenerate() and len(dimensions) == 2 and all(
+                RECURSION.vector_lies_in_radical(point) for point in basis[:dimensions[0]]
+            ) and (
+                dimensions[0] == dimensions[-1] + int(ambient.radical().rank())
+                - int(ambient.subobject_on((*basis, *(
+                    ambient.radical().inclusion()(point)
+                    for point in ambient.radical().module_generators()
+                ))).rank())
+            ):
+                # The initial term T is precisely J∩rad(L). This
+                # intersection is characteristic inside J, so its
+                # setwise stabilizer is already Stab_O(L)(J). This also
+                # covers a proper radical summand, not only all rad(L).
+                generators = INDUCTION.plane_automorphism_generators(
+                    ambient.primitive_isotropic_subobject(*basis)
+                )
             elif (not ambient.is_nondegenerate()
                   and dimensions[0] >= int(ambient.radical().rank())
                   and dimensions[-1] > int(ambient.radical().rank())

@@ -768,6 +768,22 @@ def test_mixed_degenerate_radical_to_isotropic_plane_flag_stabilizer():
                    for generator in generators for point in basis)
 
 
+def test_proper_radical_intersection_first_flag_stabilizer_is_top_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        FLAGS, INDUCTION, automorphism_group_generators, _flag_marking_from_basis,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    flag = FLAGS(_flag_marking_from_basis(ambient, (z, e), (1, 2)))
+    generators = tuple(automorphism_group_generators(FLAGS, flag))
+    expected = INDUCTION.plane_automorphism_generators(ambient.primitive_isotropic_subobject(z, e))
+    assert generators and generators == expected
+    assert all(ambient.primitive_isotropic_subobject(z).inclusion().is_in_image(generator(z))
+               for generator in generators)
+
+
 def test_mixed_degenerate_proper_radical_partial_flag_transporter():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
@@ -1330,6 +1346,22 @@ def test_mixed_degenerate_rank_two_radical_nonprimitive_projection_exact_schreie
             for point in (z, w)
         ]) for generator in fixed]
         assert MatrixGroup(actions).order() == expected_order
+
+
+def test_mixed_degenerate_nonprimitive_projection_line_transporters_respect_residue_orbits():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    for c in (2, 3, 5):
+        source = c * e + z
+        target = c * e + z + w
+        witness = INDUCTION.line_isometry(source, target)
+        assert witness is not None
+        assert witness(source) in (target, -target)
+        assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+                   for x in (e, f, z, w) for y in (e, f, z, w))
 
 
 def test_mixed_degenerate_rank_three_radical_congruence_stabilizer_image_is_exact():
