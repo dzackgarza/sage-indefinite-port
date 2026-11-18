@@ -214,6 +214,15 @@ def test_exact_integral_orthogonal_stream_higher_rank_radical_generators(monkeyp
     assert all(abs(g.det()) == 1 for g in matrices)
     assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
                for g in family for x in ambient.module_generators() for y in ambient.module_generators())
+    from sage.all import ZZ as SageZZ, matrix
+    original = matrix(SageZZ, [[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    change = matrix(SageZZ, [[1, 0, 0], [1, 1, 0], [0, 1, 1]])
+    changed = change * original * change.transpose()
+    twisted = lattice([[int(value) for value in row] for row in changed.rows()])
+    transported = tuple(islice(recursive.iter_exact_integral_orthogonal_isometries(twisted), 12))
+    assert len({tuple(recursive._column_matrix(g).list()) for g in transported}) == 12
+    assert all(twisted.b(g(x), g(y)) == twisted.b(x, y)
+               for g in transported for x in twisted.module_generators() for y in twisted.module_generators())
 
 
 def test_exact_integral_orthogonal_stream_exhausts_split_binary_indefinite_groups():
