@@ -1058,8 +1058,8 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
                     and all(target_arrow.codomain().b(x, y) == 0 for x in target_arrow.codomain().module_generators()
                             for y in target_arrow.codomain().module_generators())):
-                from sage.all import ZZ as SageZZ, matrix
-                from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
+                from sage.all import ZZ as SageZZ, identity_matrix, matrix
+                from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
 
                 source_labels = tuple(ambient.module_generating_set())
                 target_labels = tuple(target_arrow.codomain().module_generating_set())
@@ -1067,13 +1067,25 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 right = tuple(target_arrow(point) for point in target_arrow.domain().module_generators())
                 left_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in source_labels] for point in left])
                 right_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in target_labels] for point in right])
-                if left_rows.elementary_divisors() != right_rows.elementary_divisors():
+                if left_rows.rank() != right_rows.rank():
                     return None
-                target_subobject = target_arrow.codomain().subobject_on(right)
-                for rows in _fair_unimodular_matrices(int(ambient.rank())):
-                    witness = _isometry_from_row_matrix(ambient, target_arrow.codomain(), rows)
-                    if all(target_subobject.inclusion().is_in_image(witness(point)) for point in left):
-                        return witness
+                left_smith, left_change, left_basis = left_rows.smith_form(transformation=True)
+                right_smith, right_change, right_basis = right_rows.smith_form(transformation=True)
+                if left_smith != right_smith:
+                    return None
+                rank, dimension = int(left_rows.nrows()), int(left_rows.ncols())
+                diagonal = matrix(SageZZ, rank, rank,
+                                  lambda i, j: left_smith[i, j])
+                transition = left_change * right_change.inverse()
+                conjugate = diagonal.inverse() * transition * diagonal
+                if any(not entry.is_integral() for entry in conjugate.list()):
+                    return None
+                extension = identity_matrix(SageZZ, dimension)
+                extension[:rank, :rank] = conjugate
+                rows = left_basis * extension * right_basis.inverse()
+                if abs(rows.det()) != 1 or left_rows * rows != right_rows:
+                    return None
+                return _isometry_from_row_matrix(ambient, target_arrow.codomain(), rows)
             if source_arrow.domain().is_nondegenerate() and target_arrow.domain().is_nondegenerate():
                 return (_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=False)
                         if source_arrow.is_primitive() and target_arrow.is_primitive()

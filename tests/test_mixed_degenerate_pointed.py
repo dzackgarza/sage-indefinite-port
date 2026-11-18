@@ -654,6 +654,27 @@ def test_zero_form_rank_three_primitive_plane_transporter_uses_unimodular_comple
                for generator in generators for point in (e, f))
 
 
+def test_zero_form_based_transporter_constructs_exact_nonprimitive_frame_map():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, g = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    left_basis = (2 * e, f)
+    right_basis = (2 * f, g)
+    left = category(source.hom(list(left_basis), codomain=ambient))
+    right = category(source.hom(list(right_basis), codomain=ambient))
+    witness = isometry(category, left, right)
+    assert witness is not None
+    assert all(witness(x) == y for x, y in zip(left_basis, right_basis, strict=True))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+    obstructed = category(source.hom([3 * f, g], codomain=ambient))
+    assert isometry(category, left, obstructed) is None
+
+
 def test_full_radical_plane_self_transporter_uses_full_rank_completion():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
