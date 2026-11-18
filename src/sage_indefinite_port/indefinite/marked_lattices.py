@@ -1768,6 +1768,23 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
         arrow = marked.arrow()
         ambient = arrow.codomain()
         source = arrow.domain()
+        if int(source.rank()) == 1 and not ambient.is_nondegenerate():
+            # The rank-one primitive mark can project to an *imprimitive*
+            # vector in L/rad(L). For example, 5e+r in <2> + <0>
+            # is primitive in L but has quotient projection 5e.
+            # degenerate_marking_generators assumes that the projected
+            # span is primitive and consequently rejects this valid mark.
+            # The exact pointed algorithm already solves the integral
+            # radical congruence for arbitrary projection content.
+            point = arrow(next(iter(source.module_generators())))
+            if point == ambient.zero():
+                return finite_ordered_set(tuple(RECURSION.orthogonal_group_generators(ambient)))
+            primitive = point.primitive_part()
+            fixed = tuple(RECURSION.pointed_automorphism_generators(primitive))
+            if isinstance(category, CosliceCategory):
+                return finite_ordered_set(fixed)
+            reversal = RECURSION.pointed_isometry(primitive, -primitive)
+            return finite_ordered_set((*fixed, *((reversal,) if reversal is not None else ())))
         if int(source.rank()) > 0 and not ambient.is_nondegenerate():
             from sage_indefinite_port.indefinite.degenerate_markings import degenerate_marking_generators
 
