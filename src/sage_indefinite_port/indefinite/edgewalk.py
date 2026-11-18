@@ -1430,9 +1430,25 @@ class _Edgewalk:
         it is equivalent to k (edgewalk.h:1449-1537 func_insert_vertex), and
         its own edge returns to k.
         """
+        supplied = self.supplied_initial_vertex
+        if supplied is not None:
+            point = supplied[0] if isinstance(supplied, tuple) else supplied
+            if point.parent() is not self.lattice or self.norm(point) > 0:
+                raise ValueError("the starting vertex must be a nonspacelike vector of the walking lattice")
         if self.lattice.is_isotropic():
             return self.report([], False, (), [])
-        initial = self.initial_vertex()
+        if supplied is None:
+            initial = self.initial_vertex()
+        elif isinstance(supplied, tuple):
+            point, roots = supplied
+            if any(root.parent() is not self.lattice or self.pairing(point, root) != 0
+                   or self.norm(root) not in self.norms for root in roots):
+                raise ValueError("the starting vertex has invalid wall roots")
+            initial = _Vertex(point, tuple(roots))
+        else:
+            initial = _Vertex(supplied, self.ordinary_vertex_roots(supplied))
+        if initial is None or len(initial.roots) != 1:
+            raise ValueError("a binary starting vertex must have exactly one wall root")
         (root,) = initial.roots
         neighbor = self.edge_step(initial, (), root)
         (neighbor_root,) = neighbor.roots
@@ -1442,8 +1458,6 @@ class _Edgewalk:
 
     def walk(self) -> AllcockEdgewalkReport:
         if self.rank == 2:
-            if self.supplied_initial_vertex is not None:
-                raise ValueError("an explicit rank-two starting vertex is not supported by the binary cycle")
             return self.binary_walk()
         supplied = self.supplied_initial_vertex
         if supplied is None:
