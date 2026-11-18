@@ -169,6 +169,19 @@ def test_exact_integral_orthogonal_stream_exhausts_split_binary_indefinite_group
         assert all(element.domain() is ambient and element.codomain() is ambient for element in elements)
 
 
+def test_exact_integral_orthogonal_stream_binary_radical_parametrization():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries, _column_matrix
+
+    for gram in ([[2, 0], [0, 0]], [[0, 0], [0, -6]]):
+        ambient = lattice(gram)
+        elements = tuple(islice(iter_exact_integral_orthogonal_isometries(ambient), 20))
+        matrices = [tuple(_column_matrix(element).list()) for element in elements]
+        assert len(set(matrices)) == 20
+        assert all(element.domain() is ambient and element.codomain() is ambient for element in elements)
+        assert all(_column_matrix(element).det() in (-1, 1) for element in elements)
+
+
 def test_low_witt_nonprimitive_isotropic_line_stream_preserves_saturation_index():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import iter_isotropic_line_content_classes

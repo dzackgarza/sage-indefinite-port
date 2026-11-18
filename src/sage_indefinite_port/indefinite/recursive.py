@@ -554,6 +554,34 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
 
         yield from _binary_split_automorphisms(lattice)
         return
+    if int(gram.nrows()) == 2 and gram.rank() == 1:
+        # A rank-one radical in a binary lattice is primitive.  Choose a
+        # unimodular basis with the radical last; every isometry in that
+        # basis is [[epsilon, b], [0, delta]] (row convention), where
+        # epsilon,delta=+/-1 and b ranges over ZZ.  Unlike a generic
+        # GL_2 word search this gives every isometry once, by an explicit
+        # arithmetic parametrization, and reaches every shear fairly.
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        reduced_gram = _gram_in_label_order(reduced)
+        if reduced_gram[0, 1] or reduced_gram[1, 0] or reduced_gram[1, 1]:
+            raise ArithmeticError("binary radical reduction did not put the radical last")
+        from itertools import count
+
+        transport = _column_matrix(reduction.isometry)
+        inverse_transport = transport.inverse().change_ring(SageZZ)
+        for height in count(0):
+            shears = (0,) if height == 0 else (-height, height)
+            for shear in shears:
+                for first_sign in (-1, 1):
+                    for radical_sign in (-1, 1):
+                        rows = matrix(SageZZ, [[first_sign, shear], [0, radical_sign]])
+                        reduced_map = _isometry_from_row_matrix(reduced, reduced, rows)
+                        yield _isometry_from_column_matrix(
+                            lattice, lattice,
+                            transport * _column_matrix(reduced_map) * inverse_transport,
+                        )
+        return
     if lattice.is_definite():
         # Closure of the exact definite O(L) generators is finite.  Matrix
         # multiplication takes place in the same labelled integral basis
