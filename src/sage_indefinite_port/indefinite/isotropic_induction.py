@@ -1560,9 +1560,15 @@ class IsotropicInduction:
                     ))
             if n and k and (not flag_dimensions or (
                 flag_basis and len(flag_dimensions) >= 2
-                and all(self.recursion.vector_lies_in_radical(point)
-                        for point in flag_basis[:flag_dimensions[-2]])
                 and flag_dimensions[-1] == int(inclusion.domain().rank())
+                and any(all(self.recursion.vector_lies_in_radical(point)
+                            for point in flag_basis[:rank])
+                        and rank == int(inclusion.domain().rank())
+                        + int(ambient.radical().rank())
+                        - int(ambient.subobject_on((*self.plane_vectors(plane), *(
+                            ambient.radical().inclusion()(point)
+                            for point in ambient.radical().module_generators()
+                        ))).rank()) for rank in flag_dimensions[:-1])
             )):
                 # Nonprimitive projection: the graph of J over its saturated
                 # projection is rational, not necessarily an integral shear.
@@ -1596,22 +1602,30 @@ class IsotropicInduction:
                             for j, label in enumerate(labels) if row[j]})
                         for row in standard_rows.rows()))
                     if flag_dimensions:
-                        if int(trows.nrows()) != flag_dimensions[-2] or not all(
+                        if int(trows.nrows()) not in flag_dimensions[:-1] or not all(
                             self.recursion.vector_lies_in_radical(point)
-                            for point in flag_basis[:flag_dimensions[-2]]
+                            for point in flag_basis[:int(trows.nrows())]
                         ):
-                            raise ValueError("the rational graph flag requires its penultimate stage to be the radical intersection")
+                            raise ValueError("the rational graph flag requires a stage equal to the radical intersection")
                         # The radical stages precede the projected part.  Their
                         # adapted basis is integral even when the graph shear
                         # is rational; preserve every intermediate stage.
-                        radical_prefix = tuple(
-                            (~reduction.isometry)(point) for point in flag_basis[:flag_dimensions[-2]]
-                        )
-                        standard_basis = tuple(reduced.linear_combination({
+                        inverse_normalizer = normalizer.inverse()
+                        original_rows = matrix(SageQQ, [[SageQQ(
+                            _integer((~reduction.isometry)(point).to_vector()(label)))
+                            for label in labels] for point in flag_basis])
+                        normalized_rows = original_rows * inverse_normalizer
+                        if any(entry.denominator() != 1 for entry in normalized_rows.list()):
+                            raise ArithmeticError("the rational graph normalization does not preserve the adapted flag lattice")
+                        normalized_points = tuple(reduced.linear_combination({
                             label: reduced.base_ring()(int(row[j]))
                             for j, label in enumerate(labels) if row[j]
-                        }) for row in (*standard_rows.rows()[s:], *standard_rows.rows()[:s]))
-                        standard_basis = radical_prefix + standard_basis[len(radical_prefix):]
+                        }) for row in normalized_rows.rows())
+                        standard_domain = standard.inclusion().domain()
+                        standard_terms = tuple(standard_domain.subobject_on(tuple(
+                            standard.inclusion().lift(point) for point in normalized_points[:rank]
+                        )).saturation() for rank in flag_dimensions[:-1])
+                        standard_basis, _ = self.flag_action_data(standard, standard_terms)
                         standard_generators = self.plane_automorphism_generators(
                             standard, flag_dimensions=flag_dimensions, flag_basis=standard_basis)
                     else:
