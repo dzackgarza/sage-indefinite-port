@@ -1419,28 +1419,25 @@ class EichlerRecursion:
         # Unlike the rational coordinate complement, the pairing L -> J^*
         # determines the invariant index a in D=2d^2e^2a intrinsically.
         isotropic_inclusion = reduction.isotropic_embedding()
-        # The pairing L -> I^* is i^* composed with the metric map,
-        # where i: I -> L. Dualization is represented on the opposite
-        # category, so its input is the reversed arrow op(L) -> op(I).
-        dualization = Modules(lattice.base_ring()).dualization()
-        opposite = dualization.domain()
-        opposite_inclusion = opposite.Mor(opposite.object(lattice), opposite.object(isotropic_inclusion.domain()))(isotropic_inclusion)
-        pairing = dualization(opposite_inclusion) * lattice.metric_map()
+        # The pairing L -> I^* has matrix (b(e_i, i(f_j))) in integral
+        # generator bases. Construct this matrix directly: the opposite
+        # module category need not accept a lattice embedding as one of its
+        # own arrows, whereas these pairings are intrinsic to the lattice.
+        isotropic_basis = tuple(isotropic_inclusion(point)
+                               for point in isotropic_inclusion.domain().module_generators())
+        ambient_basis = tuple(lattice.module_generators())
+        pairing_matrix = matrix(SageZZ, [
+            [_integer(lattice.b(point, isotropic)) for isotropic in isotropic_basis]
+            for point in ambient_basis
+        ])
         # Here pairing is a map between finite free ZZ-modules L -> J*. Its
         # cokernel is finite, and its order is the product of the nonzero Smith
         # entries of its coordinate matrix. Compute that exact index from these
         # presentations: the generic provider's index() currently delegates to
         # cardinality() on a represented torsion module whose construction does
         # not yet supply a decided finite cardinality.
-        pairing_domain_labels = tuple(pairing.domain().module_generating_set())
-        pairing_codomain_labels = tuple(pairing.codomain().module_generating_set())
-        pairing_rows = tuple(
-            tuple(pairing(pairing.domain().module_generator(label)).to_vector()(target_label) for target_label in pairing_codomain_labels)
-            for label in pairing_domain_labels
-        )
-        pairing_matrix = matrix(SageZZ, pairing_rows)
         pairing_rank = int(pairing_matrix.rank())
-        if pairing_rank != len(pairing_codomain_labels):
+        if pairing_rank != len(isotropic_basis):
             raise ArithmeticError("the isotropic pairing L -> J* must have finite cokernel")
         smith = pairing_matrix.smith_form()[0]
         pairing_index = SageZZ.one()
