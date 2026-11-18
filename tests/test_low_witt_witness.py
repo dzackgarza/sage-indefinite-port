@@ -312,6 +312,47 @@ def test_rank_one_quotient_radical_orbit_representatives_are_pairwise_inequivale
                for representative in representatives)
 
 
+def test_rank_one_quotient_large_prime_norm_uses_exact_divisor_classes():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    prime = 10007
+    square = 2 * prime * prime
+    representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, square))
+    assert len(representatives) == 2
+    assert {int(point.content()) for point in representatives} == {1, prime}
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, square, primitive_only=True))) == 1
+
+
+def test_anisotropic_quotient_degenerate_null_orbits_are_radical_contents():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for gram in (
+        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]],
+        [[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, 0]],
+        [[2, 0, 0, 0, 0], [0, 2, 0, 0, 0], [0, 0, -6, 0, 0],
+         [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
+    ):
+        ambient = lattice(gram)
+        primitive = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True))
+        assert len(primitive) == 1
+        assert int(primitive[0].content()) == 1
+        nulls = tuple(islice(RECURSION.exact_vector_orbit_iterator(ambient, 0), 6))
+        assert [int(v.content()) for v in nulls] == list(range(6))
+        assert all(int(v.q()) == 0 for v in nulls)
+    from sage.all import ZZ as SageZZ, matrix
+    original = matrix(SageZZ, [[2, 0, 0, 0], [0, 2, 0, 0],
+                               [0, 0, -6, 0], [0, 0, 0, 0]])
+    change = matrix(SageZZ, [[1, 0, 0, 0], [0, 1, 0, 0],
+                             [0, 0, 1, 0], [1, 1, 0, 1]])
+    transformed = change * original * change.transpose()
+    changed = lattice([[int(value) for value in row] for row in transformed.rows()])
+    nulls = tuple(islice(RECURSION.exact_vector_orbit_iterator(changed, 0), 5))
+    assert [int(v.content()) for v in nulls] == list(range(5))
+    assert all(int(v.q()) == 0 for v in nulls)
+
+
 def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):
     from itertools import islice
     from sage_indefinite_port.indefinite import recursive

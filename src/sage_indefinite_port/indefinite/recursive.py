@@ -2740,8 +2740,11 @@ class EichlerRecursion:
             if quotient <= 0 or isqrt(quotient) ** 2 != quotient:
                 return
             x = isqrt(quotient)
-            for divisor in range(1, x + 1):
-                if x % divisor or (primitive_only and divisor != 1):
+            # Divisor enumeration is output-sensitive: scanning 1..x is
+            # prohibitively expensive for a large represented square with
+            # only a few divisor classes (e.g. x a large prime).
+            for divisor in SageZZ(x).divisors():
+                if primitive_only and divisor != 1:
                     continue
                 yield reduction.isometry(_from_column(reduced, (x, divisor, *radical_zeros)))
             return
@@ -2827,6 +2830,38 @@ class EichlerRecursion:
             for content in count(1):
                 yield lattice.scalar_multiple(lattice.base_ring()(content), basis_vector)
             return
+        if int(square) == 0 and not lattice.is_nondegenerate():
+            # If the nondegenerate quotient C is rationally anisotropic,
+            # every null vector lies in the radical R.  The exact
+            # degenerate group contains GL(R), which is transitive on
+            # vectors of each positive content, and fixes content.
+            # Thus the entire null orbit space is {0} union {c*r:c>=1}
+            # for one primitive radical generator r.  No infinite
+            # coordinate search or pointed equivalence test is needed.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            gram_reduced = _gram_in_label_order(reduced)
+            quotient_rank = int(gram_reduced.rank())
+            quotient_gram = gram_reduced.matrix_from_rows_and_columns(
+                range(quotient_rank), range(quotient_rank)
+            )
+            if any(gram_reduced[i, j] for i in range(quotient_rank, int(lattice.rank()))
+                   for j in range(int(lattice.rank()))):
+                raise ArithmeticError("degenerate reduction did not isolate the radical")
+            complement = lattice.lattice_category()(
+                [[int(value) for value in row] for row in quotient_gram.rows()]
+            )
+            if complement.is_definite() or not complement.is_isotropic():
+                radical_point = reduction.isometry(_from_column(
+                    reduced, (0,) * quotient_rank + (1,) + (0,) * (int(lattice.rank()) - quotient_rank - 1)
+                ))
+                if primitive_only:
+                    yield radical_point
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield lattice.scalar_multiple(lattice.base_ring()(content), radical_point)
+                return
         if int(square) == 0 and lattice.is_nondegenerate() and not lattice.is_isotropic():
             if not primitive_only:
                 yield lattice.zero()
