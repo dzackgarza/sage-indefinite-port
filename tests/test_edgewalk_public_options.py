@@ -71,6 +71,7 @@ def test_public_nonreflective_edgewalk_can_complete_without_early_termination():
 
 
 def test_public_edgewalk_isometry_uses_integral_vertex_transporters():
+    from sage.matrix.constructor import matrix
     from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
 
     gram = [[0, 1, 0], [1, 0, 0], [0, 0, 2]]
@@ -87,3 +88,13 @@ def test_public_edgewalk_isometry_uses_integral_vertex_transporters():
         [0, 1, 0], [1, 0, 0], [0, 0, 4],
     ]))
     assert source.edgewalk_isometry(nonisometric) is None
+
+    change = matrix([[1, 1, 0], [0, 1, 0], [0, 0, 1]])
+    transformed = change * matrix(gram) * change.transpose()
+    conjugate = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [int(entry) for entry in row] for row in transformed.rows()
+    ]))
+    conjugate_witness = source.edgewalk_isometry(conjugate)
+    assert conjugate_witness is not None
+    assert all(conjugate.b(conjugate_witness(x), conjugate_witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
