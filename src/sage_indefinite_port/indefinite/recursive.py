@@ -2828,6 +2828,53 @@ class EichlerRecursion:
                 if not primitive_only or int(representative.content()) == 1:
                     yield representative
             return
+        profile = AttackProfile.from_lattice(lattice)
+        if (lattice.is_nondegenerate() and profile.positive_index == 1
+                and int(lattice.rank()) >= 3 and int(lattice.witt_index()) > 0
+                and profile.sign * int(square) >= 0):
+            # In the Lorentzian positive cone the perfect-cell algorithm
+            # returns the complete finite primitive norm-orbit set.  The
+            # null fibre is the induction algorithm's finite primitive
+            # line-class set.  Recover all nonprimitive classes by content:
+            # c^2 divides the norm, and scaling preserves orbit bijectively.
+            if int(square) == 0:
+                from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+                primitive = IsotropicInduction(self).isotropic_vector_classes(lattice)
+                if primitive_only:
+                    yield from primitive
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    for representative in primitive:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            from sage_indefinite_port.indefinite.lorentzian_cells import (
+                NONNEGATIVE_SQUARES,
+                MarkedCellOrbitAlgorithm,
+                perfect_complex,
+            )
+
+            reduction = indefinite_reduced_presentation(profile.signed_view)
+            signed_norm = profile.sign * int(square)
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                if primitive_only and content != 1:
+                    continue
+                primitive_norm = signed_norm // (content * content)
+                orbits = MarkedCellOrbitAlgorithm(
+                    perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES), primitive_norm
+                ).global_orbits()
+                for orbit in orbits:
+                    reduced_vector = orbit[0]
+                    transported = reduction.isometry(reduced_vector)
+                    coordinates = tuple(int(transported.to_vector()(label))
+                                         for label in lattice.module_generating_set())
+                    representative = _from_column(lattice, coordinates)
+                    if not primitive_only or int(representative.content()) == 1:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+            return
         if int(square) != 0 and not lattice.is_nondegenerate():
             # For L=C (+) R with definite nondegenerate C and zero radical
             # R, O(L) is the semidirect product of O(C) x GL(R) with

@@ -544,6 +544,30 @@ def test_exact_integral_orthogonal_stream_higher_witt_index_real_generators():
                for g in family for x in ambient.module_generators() for y in ambient.module_generators())
 
 
+def test_lorentzian_fixed_norm_iterator_uses_complete_perfect_cell_orbits():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[0, 1, 0], [1, 0, 0], [0, 0, -2]])
+    representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2))
+    assert representatives
+    assert all(int(point.q()) == 2 for point in representatives)
+    for i, first in enumerate(representatives):
+        for second in representatives[i + 1:]:
+            assert RECURSION.pointed_isometry(first, second) is None
+    primitive = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2, primitive_only=True))
+    assert len(primitive) == len(representatives)
+    nonprimitive = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8))
+    assert nonprimitive and all(int(point.q()) == 8 for point in nonprimitive)
+    assert all(int(point.content()) in (1, 2) for point in nonprimitive)
+    isotropic = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True))
+    assert isotropic and all(int(point.q()) == 0 and int(point.content()) == 1 for point in isotropic)
+    opposite = lattice([[0, -1, 0], [-1, 0, 0], [0, 0, 2]])
+    opposite_representatives = tuple(RECURSION.exact_vector_orbit_iterator(opposite, -2))
+    assert opposite_representatives
+    assert all(int(point.q()) == -2 for point in opposite_representatives)
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(opposite, 0, primitive_only=True))) == len(isotropic)
+
+
 def test_exact_integral_orthogonal_stream_binary_radical_parametrization():
     from itertools import islice
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries, _column_matrix
