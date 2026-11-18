@@ -555,19 +555,25 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
 
         yield from _binary_split_automorphisms(lattice)
         return
-    if int(gram.nrows()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
-        # The anisotropic binary edgewalk supplies a complete finite
-        # generating family.  Enumerating its Cayley graph is fair and
-        # duplicate-free without searching the much larger GL_2(ZZ).
+    if lattice.is_nondegenerate() and not lattice.is_definite() and tuple(map(int, lattice.signature_pair())) in (
+        (1, int(lattice.rank()) - 1), (int(lattice.rank()) - 1, 1)
+    ):
+        # For Lorentzian lattices the pinned perfect-domain algorithm
+        # supplies the full integral orthogonal group, not merely an
+        # approximate subgroup.  Enumerate its Cayley graph instead of
+        # traversing the much larger GL_n(ZZ).  A negative-signature
+        # convention is handled by the existing signed-view machinery.
         from collections import deque
 
         # A group generating family is not generally a *monoid*
         # generating family.  In particular an infinite-order Pell period
         # and its negative powers must both occur in the enumeration.
         # Include inverse matrices explicitly before traversing words.
-        forward = tuple(_column_matrix(g) for g in lorentzian_orthogonal_group_generators(lattice))
+        profile = AttackProfile.from_lattice(lattice)
+        forward = tuple(_column_matrix(_untwisted(g, profile))
+                        for g in lorentzian_orthogonal_group_generators(profile.signed_view))
         generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
-        identity = identity_matrix(SageZZ, 2)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
         frontier = deque((identity,))
         seen = {tuple(identity.list())}
         while frontier:

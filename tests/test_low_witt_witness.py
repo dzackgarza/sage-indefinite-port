@@ -269,6 +269,35 @@ def test_exact_integral_orthogonal_stream_anisotropic_binary_actual_edgewalk():
                for g in family for x in ambient.module_generators() for y in ambient.module_generators())
 
 
+def test_exact_integral_orthogonal_stream_lorentzian_higher_rank_generators(monkeypatch):
+    from itertools import islice
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_indefinite_port.indefinite import recursive
+
+    for gram in ([[1, 0, 0], [0, -1, 0], [0, 0, -1]],
+                 [[-1, 0, 0], [0, 1, 0], [0, 0, 1]]):
+        ambient = lattice(gram)
+        identity = ambient.O().identity()
+        monkeypatch.setattr(recursive, "lorentzian_orthogonal_group_generators", lambda _: (identity,))
+        def forbidden(*args, **kwargs):
+            raise AssertionError("Lorentzian enumeration must not traverse GL_n")
+        monkeypatch.setattr(recursive, "_fair_unimodular_matrices", forbidden)
+        family = tuple(recursive.iter_exact_integral_orthogonal_isometries(ambient))
+        assert len(family) == 1
+        assert tuple(recursive._column_matrix(family[0]).list()) == tuple(matrix.identity(SageZZ, 3).list())
+
+
+def test_exact_integral_orthogonal_stream_lorentzian_rank_three_real_generators():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries, _column_matrix
+
+    ambient = lattice([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+    family = tuple(islice(iter_exact_integral_orthogonal_isometries(ambient), 6))
+    assert len({tuple(_column_matrix(g).list()) for g in family}) == 6
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in family for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_exact_integral_orthogonal_stream_binary_radical_parametrization():
     from itertools import islice
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries, _column_matrix
