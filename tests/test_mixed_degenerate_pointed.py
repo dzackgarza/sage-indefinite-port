@@ -1793,6 +1793,59 @@ def test_mixed_imprimitive_projected_first_line_transports_moving_quotient_and_g
                for x in ambient.module_generators() for y in ambient.module_generators())
 
 
+def test_mixed_split_interleaved_projection_and_radical_flag_stabilizer():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    for basis in ((e, z, u), (e + u, z, u)):
+        marking = category(_flag_marking_from_basis(ambient, basis, (1, 2, 3)))
+        generators = tuple(automorphism_group_generators(category, marking))
+        assert generators
+        for rank in (1, 2, 3):
+            term = ambient.primitive_isotropic_subobject(*basis[:rank])
+            assert all(term.inclusion().is_in_image(generator(point))
+                       for generator in generators for point in basis[:rank])
+        assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+                   for generator in generators
+                   for x in ambient.module_generators() for y in ambient.module_generators())
+        labels = tuple(ambient.module_generating_set())
+        radical_actions = [matrix(GF(2), [
+            [int(generator(point).to_vector()(labels[j])) for j in (4, 5, 6)]
+            for point in (z, w, t)
+        ]) for generator in generators]
+        # The stabilizer of a line in GL_3(F_2) has order 168/7=24.
+        assert MatrixGroup(radical_actions).order() == 24
+
+
+def test_mixed_split_interleaved_projection_and_radical_flag_transport():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    for source_basis, target_basis, dimensions in (
+        ((e, z, u), (u, w, e), (1, 2, 3)),
+        ((e + u, z, u), (e + u, w, e), (1, 2, 3)),
+        ((e, z, w, u), (u, w, t, e), (1, 2, 3, 4)),
+    ):
+        category = Cat().Mor(FiniteOrdinalCategory(len(dimensions) + 1), Lattices(ZZ))
+        source = category(_flag_marking_from_basis(ambient, source_basis, dimensions))
+        target = category(_flag_marking_from_basis(ambient, target_basis, dimensions))
+        witness = isometry(category, source, target)
+        assert witness is not None
+        for rank in dimensions:
+            term = ambient.primitive_isotropic_subobject(*target_basis[:rank])
+            assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
+        assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+                   for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_mixed_imprimitive_rank_two_projection_flag_transporter():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory

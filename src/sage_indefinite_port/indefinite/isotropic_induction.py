@@ -1010,11 +1010,17 @@ class IsotropicInduction:
             if n and k and (not flag_dimensions or (
                 source_flag_basis and target_flag_basis
                 and flag_dimensions[-1] == len(source_flag_basis) == len(target_flag_basis)
-                and all(self.recursion.vector_lies_in_radical(point)
-                        for point in source_flag_basis[:flag_dimensions[0]])
-                and all(self.recursion.vector_lies_in_radical(point)
-                        for point in target_flag_basis[:flag_dimensions[0]])
-                and flag_dimensions[0] == intersection_ranks[0]
+                and ((all(self.recursion.vector_lies_in_radical(point)
+                          for point in source_flag_basis[:flag_dimensions[0]])
+                      and all(self.recursion.vector_lies_in_radical(point)
+                              for point in target_flag_basis[:flag_dimensions[0]])
+                      and flag_dimensions[0] == intersection_ranks[0])
+                     or all(
+                         self.recursion.vector_lies_in_radical(point)
+                         or all(_integer((~reduction.isometry)(point).to_vector()(label)) == 0
+                                for label in tuple(reduced.module_generating_set())[n:])
+                         for point in (*tuple(phi(point) for point in source_flag_basis),
+                                       *target_flag_basis)))
             )):
                 # For a primitive J whose projection I to C is also
                 # primitive, the split group O(C) ⋉ Hom(C,R) × GL(R)
@@ -1031,7 +1037,11 @@ class IsotropicInduction:
                 quotient_subspaces = []
                 radical_completions = []
                 primitive_projection = True
-                for points in (tuple(phi(point) for point in source_basis), target_basis):
+                for points, flag_points in zip(
+                    (tuple(phi(point) for point in source_basis), target_basis),
+                    (tuple(phi(point) for point in source_flag_basis), target_flag_basis)
+                    if flag_dimensions else ((), ()), strict=True,
+                ):
                     rows = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
                                             for label in labels] for point in points])
                     projection = rows[:, :n]
@@ -1044,6 +1054,22 @@ class IsotropicInduction:
                     xrows = adapted_rows[:s, :n]
                     yrows = adapted_rows[:s, n:]
                     trows = adapted_rows[s:, n:]
+                    if flag_points and all(
+                        self.recursion.vector_lies_in_radical(point)
+                        or all(_integer((~reduction.isometry)(point).to_vector()(label)) == 0
+                               for label in labels[n:])
+                        for point in flag_points
+                    ):
+                        split_rows = matrix(SageZZ, [[_integer(
+                            (~reduction.isometry)(point).to_vector()(label))
+                            for label in labels] for point in flag_points])
+                        xrows = matrix(SageZZ, [list(split_rows.row(i)[:n])
+                            for i, point in enumerate(flag_points)
+                            if not self.recursion.vector_lies_in_radical(point)])
+                        yrows = matrix(SageZZ, s, k, 0)
+                        trows = matrix(SageZZ, [list(split_rows.row(i)[n:])
+                            for i, point in enumerate(flag_points)
+                            if self.recursion.vector_lies_in_radical(point)])
                     if int(trows.rank()) != len(points) - s:
                         raise ArithmeticError("the Smith kernel does not span the radical intersection")
                     quotient_points = tuple(complement.linear_combination({
@@ -1082,10 +1108,12 @@ class IsotropicInduction:
                                     continue
                                 term = complement.primitive_isotropic_subobject(*projected)
                                 domain = top.inclusion().domain()
-                                terms.append(domain.primitive_isotropic_subobject(*(
+                                projected_term = domain.primitive_isotropic_subobject(*(
                                     top.inclusion().lift(term.inclusion()(point))
                                     for point in term.module_generators()
-                                )))
+                                ))
+                                if not terms or int(projected_term.rank()) > int(terms[-1].rank()):
+                                    terms.append(projected_term)
                             quotient_terms.append(tuple(terms))
                         if quotient_terms[0] or quotient_terms[1]:
                             left_basis, _ = self.flag_action_data(quotient_subspaces[0], quotient_terms[0])
@@ -1113,6 +1141,13 @@ class IsotropicInduction:
                     witness = reduction.isometry * reduced_witness * (~reduction.isometry) * phi
                     if not all(target.inclusion().is_in_image(witness(point)) for point in source_basis):
                         raise ArithmeticError("the primitive-projection transporter does not carry the source subspace onto the target")
+                    if flag_dimensions:
+                        target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_flag_basis[:rank])
+                                             for rank in flag_dimensions)
+                        if not all(term.inclusion().is_in_image(witness(point))
+                                   for rank, term in zip(flag_dimensions, target_terms, strict=True)
+                                   for point in source_flag_basis[:rank]):
+                            raise ArithmeticError("the primitive-projection transporter does not preserve the specified intermediate flag stages")
                     return witness
             radical = tuple(reduction.isometry(reduced.module_generator(label))
                             for label in tuple(reduced.module_generating_set())[n:])
@@ -1527,14 +1562,19 @@ class IsotropicInduction:
                         ))
             if n and k and (not flag_dimensions or (
                 flag_basis and flag_dimensions[-1] == len(flag_basis)
-                and any(all(self.recursion.vector_lies_in_radical(point)
-                            for point in flag_basis[:rank])
-                        and rank == int(inclusion.domain().rank())
-                        + int(ambient.radical().rank())
-                        - int(ambient.subobject_on((*self.plane_vectors(plane), *(
-                    ambient.radical().inclusion()(point)
-                    for point in ambient.radical().module_generators()
-                ))).rank()) for rank in flag_dimensions[:-1])
+                and (any(all(self.recursion.vector_lies_in_radical(point)
+                             for point in flag_basis[:rank])
+                         and rank == int(inclusion.domain().rank())
+                         + int(ambient.radical().rank())
+                         - int(ambient.subobject_on((*self.plane_vectors(plane), *(
+                             ambient.radical().inclusion()(point)
+                             for point in ambient.radical().module_generators()
+                         ))).rank()) for rank in flag_dimensions[:-1])
+                     or all(
+                         self.recursion.vector_lies_in_radical(point)
+                         or all(_integer((~reduction.isometry)(point).to_vector()(label)) == 0
+                                for label in labels[n:])
+                         for point in flag_basis))
             )):
                 # A primitive J with primitive projection I in C has
                 # radical intersection T=J∩R, and an integral shear
@@ -1550,6 +1590,26 @@ class IsotropicInduction:
                     xrows = adapted_rows[:s, :n]
                     yrows = adapted_rows[:s, n:]
                     trows = adapted_rows[s:, n:]
+                    if flag_dimensions and all(
+                        self.recursion.vector_lies_in_radical(point)
+                        or all(_integer((~reduction.isometry)(point).to_vector()(label)) == 0
+                               for label in labels[n:])
+                        for point in flag_basis
+                    ):
+                        # Smith row operations need not respect the
+                        # intermediate projected flag. For a split flag,
+                        # its pure projected and radical generators give
+                        # primitive frames already adapted to every stage.
+                        split_rows = matrix(SageZZ, [[_integer(
+                            (~reduction.isometry)(point).to_vector()(label))
+                            for label in labels] for point in flag_basis])
+                        xrows = matrix(SageZZ, [list(split_rows.row(i)[:n])
+                            for i, point in enumerate(flag_basis)
+                            if not self.recursion.vector_lies_in_radical(point)])
+                        yrows = matrix(SageZZ, s, k, 0)
+                        trows = matrix(SageZZ, [list(split_rows.row(i)[n:])
+                            for i, point in enumerate(flag_basis)
+                            if self.recursion.vector_lies_in_radical(point)])
                     t = int(trows.nrows())
                     complement = reduced.lattice_category()([
                         [int(gram[i, j]) for j in range(n)] for i in range(n)
@@ -1591,10 +1651,12 @@ class IsotropicInduction:
                             if not projected_points:
                                 continue
                             term = complement.primitive_isotropic_subobject(*projected_points)
-                            quotient_terms.append(quotient.inclusion().domain().primitive_isotropic_subobject(*(
+                            projected_term = quotient.inclusion().domain().primitive_isotropic_subobject(*(
                                 quotient.inclusion().lift(term.inclusion()(point))
                                 for point in term.module_generators()
-                            )))
+                            ))
+                            if not quotient_terms or int(projected_term.rank()) > int(quotient_terms[-1].rank()):
+                                quotient_terms.append(projected_term)
                         if quotient_terms:
                             adapted_basis, images = self.flag_action_data(quotient, tuple(quotient_terms))
                             quotient_generators = self._stabilizer_generators(adapted_basis, images)
@@ -1623,8 +1685,9 @@ class IsotropicInduction:
                                 label: radical_module.base_ring()(int((~reduction.isometry)(point).to_vector()(labels[n + j])))
                                 for j, label in enumerate(r_labels)
                                 if (~reduction.isometry)(point).to_vector()(labels[n + j])
-                            }) for point in flag_basis[:rank])
-                            if all(self.recursion.vector_lies_in_radical(point) for point in flag_basis[:rank]):
+                            }) for point in flag_basis[:rank]
+                                if self.recursion.vector_lies_in_radical(point))
+                            if points and (not radical_terms or len(points) > int(radical_terms[-1].rank())):
                                 radical_terms.append(radical_module.primitive_isotropic_subobject(*points))
                     radical_generators = (
                         linear.flag_stabilizer(tuple((*radical_terms, radical_term))).group_generators()
@@ -1638,13 +1701,30 @@ class IsotropicInduction:
                                 block[n + i, n + j] = _integer(image(label))
                         blocks.append(block)
                     for i in range(n):
-                        for j in range(t if i < s else k):
+                        allowed_rows = tuple(trows.rows()) if i < s else tuple(identity_matrix(SageZZ, k).rows())
+                        if i < s and flag_dimensions:
+                            projected_row = complement.linear_combination({
+                                label: complement.base_ring()(int(xrows[i, j]))
+                                for j, label in enumerate(c_labels) if xrows[i, j]
+                            })
+                            for rank in flag_dimensions:
+                                projected_points = tuple(complement.linear_combination({
+                                    label: complement.base_ring()(_integer(
+                                        (~reduction.isometry)(point).to_vector()(labels[j])))
+                                    for j, label in enumerate(c_labels)
+                                    if (~reduction.isometry)(point).to_vector()(labels[j])
+                                }) for point in flag_basis[:rank]
+                                    if not self.recursion.vector_lies_in_radical(point))
+                                if projected_points and complement.subobject_on(projected_points).saturation().inclusion().is_in_image(projected_row):
+                                    allowed_rows = tuple(matrix(SageZZ, [[_integer(
+                                        (~reduction.isometry)(point).to_vector()(labels[n + j]))
+                                        for j in range(k)] for point in flag_basis[:rank]
+                                        if self.recursion.vector_lies_in_radical(point)]).rows())
+                                    break
+                        for allowed_row in allowed_rows:
                             adapted_shear = matrix(SageZZ, n, k, 0)
-                            if i < s:
-                                for col in range(k):
-                                    adapted_shear[i, col] = trows[j, col]
-                            else:
-                                adapted_shear[i, j] = 1
+                            for col in range(k):
+                                adapted_shear[i, col] = allowed_row[col]
                             shear_block = inverse * adapted_shear
                             block = identity_matrix(SageZZ, size)
                             for row in range(n):

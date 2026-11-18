@@ -1191,6 +1191,26 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                                                 .inclusion().is_in_image(candidate(point))
                                                 for rank in source_dimensions for point in source_basis[:rank])):
                                     return candidate
+            if (not ambient.is_nondegenerate() and not target_ambient.is_nondegenerate()
+                    and len(source_dimensions) >= 2
+                    and all(all(RECURSION.vector_lies_in_radical(point)
+                                or all(int((~reduction.isometry)(point).to_vector()(label)) == 0
+                                       for label in tuple(reduction.reduced.module_generating_set())[
+                                           int(reduction.reduced.rank()) - int(owner.radical().rank()):])
+                                for point in basis)
+                            for owner, basis, reduction in (
+                                (ambient, source_basis, indefinite_reduced_presentation(ambient)),
+                                (target_ambient, target_basis, indefinite_reduced_presentation(target_ambient))))):
+                # The projected and radical constituent flags are split;
+                # the integral shear may therefore align their graph-free
+                # realizations after the quotient and radical transports.
+                return INDUCTION.plane_isometry(
+                    ambient.primitive_isotropic_subobject(*source_basis),
+                    target_ambient.primitive_isotropic_subobject(*target_basis),
+                    flag_dimensions=source_dimensions,
+                    source_flag_basis=source_basis,
+                    target_flag_basis=target_basis,
+                )
             if (int(ambient.rank()) == int(target_ambient.rank())
                     and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
                     and all(target_ambient.b(x, y) == 0 for x in target_ambient.module_generators()
@@ -1526,6 +1546,21 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                   and all(RECURSION.vector_lies_in_radical(point) for point in basis[1:])):
                 # All later stages extend the projected first line by a
                 # flag inside the characteristic radical intersection.
+                generators = INDUCTION.plane_automorphism_generators(
+                    ambient.primitive_isotropic_subobject(*basis),
+                    flag_dimensions=dimensions, flag_basis=basis,
+                )
+            elif (not ambient.is_nondegenerate() and len(dimensions) >= 2
+                  and (split_reduction := indefinite_reduced_presentation(ambient)) is not None
+                  and all(RECURSION.vector_lies_in_radical(point)
+                          or all(int((~split_reduction.isometry)(point)
+                                     .to_vector()(label)) == 0
+                                 for label in tuple(split_reduction.reduced.module_generating_set())[
+                                     int(split_reduction.reduced.rank()) - int(ambient.radical().rank()):])
+                          for point in basis)):
+                # A split flag has independent projected and radical
+                # constituent flags, but the shear kernel must respect
+                # the radical stage present when each projected line enters.
                 generators = INDUCTION.plane_automorphism_generators(
                     ambient.primitive_isotropic_subobject(*basis),
                     flag_dimensions=dimensions, flag_basis=basis,
