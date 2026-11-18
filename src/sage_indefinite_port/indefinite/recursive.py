@@ -570,6 +570,30 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
                     seen.add(key)
                     frontier.append(successor)
         return
+    if not lattice.is_nondegenerate() and int(lattice.rank()) >= 3:
+        # Reduce the radical to the final coordinates and extend the
+        # nondegenerate complement group by all integral radical shears
+        # and GL(R) actions.  This is the exact degenerate extension
+        # algorithm, not an ambient GL_n enumeration.  Its generators
+        # are complete whenever the complement group generators are.
+        from collections import deque
+
+        recursion = EichlerRecursion()
+        forward = tuple(_column_matrix(g) for g in recursion.orthogonal_group_generators(lattice))
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
     if int(gram.nrows()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
         # Every rational isometry of a split binary plane permutes its two
         # rational null lines, scaling them by mutually inverse factors.

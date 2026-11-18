@@ -200,6 +200,22 @@ def test_exact_integral_orthogonal_stream_zero_form_general_linear(monkeypatch):
         assert all(g.domain() is ambient and g.codomain() is ambient for g in elements)
 
 
+def test_exact_integral_orthogonal_stream_higher_rank_radical_generators(monkeypatch):
+    from itertools import islice
+    from sage_indefinite_port.indefinite import recursive
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    def forbidden(*args, **kwargs):
+        raise AssertionError("degenerate enumeration must not traverse ambient GL_n")
+    monkeypatch.setattr(recursive, "_fair_unimodular_matrices", forbidden)
+    family = tuple(islice(recursive.iter_exact_integral_orthogonal_isometries(ambient), 12))
+    matrices = tuple(recursive._column_matrix(g) for g in family)
+    assert len({tuple(g.list()) for g in matrices}) == 12
+    assert all(abs(g.det()) == 1 for g in matrices)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in family for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_exact_integral_orthogonal_stream_exhausts_split_binary_indefinite_groups():
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
 
