@@ -538,6 +538,12 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
     if int(gram.nrows()) == 0:
         yield lattice.O().identity()
         return
+    if int(gram.nrows()) == 1:
+        # GL_1(ZZ)={+1,-1}; both preserve every integral rank-one
+        # quadratic form, including the degenerate zero form.
+        yield _isometry_from_row_matrix(lattice, lattice, identity_matrix(SageZZ, 1))
+        yield _isometry_from_row_matrix(lattice, lattice, -identity_matrix(SageZZ, 1))
+        return
     if lattice.is_definite():
         # Closure of the exact definite O(L) generators is finite.  Matrix
         # multiplication takes place in the same labelled integral basis
