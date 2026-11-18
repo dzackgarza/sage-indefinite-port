@@ -1332,6 +1332,28 @@ def test_mixed_imprimitive_graph_transport_moves_radical_complement_in_rank_four
                for x in ambient.module_generators() for y in ambient.module_generators())
 
 
+def test_mixed_imprimitive_rank_two_projection_flag_transporter():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source_basis = (z, 2 * e + w, u + t)
+    source = category(_flag_marking_from_basis(ambient, source_basis, (1, 2, 3)))
+    for target_basis in ((w, 2 * u + t, e + z), (w, 2 * u + t, e + z + u),
+                         (w, 2 * u + t, e + z + w)):
+        target = category(_flag_marking_from_basis(ambient, target_basis, (1, 2, 3)))
+        witness = isometry(category, source, target)
+        assert witness is not None
+        for rank in (1, 2, 3):
+            term = ambient.primitive_isotropic_subobject(*target_basis[:rank])
+            assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
+        assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+                   for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_rank_three_radical_intersection_complete_flag_transporter_moving_projection():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
