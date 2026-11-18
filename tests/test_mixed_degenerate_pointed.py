@@ -1373,6 +1373,12 @@ def test_mixed_imprimitive_rank_five_partial_flag_in_three_hyperbolic_planes():
         assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in ambient.module_generators() for y in ambient.module_generators())
+    # The projection of the rank-three term has elementary divisor 2 in
+    # the source. Replacing it by 3 changes an integral isometry invariant,
+    # even though the rational flag dimensions and Gram matrices agree.
+    inequivalent_basis = (w, z, 3 * u + t, a, e)
+    inequivalent = category(_flag_marking_from_basis(ambient, inequivalent_basis, (1, 2, 3, 5)))
+    assert isometry(category, source, inequivalent) is None
 
 
 def test_mixed_imprimitive_rank_two_projection_flag_transporter():
