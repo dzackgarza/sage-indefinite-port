@@ -1726,6 +1726,27 @@ def test_mixed_imprimitive_projected_first_complete_flag_in_radical_corank_four(
     assert MatrixGroup(radical_actions).order() == 8
 
 
+def test_mixed_imprimitive_projected_first_flag_in_two_hyperbolic_planes():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    basis = (2 * e + t, z, w)
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    marking = category(_flag_marking_from_basis(ambient, basis, (1, 2, 3)))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    for rank in (1, 2, 3):
+        term = ambient.primitive_isotropic_subobject(*basis[:rank])
+        assert all(term.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in basis[:rank])
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_mixed_imprimitive_rank_two_projection_flag_transporter():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
