@@ -1080,6 +1080,28 @@ def test_induction_rank_five_pointwise_flag_stabilizer_fixes_top_basis():
     assert all(g(point) == point for g in generators for point in basis)
 
 
+def test_public_rank_five_partial_flag_stabilizer_preserves_each_rank():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        _flag_marking_from_basis, automorphism_group_generators,
+    )
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j)
+                        for j in range(10)] for i in range(10)])
+    basis = tuple(ambient.module_generators())[::2]
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, basis, (1, 3, 5)))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    for rank in (1, 3, 5):
+        term = ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion()
+        assert all(term.is_in_image(g(point)) for g in generators for point in basis[:rank])
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+
+
 def test_pointed_reflection_witness_precedes_expensive_complement_group(monkeypatch):
     """An integral root reflection is a complete witness without PARI qfauto."""
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
