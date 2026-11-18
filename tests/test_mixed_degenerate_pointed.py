@@ -818,6 +818,19 @@ def test_proper_radical_intersection_flag_transporter_rejects_projection_smith_c
     assert isometry(FLAGS, first, second) is None
 
 
+def test_mixed_flag_transporter_rejects_intermediate_projection_smith_difference():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (z, e + w, u), (1, 2, 3)))
+    second = category(_flag_marking_from_basis(ambient, (z, 2 * e + w, u), (1, 2, 3)))
+    assert isometry(category, first, second) is None
+
+
 def test_induction_legacy_flag_transporter_with_proper_radical_line():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION

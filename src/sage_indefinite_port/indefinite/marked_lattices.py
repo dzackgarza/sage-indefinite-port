@@ -944,7 +944,11 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 # Each stage's intersection with the characteristic
                 # radical is invariant under ambient isometries. Test
                 # every stage, not just the terminal isotropic subspace.
+                from sage.matrix.constructor import matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
+                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
                 intersection_profiles = []
+                projection_smith_profiles = []
                 for owner, basis in ((ambient, source_basis), (target_ambient, target_basis)):
                     radical = owner.radical()
                     radical_points = tuple(radical.inclusion()(point) for point in radical.module_generators())
@@ -953,7 +957,18 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                             (*basis[:rank], *radical_points)
                         ).rank()) for rank in source_dimensions
                     ))
+                    reduction = indefinite_reduced_presentation(owner)
+                    reduced = reduction.reduced
+                    labels = tuple(reduced.module_generating_set())[:int(_gram_in_label_order(reduced).rank())]
+                    rows = tuple(tuple(int((~reduction.isometry)(point).to_vector()(label))
+                                       for label in labels) for point in basis)
+                    projection_smith_profiles.append(tuple(tuple(
+                        abs(int(entry)) for entry in matrix(SageZZ, rows[:rank]).elementary_divisors()
+                        if entry
+                    ) for rank in source_dimensions))
                 if intersection_profiles[0] != intersection_profiles[1]:
+                    return None
+                if projection_smith_profiles[0] != projection_smith_profiles[1]:
                     return None
             source_radical_flag = not ambient.is_nondegenerate() and all(
                 RECURSION.vector_lies_in_radical(point) for point in source_basis
