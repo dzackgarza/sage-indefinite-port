@@ -3887,6 +3887,29 @@ def test_full_rank_based_mixed_gram_transporter_uses_unique_integral_action():
     assert isometry(category, first, obstructed) is None
 
 
+def test_full_rank_based_gram_transporter_across_distinct_ambient_presentations():
+    from sage.all import matrix, ZZ as SageZZ
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    source_ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    labels = tuple(source_ambient.module_generators())
+    gram = matrix(SageZZ, [[int(source_ambient.b(x, y)) for y in labels] for x in labels])
+    change = matrix(SageZZ, [[1, 0, 1], [0, 1, 0], [0, 0, 1]])
+    target_ambient = Lattices(ZZ)([[int(entry) for entry in row]
+        for row in (change * gram * change.transpose()).rows()])
+    source = Lattices(ZZ)([[0, 2, 0], [2, 0, 0], [0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    left = category(source.hom([2 * labels[0], labels[1], labels[2]], codomain=source_ambient))
+    target_points = tuple(target_ambient.module_generators())
+    right = category(source.hom([2 * target_points[0], target_points[1], target_points[2]], codomain=target_ambient))
+    witness = isometry(category, left, right)
+    assert witness is not None
+    assert witness.domain() is source_ambient and witness.codomain() is target_ambient
+    assert all(witness(left.arrow()(point)) == right.arrow()(point)
+               for point in source.module_generators())
+
+
 def test_noncoordinate_zero_form_based_frame_uses_integral_completion():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
