@@ -1674,7 +1674,7 @@ def test_mixed_imprimitive_projected_first_line_with_nested_radical_quotient_fla
     ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
     e, f, z, w, t = tuple(ambient.module_generators())
     category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
-    for index in (2, 3):
+    for index in (1, 2, 3):
         basis = (index * e + t, z, w)
         marking = category(_flag_marking_from_basis(ambient, basis, (1, 2, 3)))
         generators = tuple(automorphism_group_generators(category, marking))
@@ -1686,14 +1686,15 @@ def test_mixed_imprimitive_projected_first_line_with_nested_radical_quotient_fla
         assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
                    for generator in generators
                    for x in ambient.module_generators() for y in ambient.module_generators())
-        labels = tuple(ambient.module_generating_set())
-        radical_actions = [matrix(GF(index), [
-            [int(generator(point).to_vector()(labels[j])) for j in (2, 3, 4)]
-            for point in (z, w, t)
-        ]) for generator in generators]
-        # D fixes the line <z> inside T=<z,w>, and the image on T is
-        # the Borel subgroup of GL_2(F_p). The t quotient has sign +/-1.
-        assert MatrixGroup(radical_actions).order() == {2: 2, 3: 24}[index]
+        if index > 1:
+            labels = tuple(ambient.module_generating_set())
+            radical_actions = [matrix(GF(index), [
+                [int(generator(point).to_vector()(labels[j])) for j in (2, 3, 4)]
+                for point in (z, w, t)
+            ]) for generator in generators]
+            # D fixes the line <z> inside T=<z,w>, and the image on T is
+            # the Borel subgroup of GL_2(F_p). The t quotient has sign +/-1.
+            assert MatrixGroup(radical_actions).order() == {2: 2, 3: 24}[index]
 
 
 def test_mixed_imprimitive_projected_first_complete_flag_in_radical_corank_four():
