@@ -1016,23 +1016,23 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return witness
             if len(source_dimensions) >= 2 and all(
                 not owner.is_nondegenerate()
-                and all(RECURSION.vector_lies_in_radical(point) for point in basis[:source_dimensions[0]])
-                and source_dimensions[0] == source_dimensions[-1] + int(owner.radical().rank())
-                - int(owner.subobject_on((*basis, *(
+                and any(all(RECURSION.vector_lies_in_radical(point) for point in basis[:rank])
+                        and rank == source_dimensions[-1] + int(owner.radical().rank())
+                        - int(owner.subobject_on((*basis, *(
                     owner.radical().inclusion()(point)
                     for point in owner.radical().module_generators()
-                ))).rank())
+                ))).rank()) for rank in source_dimensions[:-1])
                 for owner, basis in ((ambient, source_basis), (target_ambient, target_basis))
             ):
-                # The initial term is exactly J∩rad(L) on both sides.
+                # A stage is exactly J∩rad(L) on both sides.
                 # Any transporter of the top isotropic subspaces must
                 # carry this characteristic intersection to its target.
                 return INDUCTION.plane_isometry(
                     ambient.primitive_isotropic_subobject(*source_basis),
                     target_ambient.primitive_isotropic_subobject(*target_basis),
-                    flag_dimensions=source_dimensions if len(source_dimensions) > 2 else (),
-                    source_flag_basis=source_basis if len(source_dimensions) > 2 else (),
-                    target_flag_basis=target_basis if len(source_dimensions) > 2 else (),
+                    flag_dimensions=source_dimensions,
+                    source_flag_basis=source_basis,
+                    target_flag_basis=target_basis,
                 )
             if all(
                 not owner.is_nondegenerate()

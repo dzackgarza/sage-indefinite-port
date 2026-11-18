@@ -777,6 +777,41 @@ class IsotropicInduction:
                                               if entry))
             if projection_smith[0] != projection_smith[1]:
                 return None
+            if flag_dimensions and k and intersection_ranks[0] in flag_dimensions[:-1]:
+                t = intersection_ranks[0]
+                source_flag = tuple(phi(point) for point in source_flag_basis)
+                target_flag = tuple(target_flag_basis)
+                source_top = target_ambient.primitive_isotropic_subobject(*source_flag)
+                target_top = target_ambient.primitive_isotropic_subobject(*target_flag)
+                if (all(target_top.inclusion().is_in_image(point) for point in source_flag)
+                        and all(source_top.inclusion().is_in_image(point) for point in target_flag)
+                        and all(self.recursion.vector_lies_in_radical(point)
+                                for point in (*source_flag[:t], *target_flag[:t]))):
+                    # Within one top sublattice, a change of its radical
+                    # flag extends by identity on R/T. This is integral
+                    # even when the projection of the top is imprimitive.
+                    rlabels = tuple(reduced.module_generating_set())[n:]
+                    frames = []
+                    for points in (source_flag[:t], target_flag[:t]):
+                        rows = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                                for label in rlabels] for point in points])
+                        frames.append(rows)
+                    common_complement = _source_subspace_completion_int(frames[0], k)
+                    left = frames[0].stack(common_complement)
+                    right = frames[1].stack(common_complement)
+                    radical_action = left.inverse().change_ring(SageZZ) * right
+                    block = identity_matrix(SageZZ, size)
+                    for i in range(k):
+                        for j in range(k):
+                            block[n + i, n + j] = radical_action[i, j]
+                    candidate = (reduction.isometry * _isometry_from_row_matrix(reduced, reduced, block)
+                                 * (~reduction.isometry) * phi)
+                    target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_flag[:rank])
+                                         for rank in flag_dimensions)
+                    if all(term.inclusion().is_in_image(candidate(point))
+                           for rank, term in zip(flag_dimensions, target_terms, strict=True)
+                           for point in source_flag_basis[:rank]):
+                        return candidate
             if all(self.recursion.vector_lies_in_radical(point) for point in source_basis):
                 # Primitive radical submodules are direct summands of R.
                 # GL(R) is transitive on their ordered integral bases:
