@@ -206,3 +206,42 @@ def test_nonprimitive_proper_nondegenerate_projection_retains_perpendicular_shea
                 frontier.append(moved)
             assert len(seen) <= expected_residue_order
     assert len(seen) == expected_residue_order
+
+
+@pytest.mark.parametrize("pointwise,expected_mod_three_order", [(True, 6), (False, 12)])
+def test_nondegenerate_projection_stabilizer_survives_integral_basis_change(
+    pointwise, expected_mod_three_order
+):
+    # Change the C-basis e,f to a=e+f,b=f. The Gram becomes
+    # [[6,4],[4,4]], and the marked vector is 5(a-b)+r.
+    # The subgroup is conjugate by an integral basis change, hence
+    # retains its exact image order modulo three.
+    from sage.rings.finite_rings.finite_field_constructor import GF
+
+    ambient = Lattices(ZZ)([[6,4,0],[4,4,0],[0,0,0]])
+    a,b,r = tuple(ambient.module_generators())
+    marked = 5*(a-b)+r
+    family = tuple(degenerate_marking_generators(ambient, (marked,), pointwise))
+    gram = matrix(SageZZ, [[6,4,0],[4,4,0],[0,0,0]])
+    original_mark = vector(SageZZ,[5,-5,1])
+    for g in family:
+        assert abs(g.det()) == 1
+        assert g.transpose()*gram*g == gram
+        assert g*original_mark in ((original_mark,) if pointwise else (original_mark,-original_mark))
+
+    field = GF(3)
+    generators = tuple(g.change_ring(field) for g in family)
+    one = identity_matrix(field,3)
+    key = lambda g: tuple(map(int,g.list()))
+    reached = {key(one)}
+    pending = [one]
+    while pending:
+        element = pending.pop()
+        for generator in generators:
+            moved = generator*element
+            value = key(moved)
+            if value not in reached:
+                reached.add(value)
+                pending.append(moved)
+            assert len(reached) <= expected_mod_three_order
+    assert len(reached) == expected_mod_three_order
