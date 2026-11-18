@@ -852,11 +852,28 @@ def _flag_action(marked: Parent) -> tuple[tuple[int, ...], tuple[Lattices.Elemen
     """
     arrows = _flag_arrows(marked)
     space = _isotropic_sublattice(arrows[-1])
+    # The terminal arrow's domain and the domain of its reconstructed
+    # primitive image need not be the *same parent*. In particular a
+    # subgroup-translated flag has original constituent arrows in a
+    # transported top lattice, while _isotropic_sublattice builds its
+    # ambient image anew. Translate each intermediate term through the
+    # actual terminal embedding and its unique primitive-image lift.
+    # This is the required parent-preserving identification, not equality
+    # of two presentations of the same abstract zero-form lattice.
+    top_arrow = arrows[-1]
+    top_inclusion = space.inclusion()
+    top_domain = top_inclusion.domain()
     terms = []
     composite = None
     for arrow in reversed(arrows[:-1]):
         composite = arrow if composite is None else composite * arrow
-        terms.append(_isotropic_sublattice(composite))
+        original = _isotropic_sublattice(composite)
+        original_inclusion = original.inclusion()
+        lifted = tuple(
+            top_inclusion.lift(top_arrow(original_inclusion(point)))
+            for point in original_inclusion.domain().module_generators()
+        )
+        terms.append(top_domain.primitive_isotropic_subobject(*lifted))
     terms.reverse()
     dimensions = tuple(int(term.inclusion().domain().rank()) for term in terms) + (int(space.inclusion().domain().rank()),)
     if any(left >= right for left, right in zip(dimensions, dimensions[1:])):
@@ -1226,10 +1243,15 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 case source_rank, target_rank if source_rank == target_rank:
                     # CombinedAlgorithms.h:1401-1404: unequal isotropic k-plane invariants
                     # (INDEF_FORM_Invariant_IsotropicKplane, :2424-2428) decide inequivalence.
-                    if INDUCTION.flag_invariant(source.arrow().codomain(), INDUCTION.plane_vectors(source_sublattice), (source_rank,)) != INDUCTION.flag_invariant(
-                        target.arrow().codomain(), INDUCTION.plane_vectors(target_sublattice), (target_rank,)
-                    ):
-                        return None
+                    # The pinned invariant uses a nondegenerate radical
+                    # pairing L -> I*. It is undefined on a degenerate
+                    # ambient lattice; its exact transporter branch below
+                    # handles such lattices without this prefilter.
+                    if source.arrow().codomain().is_nondegenerate() and target.arrow().codomain().is_nondegenerate():
+                        if INDUCTION.flag_invariant(source.arrow().codomain(), INDUCTION.plane_vectors(source_sublattice), (source_rank,)) != INDUCTION.flag_invariant(
+                            target.arrow().codomain(), INDUCTION.plane_vectors(target_sublattice), (target_rank,)
+                        ):
+                            return None
                     return INDUCTION.plane_isometry(source_sublattice, target_sublattice)
                 case _:
                     return None
@@ -1266,14 +1288,20 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             target_dimensions, target_basis, target_images = _flag_action(target)
             if source_dimensions != target_dimensions:
                 return None
-            # CombinedAlgorithms.h:1401-1404: unequal isotropic flag invariants
-            # (INDEF_FORM_Invariant_IsotropicKflag, :2429-2433) decide inequivalence.
-            if INDUCTION.flag_invariant(source_basis[0].parent(), source_basis, source_dimensions) != INDUCTION.flag_invariant(
-                target_basis[0].parent(), target_basis, target_dimensions
-            ):
-                return None
             ambient = source_basis[0].parent()
             target_ambient = target_basis[0].parent()
+            # CombinedAlgorithms.h:1401-1404 uses an invariant of the
+            # *nondegenerate* ambient form. It constructs an invertible
+            # rational pairing with the null subspace; that pairing has
+            # non-full rank on a radical ambient. Degenerate flags instead
+            # use their characteristic-radical and projected Smith data
+            # below. Invoking the nondegenerate prefilter here wrongly
+            # rejects even two equivalent flags in zero-form lattices.
+            if ambient.is_nondegenerate() and target_ambient.is_nondegenerate():
+                if INDUCTION.flag_invariant(ambient, source_basis, source_dimensions) != INDUCTION.flag_invariant(
+                    target_ambient, target_basis, target_dimensions
+                ):
+                    return None
             if ambient is target_ambient and len(source_basis) == len(target_basis):
                 # Extend the prescribed matching of coordinate generators
                 # to a permutation of the full coordinate basis. This
