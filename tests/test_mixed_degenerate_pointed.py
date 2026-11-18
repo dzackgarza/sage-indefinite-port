@@ -953,6 +953,21 @@ def test_induction_legacy_flag_transporter_with_proper_radical_line():
     assert all(second[1].inclusion().is_in_image(witness(point)) for point in (z, e + w))
 
 
+def test_induction_legacy_flag_transporter_with_nonprimitive_projection():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    first = (z, ambient.primitive_isotropic_subobject(z, 5 * e + w))
+    second = (w, ambient.primitive_isotropic_subobject(w, 5 * f + z))
+    witness = INDUCTION.flag_isometry(first, second)
+    assert witness is not None
+    assert witness(z) in (w, -w)
+    assert all(second[1].inclusion().is_in_image(witness(point))
+               for point in (z, 5 * e + w))
+
+
 def test_induction_legacy_flag_stabilizer_with_proper_radical_line():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
