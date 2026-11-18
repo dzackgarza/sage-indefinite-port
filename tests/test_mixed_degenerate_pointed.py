@@ -1236,6 +1236,13 @@ def test_rank_three_radical_intersection_complete_flag_transporter():
         assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in ambient.module_generators() for y in ambient.module_generators())
+    target_basis = (w, z, t, 2 * e + u + e)
+    target = category(_flag_marking_from_basis(ambient, target_basis, (1, 2, 3, 4)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for rank in (1, 2, 3, 4):
+        term = ambient.primitive_isotropic_subobject(*target_basis[:rank])
+        assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
 
 
 def test_mixed_three_stage_flag_action_data_uses_sage_integer_matrices():
