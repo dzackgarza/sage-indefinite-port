@@ -1563,6 +1563,12 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                         arrow.codomain(), (int(frame.domain().rank()),), basis, pointwise=True
                     )
                     return finite_ordered_set(tuple(generators))
+                elif int(arrow.domain().rank()) == int(arrow.codomain().rank()):
+                    # An injective full-rank marking spans the ambient
+                    # rational vector space. Any isometry fixing its frame
+                    # pointwise is therefore the identity, regardless of
+                    # degeneracy or finite index of the integral embedding.
+                    return finite_ordered_set((arrow.codomain().O().identity(),))
                 elif arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=True)
                                   if arrow.is_primitive() else _nondegenerate_stabilizer_generators(arrow.saturation().inclusion(), based=True))

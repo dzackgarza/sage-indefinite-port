@@ -3794,6 +3794,23 @@ def test_based_rank_three_nonprimitive_plane_projection_with_radical_kernel():
     assert MatrixGroup(radical_actions).order() == 1
 
 
+def test_full_rank_based_mixed_gram_stabilizer_is_identity():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    for index in (1, 2):
+        source = Lattices(ZZ)([[0, index, 0], [index, 0, 0], [0, 0, 0]])
+        category = Lattices(ZZ).CosliceUnder(source)
+        basis = (index * e, f, z)
+        marking = category(source.hom(list(basis), codomain=ambient))
+        generators = tuple(automorphism_group_generators(category, marking))
+        assert len(generators) == 1
+        assert generators[0] == ambient.O().identity()
+        assert all(generators[0](point) == point for point in basis)
+
+
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
