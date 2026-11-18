@@ -1166,7 +1166,8 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                         n = int(_gram_in_label_order(reduced).rank())
                         rows = matrix(SageZZ, [[int((~reduction.isometry)(point).to_vector()(label))
                                                 for label in labels] for point in basis])
-                        if int(rows[:, :n].rank()) != 1:
+                        projection_rank = int(rows[:, :n].rank())
+                        if not projection_rank:
                             break
                         radical_terms = []
                         for rank in source_dimensions:
@@ -1179,7 +1180,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                             })) for row in kernel.rows())
                             if points and (not radical_terms or len(points) > int(radical_terms[-1].rank())):
                                 radical_terms.append(owner.primitive_isotropic_subobject(*points))
-                        if not radical_terms or int(radical_terms[-1].rank()) != len(basis) - 1:
+                        if not radical_terms or int(radical_terms[-1].rank()) != len(basis) - projection_rank:
                             break
                         radical_top = radical_terms[-1]
                         domain = radical_top.inclusion().domain()
@@ -1188,7 +1189,20 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                             for point in term.module_generators()
                         )) for term in radical_terms)
                         radical_basis, _ = INDUCTION.flag_action_data(radical_top, nested)
-                        reordered = (*radical_basis, basis[0])
+                        projected_basis = []
+                        projected_rows = matrix(SageZZ, 0, n)
+                        for point, row in zip(basis, rows.rows(), strict=True):
+                            extension = projected_rows.stack(matrix(SageZZ, [list(row[:n])]))
+                            if int(extension.rank()) > int(projected_rows.rank()):
+                                projected_basis.append(point)
+                                projected_rows = extension
+                        reordered = (*radical_basis, *projected_basis)
+                        original_rows = matrix(SageZZ, [[int(point.to_vector()(label))
+                            for label in owner.module_generating_set()] for point in basis])
+                        reordered_rows = matrix(SageZZ, [[int(point.to_vector()(label))
+                            for label in owner.module_generating_set()] for point in reordered])
+                        if original_rows.hermite_form() != reordered_rows.hermite_form():
+                            break
                         reordered_top = owner.primitive_isotropic_subobject(*reordered)
                         if not all(reordered_top.inclusion().is_in_image(point) for point in basis):
                             break
