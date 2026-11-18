@@ -441,6 +441,16 @@ def test_definite_quotient_radical_residue_orbit_transporters():
     witness = RECURSION.pointed_isometry(first, second)
     assert witness is not None and witness(first) == second
     assert RECURSION.pointed_isometry(first, third) is None
+    representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25))
+    assert len(representatives) == 3
+    for i, representative in enumerate(representatives):
+        for other in representatives[i + 1:]:
+            assert RECURSION.pointed_isometry(representative, other) is None
+    # The nonprimitive class is represented by a radical residue of
+    # content five; a shear removes multiples of the quotient content.
+    nonprimitive = point(5, 0, 5, 0)
+    assert any(RECURSION.pointed_isometry(nonprimitive, representative) is not None
+               for representative in representatives)
 
 
 def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):
