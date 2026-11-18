@@ -255,6 +255,29 @@ def test_exact_vector_orbit_iterator_split_binary_finite_and_content_classes():
         assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2, primitive_only=True))
 
 
+def test_nonsplit_binary_norm_orbit_iterator_terminates_with_exact_pell_classes():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[1, 0], [0, -2]])
+    assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 3)) == ()
+    assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True)) == ()
+    classes = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8))
+    assert classes
+    assert all(int(point.q()) == 8 for point in classes)
+    assert all(int(point.content()) == 2 for point in classes)
+    assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8, primitive_only=True)) == ()
+    negative = tuple(RECURSION.exact_vector_orbit_iterator(ambient, -1))
+    assert negative and all(int(point.q()) == -1 for point in negative)
+    from sage.all import ZZ as SageZZ, matrix
+    gram = matrix(SageZZ, [[1, 0], [0, -2]])
+    change = matrix(SageZZ, [[1, 1], [0, 1]])
+    transformed = change * gram * change.transpose()
+    changed = lattice([[int(value) for value in row] for row in transformed.rows()])
+    changed_classes = tuple(RECURSION.exact_vector_orbit_iterator(changed, 8))
+    assert len(changed_classes) == len(classes)
+    assert all(int(point.q()) == 8 and int(point.content()) == 2 for point in changed_classes)
+
+
 def test_exact_vector_orbit_iterator_binary_rank_one_radical_classes():
     from itertools import islice
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

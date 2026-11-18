@@ -2807,6 +2807,20 @@ class EichlerRecursion:
                 for representative in binary_split_primitive_vector_classes(lattice, int(square) // (content * content)):
                     yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
             return
+        if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
+            # The maintained binary quadratic-form orbit set computes a
+            # *finite complete* transversal even for nonsplit indefinite
+            # binary forms (Pell arithmetic), including imprimitive
+            # vectors.  Unlike the generic coordinate walk, this branch
+            # terminates after its last orbit representative.  The null
+            # case was already decided by rational anisotropy above.
+            orbit_set = lattice.binary_fixed_norm_representatives(int(square))
+            section = orbit_set.section()
+            for orbit in orbit_set:
+                representative = section(orbit)
+                if not primitive_only or int(representative.content()) == 1:
+                    yield representative
+            return
         if int(square) != 0 and not lattice.is_nondegenerate():
             # For L=C (+) R with definite nondegenerate C and zero radical
             # R, O(L) is the semidirect product of O(C) x GL(R) with
