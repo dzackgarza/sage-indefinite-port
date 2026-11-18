@@ -571,6 +571,7 @@ def test_mixed_degenerate_rank_three_primitive_projection_partial_radical_stabil
 
 
 def test_mixed_degenerate_primitive_projection_graph_plane_stabilizer_without_radical():
+    from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
 
@@ -581,6 +582,12 @@ def test_mixed_degenerate_primitive_projection_graph_plane_stabilizer_without_ra
     assert generators
     assert all(plane.inclusion().is_in_image(generator(point))
                for generator in generators for point in (e + z, u + w))
+    labels = tuple(ambient.module_generating_set())[-2:]
+    actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in (z, w)
+    ]) for generator in generators]
+    assert MatrixGroup(actions).order() == 6
 
 
 def test_mixed_degenerate_primitive_projection_transporter_across_presentations():
