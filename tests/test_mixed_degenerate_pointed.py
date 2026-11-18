@@ -818,6 +818,66 @@ def test_proper_radical_intersection_flag_transporter_rejects_projection_smith_c
     assert isometry(FLAGS, first, second) is None
 
 
+def test_nonprimitive_projection_proper_radical_flag_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    first = FLAGS(_flag_marking_from_basis(ambient, (z, 2 * e + w), (1, 2)))
+    second = FLAGS(_flag_marking_from_basis(ambient, (w, 2 * f + z), (1, 2)))
+    witness = isometry(FLAGS, first, second)
+    assert witness is not None
+    assert ambient.primitive_isotropic_subobject(w).inclusion().is_in_image(witness(z))
+    target = ambient.primitive_isotropic_subobject(w, 2 * f + z)
+    assert all(target.inclusion().is_in_image(witness(point)) for point in (z, 2 * e + w))
+
+
+def test_nonprimitive_projection_proper_radical_flag_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, automorphism_group_generators, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    for c in (2, 3, 5):
+        flag = FLAGS(_flag_marking_from_basis(ambient, (z, c * e + w), (1, 2)))
+        generators = tuple(automorphism_group_generators(FLAGS, flag))
+        assert generators
+        first = ambient.primitive_isotropic_subobject(z)
+        top = ambient.primitive_isotropic_subobject(z, c * e + w)
+        assert all(first.inclusion().is_in_image(generator(z)) for generator in generators)
+        assert all(top.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in (z, c * e + w))
+        assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+                   for generator in generators for x in (e, f, z, w) for y in (e, f, z, w))
+        assert any(generator(z) == -z for generator in generators)
+
+
+def test_nonprimitive_projection_rank_three_radical_saturation_stabilizer():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    for basis in ((z, 3 * e + w), (z, w, 3 * e + t)):
+        plane = ambient.primitive_isotropic_subobject(*basis)
+        generators = INDUCTION.plane_automorphism_generators(plane)
+        assert generators
+        assert all(plane.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in basis)
+        assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+                   for generator in generators for x in (e, f, z, w, t)
+                   for y in (e, f, z, w, t))
+        if len(basis) == 3:
+            labels = tuple(ambient.module_generating_set())[-3:-1]
+            actions = [matrix(GF(2), [
+                [int(generator(point).to_vector()(label)) for label in labels]
+                for point in (z, w)
+            ]) for generator in generators]
+            assert MatrixGroup(actions).order() == 6
+
+
 def test_mixed_flag_transporter_rejects_intermediate_projection_smith_difference():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
