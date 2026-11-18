@@ -1179,6 +1179,8 @@ def test_nonprimitive_projection_moving_top_and_radical_flag_transporter():
         assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in ambient.module_generators() for y in ambient.module_generators())
+
+
     # The characteristic radical intersection itself may move inside R;
     # it is not an invariant submodule, only its rank is invariant.
     target_basis = (z, t, 2 * e + w, u + e)
@@ -1213,6 +1215,27 @@ def test_nonprimitive_projection_moving_top_and_radical_flag_transporter():
     for rank in (1, 2, 4):
         term = ambient.primitive_isotropic_subobject(*target_basis[:rank])
         assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
+
+
+def test_rank_three_radical_intersection_complete_flag_transporter():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    source_basis = (z, w, t, 2 * e + u)
+    target_basis = (w, z, t, 2 * e + u)
+    source = category(_flag_marking_from_basis(ambient, source_basis, (1, 2, 3, 4)))
+    target = category(_flag_marking_from_basis(ambient, target_basis, (1, 2, 3, 4)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for rank in (1, 2, 3, 4):
+        term = ambient.primitive_isotropic_subobject(*target_basis[:rank])
+        assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
 
 
 def test_mixed_three_stage_flag_action_data_uses_sage_integer_matrices():
