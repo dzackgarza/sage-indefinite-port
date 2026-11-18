@@ -155,6 +155,37 @@ def test_public_edgewalk_isometry_uses_integral_vertex_transporters():
                for x in source.module_generators() for y in source.module_generators())
 
 
+def test_edgewalk_isometry_uses_complete_equivalence_after_missing_edge(monkeypatch):
+    import sage_indefinite_port.indefinite.edgewalk as edgewalk
+    import sage_indefinite_port.indefinite.lorentzian_cells as cells
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+
+    gram = [[0, 1, 0], [1, 0, 0], [0, 0, 2]]
+    source = HyperbolicLattices(ZZ)(Lattices(ZZ)(gram))
+    target = HyperbolicLattices(ZZ)(Lattices(ZZ)(gram, module_generators=("a", "b", "c")))
+    expected = source.edgewalk_isometry(target)
+    assert expected is not None
+    calls = []
+
+    def missing_edge(self, vertex, roots, discarded):
+        return None
+
+    def complete_equivalence(left, right):
+        calls.append((left, right))
+        return expected
+
+    # The first configurations must not be identified by the local
+    # transporter; otherwise the edge traversal is never exercised.
+    monkeypatch.setattr(edgewalk._Edgewalk, "edge_step", missing_edge)
+    monkeypatch.setattr(type(source.Isom(target)), "transporter", lambda self, left, right: None)
+    monkeypatch.setattr(cells, "lorentzian_isometry", complete_equivalence)
+    witness = source.edgewalk_isometry(target)
+    assert calls == [(source, target)]
+    assert witness is not None
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
+
+
 def test_public_edgewalk_isometry_of_isotropic_binary_lattices():
     from sage.matrix.constructor import matrix
     from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
