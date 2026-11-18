@@ -1171,6 +1171,32 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return None
             ambient = source_basis[0].parent()
             target_ambient = target_basis[0].parent()
+            if ambient is target_ambient and len(source_basis) == len(target_basis):
+                # In a split hyperbolic coordinate chart, the exchange of
+                # disjoint paired isotropic generators is an integral
+                # isometry whenever it preserves the Gram form. Certify
+                # this directly before invoking the general arithmetic
+                # transporter, whose Levi computation can be expensive.
+                from sage.matrix.constructor import identity_matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
+                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
+
+                generators = tuple(ambient.module_generators())
+                if (all(point in generators for point in (*source_basis, *target_basis))
+                        and len(set((*source_basis, *target_basis))) == 2 * len(source_basis)):
+                    permutation = identity_matrix(SageZZ, len(generators))
+                    for left_point, right_point in zip(source_basis, target_basis, strict=True):
+                        i, j = generators.index(left_point), generators.index(right_point)
+                        permutation[i, i] = 0
+                        permutation[j, j] = 0
+                        permutation[i, j] = 1
+                        permutation[j, i] = 1
+                    gram = _gram_in_label_order(ambient)
+                    if permutation * gram * permutation.transpose() == gram:
+                        witness = _isometry_from_row_matrix(ambient, ambient, permutation)
+                        if all(witness(point) == target for point, target in zip(
+                                source_basis, target_basis, strict=True)):
+                            return witness
             if not ambient.is_nondegenerate() and not target_ambient.is_nondegenerate():
                 # Each stage's intersection with the characteristic
                 # radical is invariant under ambient isometries. Test
