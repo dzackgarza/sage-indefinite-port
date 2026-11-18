@@ -147,3 +147,21 @@ def test_edgewalk_missing_starting_corner_uses_exact_lorentzian_equivalence(monk
     assert witness is not None
     assert all(target.b(witness(x), witness(y)) == source.b(x, y)
                for x in source.module_generators() for y in source.module_generators())
+
+
+def test_public_edgewalk_handles_opposite_signature_convention():
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+
+    gram = [[0, -1, 0], [-1, 0, 0], [0, 0, -2]]
+    source = HyperbolicLattices(ZZ)(Lattices(ZZ)(gram))
+    target = HyperbolicLattices(ZZ)(Lattices(ZZ)(
+        gram, module_generators=("a", "b", "c")))
+    assert tuple(int(x) for x in source.signature_pair()) == (1, 2)
+    report = source.allcock_edgewalk(option_norms="K3")
+    assert report.is_reflective()
+    assert len(report.simple_roots()) == 3
+    assert all(int(root.q()) == -2 for root in report.simple_roots())
+    witness = source.edgewalk_isometry(target)
+    assert witness is not None
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
