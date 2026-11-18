@@ -546,7 +546,9 @@ def _degenerate_radical_based_isometry(source_arrow: Morphism, target_arrow: Mor
     transformations produce D and the reduced split extends it by the
     identity on the nondegenerate quotient.
     """
-    from sage.all import ZZ as SageZZ, identity_matrix, matrix
+    from sage.matrix.constructor import matrix
+    from sage.matrix.special import identity_matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
     from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
 
     source_ambient, target_ambient = source_arrow.codomain(), target_arrow.codomain()

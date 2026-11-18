@@ -2010,6 +2010,24 @@ def test_mixed_based_embedding_moves_nonprimitive_projected_sublattice():
                for x in ambient.module_generators() for y in ambient.module_generators())
 
 
+def test_mixed_based_radical_frame_transport_uses_native_integer_matrix_ring():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 2 for _ in range(2)])
+    category = CosliceCategory(Lattices(ZZ), source)
+    first = category.object(source.hom([z, w], codomain=ambient))
+    second = category.object(source.hom([w, z], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(z) == w and witness(w) == z
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_mixed_imprimitive_rank_two_projection_flag_transporter():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
