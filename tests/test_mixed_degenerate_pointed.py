@@ -1120,6 +1120,27 @@ def test_nonprimitive_projection_nested_radical_flag_public_transporter():
                    for point in (z, w, 2 * e + t, u)[:rank])
 
 
+def test_projected_finite_index_isotropic_transporter_and_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        _finite_index_sublattice_transporter,
+        _finite_index_sublattice_stabilizer_generators,
+    )
+
+    complement = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(complement.module_generators())
+    source = complement.subobject_on((2 * e, u)).inclusion()
+    target = complement.subobject_on((2 * e, u + e)).inclusion()
+    witness = _finite_index_sublattice_transporter(source, target)
+    assert witness is not None
+    assert all(target.is_in_image(witness(source(point)))
+               for point in source.domain().module_generators())
+    generators = tuple(_finite_index_sublattice_stabilizer_generators(target))
+    assert generators
+    assert all(target.is_in_image(generator(target(point)))
+               for generator in generators for point in target.domain().module_generators())
+
+
 def test_mixed_three_stage_flag_action_data_uses_sage_integer_matrices():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION

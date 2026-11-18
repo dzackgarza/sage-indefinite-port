@@ -126,7 +126,8 @@ def _finite_index_sublattice_transporter(source_arrow: Morphism, target_arrow: M
     the finite orbit of the transported source submodule under the integral
     Levi image, retaining an ambient isometry word for each visited member.
     """
-    from sage.all import ZZ as SageZZ, matrix
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
 
     source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
     source_saturation = source_arrow.saturation()
@@ -199,7 +200,8 @@ def _finite_index_sublattice_stabilizer_generators(arrow: Morphism) -> tuple[Lat
     generators ``w(gJ)^-1 * g * w(J)`` for its stabilizer.  This uses the
     *actual* integral Levi image, never the full abstract GL(S).
     """
-    from sage.all import ZZ as SageZZ, matrix
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
 
     lattice = arrow.codomain()
     saturation = arrow.saturation()
