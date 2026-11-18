@@ -1069,23 +1069,24 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 right_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in target_labels] for point in right])
                 if left_rows.rank() != right_rows.rank():
                     return None
-                left_smith, left_change, left_basis = left_rows.smith_form(transformation=True)
-                right_smith, right_change, right_basis = right_rows.smith_form(transformation=True)
+                left_smith, _left_change, left_basis = left_rows.smith_form(transformation=True)
+                right_smith, _right_change, right_basis = right_rows.smith_form(transformation=True)
                 if left_smith != right_smith:
                     return None
-                rank, dimension = int(left_rows.nrows()), int(left_rows.ncols())
-                diagonal = matrix(SageZZ, rank, rank,
-                                  lambda i, j: left_smith[i, j])
-                transition = left_change * right_change.inverse()
-                conjugate = diagonal.inverse() * transition * diagonal
-                if any(not entry.is_integral() for entry in conjugate.list()):
+                dimension = int(left_rows.ncols())
+                # Arrow-category isometries may act by an arbitrary
+                # isomorphism on the source subobject; unlike coslice
+                # isometries, they need not preserve its ordered frame.
+                # Smith transforms identify the two sublattices with the
+                # same diagonal module, so the identity there suffices.
+                rows = left_basis * right_basis.inverse()
+                if abs(rows.det()) != 1:
                     return None
-                extension = identity_matrix(SageZZ, dimension)
-                extension[:rank, :rank] = conjugate
-                rows = left_basis * extension * right_basis.inverse()
-                if abs(rows.det()) != 1 or left_rows * rows != right_rows:
-                    return None
-                return _isometry_from_row_matrix(ambient, target_arrow.codomain(), rows)
+                witness = _isometry_from_row_matrix(ambient, target_arrow.codomain(), rows)
+                target_subobject = target_arrow.codomain().subobject_on(right)
+                if not all(target_subobject.inclusion().is_in_image(witness(point)) for point in left):
+                    raise ArithmeticError("Smith arrow transporter failed its image certificate")
+                return witness
             if source_arrow.domain().is_nondegenerate() and target_arrow.domain().is_nondegenerate():
                 return (_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=False)
                         if source_arrow.is_primitive() and target_arrow.is_primitive()

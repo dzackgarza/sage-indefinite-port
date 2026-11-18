@@ -675,6 +675,24 @@ def test_zero_form_based_transporter_constructs_exact_nonprimitive_frame_map():
     assert isometry(category, left, obstructed) is None
 
 
+def test_zero_form_arrow_transporter_allows_source_frame_automorphisms():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, g = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    first = ARROWS.object(source.hom([2 * e, f], codomain=ambient))
+    second = ARROWS.object(source.hom([f, 2 * g], codomain=ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    target = ambient.subobject_on((f, 2 * g))
+    assert all(target.inclusion().is_in_image(witness(point)) for point in (2 * e, f))
+    assert not (witness(2 * e) == f and witness(f) == 2 * g)
+    obstructed = ARROWS.object(source.hom([3 * f, g], codomain=ambient))
+    assert isometry(ARROWS, first, obstructed) is None
+
+
 def test_full_radical_plane_self_transporter_uses_full_rank_completion():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
