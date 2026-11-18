@@ -111,3 +111,20 @@ def test_public_edgewalk_isometry_of_isotropic_binary_lattices():
     assert witness.domain() is first and witness.codomain() is second
     assert all(second.b(witness(x), witness(y)) == first.b(x, y)
                for x in first.module_generators() for y in first.module_generators())
+
+
+def test_public_edgewalk_isometry_of_anisotropic_binary_presentations():
+    from sage.matrix.constructor import matrix
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+
+    gram = matrix([[1, 0], [0, -2]])
+    change = matrix([[1, 1], [0, 1]])
+    transformed = change * gram * change.transpose()
+    first = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [int(entry) for entry in row] for row in gram.rows()]))
+    second = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [int(entry) for entry in row] for row in transformed.rows()]))
+    witness = first.edgewalk_isometry(second)
+    assert witness is not None
+    assert all(second.b(witness(x), witness(y)) == first.b(x, y)
+               for x in first.module_generators() for y in first.module_generators())
