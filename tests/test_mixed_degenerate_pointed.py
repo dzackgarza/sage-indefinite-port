@@ -881,6 +881,24 @@ def test_proper_radical_intersection_four_stage_flag_stabilizer_and_transporter(
                    for point in (z, e + w, u, a)[:rank])
 
 
+def test_provider_proper_radical_intersection_flag_stabilizer_matches_marked_api():
+    from sage_extensions.all import Cat, IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        INDUCTION, automorphism_group_generators, _flag_marking_from_basis,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    basis = (z, e + w, u)
+    provider_flag = IsotropicFlag(ambient, basis, flag_type=FlagType((1, 2, 3)))
+    provider = tuple(INDUCTION.flag_automorphism_generators(provider_flag))
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, basis, (1, 2, 3)))
+    public = tuple(automorphism_group_generators(category, marked))
+    assert provider and provider == public
+
+
 def test_mixed_degenerate_proper_radical_partial_flag_transporter():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis

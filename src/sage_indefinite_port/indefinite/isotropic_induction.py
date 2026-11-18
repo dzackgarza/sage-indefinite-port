@@ -1389,6 +1389,19 @@ class IsotropicInduction:
                 space, flag_dimensions=dimensions, flag_basis=basis
             )
         if (not ambient.is_nondegenerate() and terms
+                and all(self.recursion.vector_lies_in_radical(point) for point in basis[:dimensions[0]])
+                and dimensions[0] == dimensions[-1] + int(ambient.radical().rank())
+                - int(ambient.subobject_on((*basis, *(
+                    ambient.radical().inclusion()(point)
+                    for point in ambient.radical().module_generators()
+                ))).rank())):
+            # The first stage is the characteristic intersection of the
+            # top isotropic subspace with the ambient radical. Its later
+            # stages descend to the exact quotient flag stabilizer.
+            return self.plane_automorphism_generators(
+                space, flag_dimensions=dimensions, flag_basis=basis
+            )
+        if (not ambient.is_nondegenerate() and terms
                 and dimensions[0] >= int(ambient.radical().rank())
                 and dimensions[-1] > int(ambient.radical().rank())
                 and all(ambient.primitive_isotropic_subobject(*basis[:dimensions[0]]).inclusion().is_in_image(
