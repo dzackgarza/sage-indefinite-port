@@ -1367,9 +1367,10 @@ class IsotropicInduction:
                 return _conjugated(reduction.isometry, tuple(
                     _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
                 ))
-            if n and k and len(flag_dimensions) == 2 and flag_dimensions[0] == 1 and (
+            if n and k and len(flag_dimensions) >= 2 and flag_dimensions[0] == 1 and (
                 flag_dimensions[-1] == int(inclusion.domain().rank())
                 and flag_basis and not self.recursion.vector_lies_in_radical(flag_basis[0])
+                and all(self.recursion.vector_lies_in_radical(point) for point in flag_basis[1:])
             ):
                 # A projected first line transverse to J∩R cannot be
                 # treated as a radical-first flag. For projection rank one,
@@ -1405,11 +1406,15 @@ class IsotropicInduction:
                             label: complement.base_ring()(int(primitive[0, j]))
                             for j, label in enumerate(c_labels) if primitive[0, j]
                         })
-                        radical_points = tuple(radical_module.linear_combination({
-                            label: radical_module.base_ring()(int(row[j]))
-                            for j, label in enumerate(r_labels) if row[j]
-                        }) for row in trows.rows())
-                        radical_term = radical_module.primitive_isotropic_subobject(*radical_points)
+                        radical_terms = []
+                        for rank in flag_dimensions[1:]:
+                            stage_points = tuple(radical_module.linear_combination({
+                                label: radical_module.base_ring()(_integer(
+                                    (~reduction.isometry)(point).to_vector()(labels[n + j])))
+                                for j, label in enumerate(r_labels)
+                                if (~reduction.isometry)(point).to_vector()(labels[n + j])
+                            }) for point in flag_basis[1:rank])
+                            radical_terms.append(radical_module.primitive_isotropic_subobject(*stage_points))
                         standard_blocks = []
                         for generator in self.recursion.line_stabilizer_generators(line):
                             block = identity_matrix(SageZZ, size)
@@ -1418,7 +1423,7 @@ class IsotropicInduction:
                                 for j, label in enumerate(c_labels):
                                     block[i, j] = _integer(image(label))
                             standard_blocks.append(block)
-                        for generator in radical_module.general_linear_group().flag_stabilizer((radical_term,)).group_generators():
+                        for generator in radical_module.general_linear_group().flag_stabilizer(tuple(radical_terms)).group_generators():
                             block = identity_matrix(SageZZ, size)
                             for i, point in enumerate(radical_module.module_generators()):
                                 image = generator(point).to_vector()

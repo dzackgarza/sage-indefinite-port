@@ -1462,6 +1462,16 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     ambient.primitive_isotropic_subobject(*basis),
                     flag_dimensions=dimensions, flag_basis=basis,
                 )
+            elif (not ambient.is_nondegenerate() and len(dimensions) > 2
+                  and dimensions[0] == 1
+                  and not RECURSION.vector_lies_in_radical(basis[0])
+                  and all(RECURSION.vector_lies_in_radical(point) for point in basis[1:])):
+                # All later stages extend the projected first line by a
+                # flag inside the characteristic radical intersection.
+                generators = INDUCTION.plane_automorphism_generators(
+                    ambient.primitive_isotropic_subobject(*basis),
+                    flag_dimensions=dimensions, flag_basis=basis,
+                )
             else:
                 generators = INDUCTION._stabilizer_generators(basis, images)
         case _:
