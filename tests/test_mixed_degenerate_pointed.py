@@ -3656,6 +3656,24 @@ def test_nonhomothetic_based_mixed_primitive_projection_pointwise_stabilizer():
                for y in higher.module_generators())
 
 
+def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    basis = (2 * e + z, 3 * e + w)
+    marking = category(source.hom(list(basis), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+
+
 def test_nonhomothetic_based_isotropic_transporter_in_nondegenerate_split_lattice():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry

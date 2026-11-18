@@ -1568,7 +1568,19 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                                   if arrow.is_primitive() else _nondegenerate_stabilizer_generators(arrow.saturation().inclusion(), based=True))
                     return finite_ordered_set(tuple(generators))
                 saturation = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
-                if saturation is None:
+                mixed_rank_one = False
+                if not arrow.codomain().is_nondegenerate() and int(arrow.domain().rank()) == 2:
+                    from sage.matrix.constructor import matrix
+                    from sage.rings.integer_ring import ZZ as SageZZ
+
+                    reduction, n, _k, _quotient = _degenerate_quotient_and_radical(arrow.codomain())
+                    labels = tuple(reduction.reduced.module_generating_set())[:n]
+                    projected_rows = matrix(SageZZ, [[int((~reduction.isometry)(arrow(point))
+                        .to_vector()(label)) for label in labels]
+                        for point in arrow.domain().module_generators()])
+                    mixed_rank_one = int(projected_rows.rank()) == 1
+                if saturation is None or (not arrow.codomain().is_nondegenerate()
+                                          and mixed_rank_one):
                     if arrow.codomain().is_nondegenerate():
                         saturation = arrow.saturation()
                     else:
