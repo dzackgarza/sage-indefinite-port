@@ -878,6 +878,22 @@ def test_nonprimitive_projection_rank_three_radical_saturation_stabilizer():
             assert MatrixGroup(actions).order() == 6
 
 
+def test_nonprimitive_projection_proper_radical_stabilizer_over_two_u():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(z, 3 * e + w)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, 3 * e + w))
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, u, v, z, w)
+               for y in (e, f, u, v, z, w))
+
+
 def test_mixed_flag_transporter_rejects_intermediate_projection_smith_difference():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
