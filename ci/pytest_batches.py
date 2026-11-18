@@ -11,6 +11,11 @@ def junit_key(nodeid):
     """Translate a collected pytest node ID to its JUnit classname/name pair."""
     parts = nodeid.split('::')
     classname = parts[0].replace('/', '.')
+    # Pytest's JUnit serializer removes the .py suffix from a Python module,
+    # but retains the .sage suffix for Sage tests collected by the port's
+    # plugin. Mirror that distinction; never drop the test or parameter ID.
+    if classname.endswith('.py'):
+        classname = classname[:-3]
     if len(parts) > 2:
         classname += '.' + '.'.join(parts[1:-1])
     return classname, parts[-1]
@@ -36,7 +41,7 @@ def main():
     if args and args[0] == '--':
         args = args[1:]
     prefix = [a.python, '-c', 'import sage.all,sys,pytest;sys.exit(pytest.main(sys.argv[1:]))']
-    pytest_args = ['-p', 'qc_sage_session']
+    pytest_args = ['-p', 'qc_sage_session', '-p', 'ci.test_budgets', '--timeout-method=signal']
     collected = subprocess.run(
         prefix + pytest_args + args + ['--collect-only', '-q'],
         check=False,
@@ -60,7 +65,7 @@ def main():
         batch_index = offset // a.batch_size
         report = a.out / f'batch-{batch_index}.xml'
         print(f'Batch {batch_index + 1}/{(len(nodes) + a.batch_size - 1) // a.batch_size}: {len(batch)} nodes', flush=True)
-        command = prefix + pytest_args + batch + ['--runxfail', '-rA', '--tb=long', '--instafail', f'--junitxml={report}']
+        command = prefix + pytest_args + batch + ['--runxfail', '-rA', '--tb=long', '--instafail', f'--junitxml={report}', f'--report-log={a.out}/report-{batch_index}.jsonl']
         result = subprocess.run(command, check=False)
         if report.exists():
             try:

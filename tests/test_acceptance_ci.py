@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -44,6 +45,36 @@ def test_junit_node_identity_is_not_replaced_by_an_equal_result_count() -> None:
     assert batches.junit_nodes_match([node], [{"classname": expected[0], "name": expected[1]}])
     assert not batches.junit_nodes_match([node], [{"classname": expected[0], "name": "different-test"}])
     assert not batches.junit_nodes_match([node], [{"classname": expected[0], "name": expected[1]}] * 2)
+
+
+def test_junit_python_and_sage_nodes_use_their_exact_serialized_identities() -> None:
+    batches = _load_ci_module("pytest_batches")
+    nodes = (
+        "tests/test_general_isotropic_markings.py::test_public_partial_two_three_flag_classes_in_three_u",
+        "tests/test_general_isotropic_stabilizers.py::test_image[four_u]",
+        "tests/test_general_isotropic_stabilizers.py::TestStabilizer::test_image[three_u]",
+        "tests/acceptance/test_boundaries.sage::test_dawes_building[stable]",
+    )
+    expected = (
+        ("tests.test_general_isotropic_markings", "test_public_partial_two_three_flag_classes_in_three_u"),
+        ("tests.test_general_isotropic_stabilizers", "test_image[four_u]"),
+        ("tests.test_general_isotropic_stabilizers.TestStabilizer", "test_image[three_u]"),
+        ("tests.acceptance.test_boundaries.sage", "test_dawes_building[stable]"),
+    )
+    assert tuple(batches.junit_key(node) for node in nodes) == expected
+    assert batches.junit_nodes_match(nodes, [
+        {"classname": classname, "name": name} for classname, name in expected
+    ])
+    # Identical counts are insufficient: a missing parametrization or a
+    # dropped module/class boundary must still reject the batch.
+    wrong_parameter = [{"classname": cls, "name": name} for cls, name in expected]
+    wrong_parameter[1] = {"classname": expected[1][0], "name": "test_image[other_u]"}
+    assert not batches.junit_nodes_match(nodes, wrong_parameter)
+    wrong_module = [{"classname": cls, "name": name} for cls, name in expected]
+    wrong_module[0] = {"classname": "tests.test_other", "name": expected[0][1]}
+    assert not batches.junit_nodes_match(nodes, wrong_module)
+    assert not batches.junit_nodes_match(nodes, wrong_module[:-1])
+    assert not batches.junit_nodes_match(nodes, wrong_module + wrong_module[:1])
 
 
 def test_batch_runner_continues_after_malformed_batch_junit(tmp_path, monkeypatch, capsys) -> None:
@@ -236,3 +267,32 @@ def test_acceptance_summary_rejects_empty_or_malformed_matrix_includes(tmp_path)
             result = summary.main(tmp_path / "no-results", json.dumps(matrix))
         assert result == 1
         assert message in output.getvalue()
+
+
+def test_long_probe_plans_every_unfinished_pricing_node_once() -> None:
+    root = Path(__file__).resolve().parents[1]
+    command = [sys.executable, str(root / "ci/plan_acceptance.py")]
+    result = subprocess.run(command + ["matrix", "probe_long"], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    jobs = json.loads(result.stdout.removeprefix("matrix="))["include"]
+    selected = []
+    for job in jobs:
+        result = subprocess.run(
+            command + ["nodes", "probe_long", str(job["shard"])], capture_output=True, text=True
+        )
+        assert result.returncode == 0, result.stderr
+        nodes = result.stdout.splitlines()
+        assert job["selection"] == "probe_long"
+        assert job["timeout"] * 60 >= len(nodes) * 600 + 20 * 60
+        # This unchanged node already has a recorded completed call of 2475 s.
+        # A completion-pricing job must accommodate that observation as well
+        # as the other nodes, rather than censor it at the short retry limit.
+        incidence = (
+            "tests/acceptance/test_boundaries.sage::"
+            "test_dawes_building_incidence_graph_is_the_published_figure[dawes_2U2_A2_stable]"
+        )
+        assert job["timeout"] * 60 >= sum(2475 if node == incidence else 600 for node in nodes) + 20 * 60
+        selected.extend(nodes)
+    expected = (root / "ci/acceptance_probe_long.txt").read_text().splitlines()
+    assert len(selected) == len(set(selected))
+    assert set(selected) == set(expected)

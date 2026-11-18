@@ -252,6 +252,37 @@ def test_null_quadrant_facets_retain_the_swap_transport():
         assert moved == member
 
 
+@pytest.mark.parametrize("name", ("enriques-direct-facets", "enriques-direct-facets-slow"))
+def test_direct_facet_orbits_on_recorded_enriques_inputs(name):
+    r"""Full direct domain modulo the group equals the independent original recorded orbit decomposition.
+
+    The two production inputs have finite ray groups of order 322560 and 3628800.
+    The latter had eleven orbits but previously spent most of its time in
+    individual GAP set transporter/stabilizer searches, despite Normaliz
+    having enumerated the complete facet domain already.
+    """
+    import json
+    from pathlib import Path
+    from sage_indefinite_port.indefinite.facet_orbits import _facet_orbit_records
+
+    path = Path(__file__).with_name("fixtures") / f"{name}.json"
+    fixture = json.loads(path.read_text())
+    records = tuple(_facet_orbit_records(
+        fixture["rays"], fixture["permutations"],
+        level=int(fixture["level"]), retain_words=False,
+    ))
+    actual = [
+        {"normal": list(record.normal), "incidence": sorted(record.incidence),
+         "orbit_size": record.orbit_size}
+        for record in records
+    ]
+    assert actual == fixture["records"]
+    assert sum(record.orbit_size for record in records) > len(records)
+    for record in records:
+        assert not record.words
+        assert is_facet_certificate(record.normal, record.incidence, fixture["rays"])
+
+
 def _group_closure(permutations, limit=20000):
     """All elements of the generated permutation group, by closure (small groups only)."""
     identity = tuple(range(len(permutations[0])))

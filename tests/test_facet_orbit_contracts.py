@@ -162,9 +162,12 @@ def test_full_dimensionality_is_not_pointedness_and_pointedness_is_certified_exp
     # `_positive_direction` is the source's `INDEFINITE_GetShortPositiveVector`, the cell's *central vector* --
     # an element of positive norm in the lattice, not a functional positive on the rays. An interior point of a
     # cone says nothing about its lineality; a positive functional does.
+    from random import Random
+
+    from sage_indefinite_port.indefinite.indefinite_reduction import GENERATOR_SEED
     from sage_indefinite_port.indefinite.lorentzian_cells import _gram_matrix, _positive_direction
 
-    central = vector(QQ, [QQ(entry) for entry in _positive_direction(cell.lattice)])
+    central = vector(QQ, [QQ(entry) for entry in _positive_direction(cell.lattice, Random(GENERATOR_SEED))])
     gram = _gram_matrix(cell.lattice).change_ring(QQ)
     norm = (central.row() * gram * central.column())[0, 0]
     assert norm > 0, (

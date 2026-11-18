@@ -6,7 +6,8 @@ A marked lattice is a diagram of lattice morphisms ending at a lattice L
 - a plain lattice L, an object of ``Lattices``;
 - a pointed lattice ``<n> -> L``, an object of the coslice ``<n>/Lattices``;
 - a primitive totally isotropic sublattice ``I -> L`` of any attainable rank, an object of ``Ar(Lattices)``;
-- a partial or complete isotropic flag ``I_1 -> ... -> I_t -> L``, an object of ``Fun([t], Lattices)``.
+- a partial or complete isotropic flag ``I_1 -> ... -> I_t -> L``, an object of ``Fun([t], Lattices)``;
+- such a flag with an orientation of each graded piece, an object of ``OrientedIsotropicFlags(Lattices, t)``.
 
 The research preamble's core homsets of these categories call these three entry points, with
 the category, when L is indefinite. An isomorphism of marked lattices is returned as its
@@ -15,6 +16,7 @@ the other components.
 """
 
 from itertools import pairwise
+from math import gcd
 
 from sage_extensions.all import ZZ, Cat, Lattices
 from sage_extensions.categories.abstract_categories.arrow_categories import (
@@ -24,7 +26,16 @@ from sage_extensions.categories.abstract_categories.products import (
     FiniteOrdinalCategory,
     _FiniteSequenceFunctorCategory,
 )
+from sage_extensions.categories.isotropic_orbits import (
+    FlagType,
+    _graded_orientation_signs,
+    _marked_isotropic_category,
+    _marked_isotropic_object,
+    _orientation_group_elements,
+    _oriented_isotropic_stabilizer_generators,
+)
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.lattices import OrientedIsotropicFlags
 from sage_extensions.categories.sets.finite_ordered_sets import (
     finite_ordered_set,
 )
@@ -48,7 +59,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     binary_split_primitive_vector_classes,
     perfect_complex,
 )
-from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _gram_in_label_order
 from sage_indefinite_port.invariants import AttackProfile
 
 LATTICES = Lattices(ZZ)
@@ -761,6 +772,62 @@ def _degenerate_rank_two_based_isometry(source_arrow: Morphism, target_arrow: Mo
     return result
 
 
+def _is_totally_isotropic(arrow: Morphism) -> bool:
+    lattice = arrow.codomain()
+    vectors = tuple(arrow(generator) for generator in arrow.domain().module_generators())
+    return all(lattice.b(left, right) == 0 for left in vectors for right in vectors)
+
+
+def _is_nondegenerate_primitive(arrow: Morphism) -> bool:
+    return arrow.is_primitive() and arrow.domain().is_nondegenerate() is True
+
+
+def _saturated_arrow(arrow: Morphism) -> Morphism:
+    r"""The inclusion of the saturation of the image of ``arrow``."""
+    return arrow.saturation().inclusion()
+
+
+def _saturation_exponent(arrow: Morphism, inclusion: Morphism) -> int:
+    return int(arrow.factor_through(inclusion).cokernel().exponent())
+
+
+def _nonprimitive_setwise_generators(arrow: Morphism, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Schreier generators of the stabilizer of ``im(arrow)`` in the setwise stabilizer of its saturation.
+
+    The stabilizer acts on ``S'/nS'``. Reidemeister--Schreier on the finite orbit of the span of ``S``.
+    """
+    lattice = arrow.codomain()
+    inclusion = _saturated_arrow(arrow)
+    modulus = _saturation_exponent(arrow, inclusion)
+    base = [inclusion.lift(arrow(point)) for point in arrow.domain().module_generators()]
+
+    def span_key(points):
+        from sage.matrix.constructor import matrix
+        from sage.rings.finite_rings.integer_mod_ring import Zmod
+
+        rows = [[int(point.to_vector()(label)) % modulus for label in inclusion.domain().module_generating_set()] for point in points]
+        return tuple(tuple(row) for row in matrix(Zmod(modulus), rows).echelon_form().rows() if any(row))
+
+    def act(generator, points):
+        return [inclusion.lift(generator(inclusion(point))) for point in points]
+
+    transversal = {span_key(base): (lattice.O().one(), base)}
+    frontier = [span_key(base)]
+    schreier = []
+    while frontier:
+        key = frontier.pop()
+        element, points = transversal[key]
+        for generator in generators:
+            moved = act(generator, points)
+            moved_key = span_key(moved)
+            if moved_key not in transversal:
+                transversal[moved_key] = (generator * element, moved)
+                frontier.append(moved_key)
+            else:
+                schreier.append(~transversal[moved_key][0] * generator * element)
+    return tuple(element for element in schreier if element != lattice.O().one())
+
+
 def _flag(marked: Parent) -> Flag:
     first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
@@ -1065,6 +1132,23 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                                     frontier.extend(generator * word for generator in standard_generators)
             return (None if nonhomothetic else RECURSION.isotropic_subspace_isometry(
                 source_primitive, target_primitive, ()))
+        case OrientedIsotropicFlags():
+            # Any isometry g carrying the underlying flags, then a correction h in
+            # Stab(F') with the graded signs of g: h g has every sign +1. The
+            # orientation-preserving isometries are the coset Stab+(F') h g, so
+            # no h means the sign vector of g lies outside the Levi sign image
+            # of Stab(F'), and then no oriented isometry exists.
+            source_flag, target_flag = source.functor().oriented_flag().flag(), target.functor().oriented_flag().flag()
+            length = int(source_flag.flag_length())
+            if int(target_flag.flag_length()) != length:
+                return None
+            flags = _marked_isotropic_category(source_flag.lattice(), length)
+            witness = isometry(flags, _marked_isotropic_object(source_flag, flag=True), _marked_isotropic_object(target_flag, flag=True))
+            if witness is None:
+                return None
+            _generators, _signs, transversal = _orientation_group_elements(target_flag.lattice().O(), target_flag)
+            correction = transversal.get(_graded_orientation_signs(witness, source_flag, target_flag))
+            return None if correction is None else correction * witness
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
         case _ if category is ARROWS:
@@ -1140,6 +1224,12 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 case 1, 1:
                     return INDUCTION.line_isometry(INDUCTION.plane_vectors(source_sublattice)[0], INDUCTION.plane_vectors(target_sublattice)[0])
                 case source_rank, target_rank if source_rank == target_rank:
+                    # CombinedAlgorithms.h:1401-1404: unequal isotropic k-plane invariants
+                    # (INDEF_FORM_Invariant_IsotropicKplane, :2424-2428) decide inequivalence.
+                    if INDUCTION.flag_invariant(source.arrow().codomain(), INDUCTION.plane_vectors(source_sublattice), (source_rank,)) != INDUCTION.flag_invariant(
+                        target.arrow().codomain(), INDUCTION.plane_vectors(target_sublattice), (target_rank,)
+                    ):
+                        return None
                     return INDUCTION.plane_isometry(source_sublattice, target_sublattice)
                 case _:
                     return None
@@ -1175,6 +1265,12 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             source_dimensions, source_basis, _source_images = _flag_action(source)
             target_dimensions, target_basis, target_images = _flag_action(target)
             if source_dimensions != target_dimensions:
+                return None
+            # CombinedAlgorithms.h:1401-1404: unequal isotropic flag invariants
+            # (INDEF_FORM_Invariant_IsotropicKflag, :2429-2433) decide inequivalence.
+            if INDUCTION.flag_invariant(source_basis[0].parent(), source_basis, source_dimensions) != INDUCTION.flag_invariant(
+                target_basis[0].parent(), target_basis, target_dimensions
+            ):
                 return None
             ambient = source_basis[0].parent()
             target_ambient = target_basis[0].parent()
@@ -1603,11 +1699,68 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     return witness
                 raise ArithmeticError("integral adapted flag completion failed its transport certificate")
             return RECURSION.isotropic_subspace_isometry(source_basis, target_basis, target_images)
-    raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
+    raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices), Fun([t], Lattices) for finite [t] or oriented isotropic flags")
+
+
+def _nonprimitive_transporter(source: Morphism, target: Morphism, transporter: LatticeIsometryMethods, inclusion: Morphism) -> LatticeIsometryMethods | None:
+    r"""Correct ``transporter`` by the stabilizer of the target saturation, or return ``None``.
+
+    BFS in the finite orbit of the moved finite-index sublattice in ``S'/nS'``.
+    """
+    from sage.matrix.constructor import matrix
+    from sage.rings.finite_rings.integer_mod_ring import Zmod
+
+    lattice = source.codomain()
+    target_inclusion = _saturated_arrow(target)
+    modulus = _saturation_exponent(target, target_inclusion)
+    generators = tuple(automorphism_group_generators(ARROWS, ARROWS.object(target_inclusion)))
+
+    def span_key(points):
+        rows = [[int(target_inclusion.lift(point).to_vector()(label)) % modulus for label in target_inclusion.domain().module_generating_set()] for point in points]
+        return tuple(tuple(row) for row in matrix(Zmod(modulus), rows).echelon_form().rows() if any(row))
+
+    target_key = span_key([target(point) for point in target.domain().module_generators()])
+    start_points = [transporter(source(point)) for point in source.domain().module_generators()]
+    seen = {span_key(start_points): (transporter, start_points)}
+    frontier = [span_key(start_points)]
+    while frontier and target_key not in seen:
+        element, points = seen[frontier.pop()]
+        for generator in generators:
+            moved = [generator(point) for point in points]
+            key = span_key(moved)
+            if key not in seen:
+                seen[key] = (generator * element, moved)
+                frontier.append(key)
+    return seen[target_key][0] if target_key in seen else None
 
 
 def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
     r"""Generators of the automorphism group of a marked lattice in ``category``, as a finite ordered set of isometries of L."""
+    if isinstance(category, CosliceCategory) or category is ARROWS:
+        arrow = marked.arrow()
+        ambient = arrow.codomain()
+        source = arrow.domain()
+        if int(source.rank()) > 0 and not ambient.is_nondegenerate():
+            from sage_indefinite_port.indefinite.degenerate_markings import degenerate_marking_generators
+
+            frame = tuple(ambient.module_generators())
+            labels = tuple(ambient.module_generating_set())
+            vectors = tuple(arrow(point) for point in source.module_generators())
+            matrices = degenerate_marking_generators(ambient, vectors, isinstance(category, CosliceCategory))
+            return finite_ordered_set(
+                tuple(
+                    ambient.O()(
+                        {
+                            label: sum(
+                                (ambient.scalar_multiple(int(c), g) for c, g in zip(m.column(j), frame, strict=True)),
+                                ambient.zero(),
+                            )
+                            for j, label in enumerate(labels)
+                        }
+                    )
+                    for m in matrices
+                )
+            )
     match category:
         case CosliceCategory():
             rank = int(category.base_object().rank())
@@ -1618,7 +1771,11 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                                      for y in ambient.module_generators())
                               else RECURSION.orthogonal_group_generators(ambient))
             elif rank == 1:
-                generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
+                generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked).primitive_part())
+            elif not _is_totally_isotropic(marked.arrow()) and _is_nondegenerate_primitive(marked.arrow()):
+                from sage_extensions.categories.lattice_embeddings import _nondegenerate_marking_stabilizer_generators
+
+                generators = _nondegenerate_marking_stabilizer_generators(marked.arrow(), pointwise=True)
             else:
                 arrow = marked.arrow()
                 if all(
@@ -1914,6 +2071,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 inclusion = saturation.inclusion()
                 basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
                 generators = INDUCTION._stabilizer_generators(basis, ())
+        case OrientedIsotropicFlags():
+            oriented = marked.functor().oriented_flag()
+            generators = _oriented_isotropic_stabilizer_generators(oriented.lattice().O(), oriented)
         case _ if category is LATTICES:
             generators = (_zero_form_orthogonal_generators(marked, marked.general_linear_group().group_generators())
                           if all(marked.b(x, y) == 0 for x in marked.module_generators()
@@ -2152,11 +2312,119 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             else:
                 generators = INDUCTION._stabilizer_generators(basis, images)
         case _:
-            raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
+            raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices), Fun([t], Lattices) for finite [t] or oriented isotropic flags")
     return finite_ordered_set(tuple(generators))
 
 
+def _radical_residues(content: int, radical_rank: int) -> tuple[tuple[int, ...], ...]:
+    r"""Representatives of ``{r in R/dR : gcd(content(r), d) = 1} / GL(R)``.
+
+    Rank at least two: ``SL_t(Z) -> SL_t(Z/d)`` is onto and transitive on
+    unimodular residues. Rank one: the units modulo ``+-1``.
+    """
+    if content == 1:
+        return ((0,) * radical_rank,)
+    if radical_rank >= 2:
+        return ((1,) + (0,) * (radical_rank - 1),)
+    return tuple((unit,) for unit in range(1, content // 2 + 1) if gcd(unit, content) == 1)
+
+
+def _degenerate_pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
+    r"""Primitive vector classes of nonzero square on ``L = C + R`` with ``R`` the radical (#41).
+
+    ``O(L)`` has blocks ``[A B; 0 D]`` with ``A in O(C)``, ``D in GL(R)`` and
+    ``B`` arbitrary. For ``v = (c, r)`` with ``c`` of content ``d``, the shears
+    translate ``r`` by exactly ``dR``, and ``v`` is primitive when ``r`` is
+    unimodular modulo ``d``. So classes are pairs of an ``O(C)``-class of ``c``
+    and a ``GL(R)``-class of ``r`` modulo ``d``.
+    """
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    gram = _gram_in_label_order(reduced)
+    size, rank = int(gram.nrows()), int(gram.rank())
+    labels = tuple(reduced.module_generating_set())
+    complement = lattice.lattice_category()([[int(gram[i, j]) for j in range(rank)] for i in range(rank)])
+    complement_labels = tuple(complement.module_generating_set())
+    ring = reduced.base_ring()
+    vectors = []
+    for point in complement.O().vector_orbit_representatives(square):
+        coordinates = tuple(int(point.to_vector()(label)) for label in complement_labels)
+        content = gcd(*coordinates)
+        for residue in _radical_residues(content, size - rank):
+            vectors.append(reduction.isometry(reduced.linear_combination({
+                label: ring(value) for label, value in zip(labels, coordinates + residue, strict=True) if value
+            })))
+    base = category.base_object()
+    return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
+
+
+class DegenerateNullClasses:
+    r"""Primitive square-zero classes of ``L = C + R``, in blocks of the content ``d`` of the ``C``-part (#41).
+
+    Block zero is the radical class ``(0, e_1)``. Block ``d >= 1`` has one class
+    per primitive isotropic class ``c'`` of ``C`` and per residue of
+    :func:`_radical_residues` modulo ``d``.
+    """
+
+    def __init__(self, lattice: Lattices.ParentMethods) -> None:
+        self.reduction = indefinite_reduced_presentation(lattice)
+        reduced = self.reduction.reduced
+        gram = _gram_in_label_order(reduced)
+        self.size, self.rank = int(gram.nrows()), int(gram.rank())
+        self.labels = tuple(reduced.module_generating_set())
+        self.ring = reduced.base_ring()
+        self.primitive: tuple[tuple[int, ...], ...] = ()
+        if self.rank:
+            complement = lattice.lattice_category()([[int(gram[i, j]) for j in range(self.rank)] for i in range(self.rank)])
+            names = tuple(complement.module_generating_set())
+            self.primitive = tuple(
+                tuple(int(point.to_vector()(name)) for name in names)
+                for point in complement.O().vector_orbit_representatives(0, content=1)
+            )
+
+    def is_finite(self) -> bool:
+        return not self.primitive
+
+    def _point(self, coordinates: tuple[int, ...]) -> Lattices.ElementMethods:
+        reduced = self.reduction.reduced
+        return self.reduction.isometry(reduced.linear_combination({
+            label: self.ring(value) for label, value in zip(self.labels, coordinates, strict=True) if value
+        }))
+
+    def _block(self, content: int) -> tuple[tuple[int, ...], ...]:
+        return tuple(
+            tuple(content * entry for entry in primitive) + residue
+            for primitive in self.primitive
+            for residue in _radical_residues(content, self.size - self.rank)
+        )
+
+    def coordinates(self):
+        yield (0,) * self.rank + (1,) + (0,) * (self.size - self.rank - 1)
+        if not self.primitive:
+            return
+        content = 1
+        while True:
+            yield from self._block(content)
+            content += 1
+
+    def __iter__(self):
+        return map(self._point, self.coordinates())
+
+    def index_of(self, vector: Lattices.ElementMethods) -> int | None:
+        inverse = self.reduction.isometry.inverse()
+        target = tuple(int(inverse(vector).to_vector()(label)) for label in self.labels)
+        bound = gcd(*target[: self.rank])
+        for index, candidate in enumerate(self.coordinates()):
+            if candidate == target:
+                return index
+            if gcd(*candidate[: self.rank]) > bound > 0 or (bound == 0 and index > 0):
+                return None
+        return None
+
+
 def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
+    if not lattice.is_nondegenerate() and square != 0:
+        return _degenerate_pointed_classes(category, lattice, square)
     # The binary split primitive algorithm is even-form based.  For an odd
     # split plane, double the pairing and transport full-group orbits back;
     # never transport the doubled discriminant-kernel subgroup.
@@ -3248,7 +3516,8 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
     ``category`` is the category of the marking: the coslice under ``<n>`` for pointed
-    lattices, ``Ar(Lattices)`` for sublattices, ``Fun([t], Lattices)`` for finite flags. ``source``
+    lattices, ``Ar(Lattices)`` for sublattices, ``Fun([t], Lattices)`` for finite flags,
+    ``OrientedIsotropicFlags(Lattices, t)`` for flags with oriented graded pieces. ``source``
     is the shape: the lattice ``<n>``, a totally isotropic lattice of rank ``k`` (zero form),
     or the chain of such lattices for a flag. A flag source may be a shorter
     diagram of its isotropic terms or a full marked diagram in ``category``;
@@ -3419,6 +3688,9 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 if any(source.b(left, right) != 0 for left in source_basis for right in source_basis):
                     raise ValueError("mixed degenerate Gram sublattices require their radical/glue classification")
                 classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()) for basis in INDUCTION.isotropic_flag_bases(lattice, (rank,)))
+        case OrientedIsotropicFlags():
+            dimensions = _shape_dimensions(source)
+            classes = tuple(category(oriented) for oriented in lattice.O().oriented_isotropic_orbit_representatives(FlagType(dimensions)))
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             if isinstance(source, Morphism):
                 shape_arrows = (source,)
@@ -3491,7 +3763,7 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             else:
                 classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
-            raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
+            raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t] or oriented isotropic flags")
     if (category is ARROWS or isinstance(category, CosliceCategory)) and classes and all(
         int(marked.arrow().domain().rank()) == 0 for marked in classes
     ):
@@ -3510,6 +3782,14 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
         classes = tuple(split for marked in classes
                         for split in lattice.O().split_orbit(marked, acting_group))
     return finite_ordered_set(classes)
+
+
+def _shape_dimensions(source: Parent | Morphism) -> tuple[int, ...]:
+    r"""The ranks of the terms of a flag shape: a lattice ``I`` for one term, one arrow ``I_1 -> I_2``, or a chain."""
+    if isinstance(source, Parent):
+        return (int(source.rank()),)
+    shape_arrows = (source,) if isinstance(source, Morphism) else _flag_arrows(source)
+    return (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
 
 
 def _flag_marking_from_basis(lattice: Lattices.ParentMethods, basis: tuple[Lattices.ElementMethods, ...], dimensions: tuple[int, ...]) -> tuple[Morphism, ...]:
@@ -3535,9 +3815,30 @@ def _flag_marking(line: Lattices.ElementMethods, plane: Parent) -> tuple[Morphis
     return line_in_plane.inclusion(), inclusion
 
 
+def isotropic_stabilizer_right_cosets(category: Category, marked: Parent) -> Parent:
+    r"""A transversal of ``G/H`` for a primitive isotropic sublattice or flag.
+
+    CombinedAlgorithms.h:1565-1609 INDEF_FORM_RightCosets_IsotropicKstuff_Reduced,
+    specialized at :2461-2471. ``G`` is the rational group extending the
+    source's stabilizer of ``I^perp`` and ``H = G`` meets ``GL(L)``.
+    """
+    match category:
+        case _ if category is ARROWS:
+            sublattice = _isotropic_sublattice(marked.arrow())
+            basis, images = INDUCTION.plane_vectors(sublattice), INDUCTION.sublattice_action_images(sublattice)
+        case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
+            _dimensions, basis, images = _flag_action(marked)
+        case _:
+            raise ValueError(f"{category} is not Ar(Lattices) or Fun([t], Lattices): the source defines these cosets for k-planes and k-flags")
+    cosets = RECURSION.isotropic_stabilizer_action(basis, images).right_cosets()
+    representative = cosets.representative_map()
+    return finite_ordered_set(tuple(~representative(coset) for coset in cosets))
+
+
 __all__ = [
     "automorphism_group_generators",
     "isometry",
+    "isotropic_stabilizer_right_cosets",
     "primitive_marking_classes",
     "pointed_content_classes",
     "odd_primitive_pointed_classes_via_doubling",

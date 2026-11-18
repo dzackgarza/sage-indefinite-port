@@ -10,7 +10,7 @@ from fractions import Fraction
 from functools import cache, cached_property
 from itertools import combinations, islice, product
 from math import gcd, isfinite, isqrt
-from random import choice, randrange, shuffle
+from random import Random
 from sys import float_info
 from typing import Literal, cast, overload
 
@@ -67,6 +67,7 @@ from sage.structure.element import RingElement
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.indefinite_reduction import (
+    GENERATOR_SEED,
     _compute_indefinite_reduction,
     _indefinite_reduction,
 )
@@ -206,40 +207,77 @@ NONNEGATIVE_SQUARES = RealSet.unbounded_above_closed(0)
 ZERO_SQUARES = RealSet.point(0)
 
 
-def _binary_split_isotropic_basis(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
-    r"""The two primitive null lines of a split binary form, as row vectors.
+@cache
+def binary_split_null_basis(form: tuple[int, int, int]) -> tuple[tuple[int, int], tuple[int, int]]:
+    r"""The two primitive null lines of the split binary form a x^2 + 2 b x y + c y^2, as integer rows.
 
-    The preamble's finite primitive-null-line enumeration replaces
-    ``GetBasisIsotropicVectors_reduced`` in pinned
-    ``src_lorentzian/two_dim_lorentzian.h:443–461``. The signs of its
-    two representatives are immaterial to the eight sign/permutation choices.
+    GetBasisIsotropicVectors_reduced (pinned two_dim_lorentzian.h:443-461):
+    each rational null vector is cleared of denominators and divided by its
+    content.  With s = sqrt(b^2 - a c), the null lines are a x + (b +- s) y = 0
+    for a != 0, and y = 0, 2 b x + c y = 0 for a = 0.  Each row is
+    normalized to a positive first nonzero entry and the two rows are sorted.
     """
-    # GetBasisIsotropicVectors_reduced clears denominators and divides by
-    # the content of each rational null vector.  Normalize explicitly so
-    # the index of the null-line sublattice is independent of which primitive
-    # isotropic representatives the preamble returns.
-    rays_by_line = {}
-    for point in lattice.primitive_isotropic_vectors():
-        row = _coordinate_row(lattice, point, SageQQ)
-        denominator = SageZZ(1)
-        for entry in row:
-            denominator = denominator.lcm(entry.denominator())
-        integral = vector(SageZZ, (denominator * entry for entry in row))
-        content = SageZZ(integral[0]).gcd(integral[1])
-        if content == 0:
-            raise ArithmeticError("a null-line generator must be nonzero")
-        primitive = vector(SageZZ, (entry // content for entry in integral))
-        first_nonzero = next(entry for entry in primitive if entry)
-        if first_nonzero < 0:
-            primitive = -primitive
-        rays_by_line[tuple(primitive)] = primitive
-    rays = tuple(sorted(rays_by_line.values(), key=lambda row: tuple(row)))
-    if len(rays) != 2:
-        raise ArithmeticError("a split nondegenerate binary lattice has exactly two rational null lines")
-    # The pinned reduced null-line basis is integral and primitive.  Use
-    # that exact arithmetic type for the determinant/index comparison and
-    # perform the rational inverse only where the isometry is constructed.
-    return matrix(SageZZ, rays)
+    a, b, c = (int(entry) for entry in form)
+    discriminant = b * b - a * c
+    root = isqrt(discriminant) if discriminant > 0 else -1
+    if root <= 0 or root * root != discriminant:
+        raise ValueError("a split nondegenerate binary form has a positive square discriminant")
+    directions = ((-(b + root), a), (-(b - root), a)) if a else ((1, 0), (-c, 2 * b))
+    rows = set()
+    for x, y in directions:
+        content = gcd(x, y)
+        x, y = x // content, y // content
+        if x < 0 or (x == 0 and y < 0):
+            x, y = -x, -y
+        rows.add((x, y))
+    if len(rows) != 2:
+        raise ArithmeticError("a split nondegenerate binary form has exactly two rational null lines")
+    first, second = sorted(rows)
+    return first, second
+
+
+def binary_split_form_vectors_of_square(form: tuple[int, int, int], square: int) -> tuple[tuple[int, int], ...]:
+    r"""All integral vectors (x, y) of nonzero square of the split binary form (a, b, c), in factor-pair order.
+
+    EnumerateVectorFixedNorm_Factorization (pinned two_dim_lorentzian.h:623-685).
+    With u, v the primitive null lines, k = det(u, v) and p = b(u, v),
+    q(z) = (2 p / k^2) det(z, v) det(u, z), so every solution is
+    z = (m1 u + m2 v) / k for a signed factor pair m1 m2 = square k^2 / (2 p).
+    """
+    a, b, c = (int(entry) for entry in form)
+    square = int(square)
+    if not square:
+        raise ValueError("the fixed-norm factorization requires nonzero square; zero has infinitely many integral vectors")
+    (u1, u2), (v1, v2) = binary_split_null_basis((a, b, c))
+    determinant = u1 * v2 - u2 * v1
+    pairing = a * u1 * v1 + b * (u1 * v2 + u2 * v1) + c * u2 * v2
+    if not determinant or not pairing:
+        raise ArithmeticError("primitive null generators must span a nondegenerate plane")
+    numerator, denominator = square * determinant * determinant, 2 * pairing
+    if numerator % denominator:
+        return ()
+    value = numerator // denominator
+    found: list[tuple[int, int]] = []
+    for divisor in SageZZ(abs(value)).divisors():
+        for sign in (-1, 1):
+            left = sign * int(divisor)
+            right = value // left
+            x, rx = divmod(u1 * left + v1 * right, determinant)
+            y, ry = divmod(u2 * left + v2 * right, determinant)
+            if rx or ry:
+                continue
+            if a * x * x + 2 * b * x * y + c * y * y != square:
+                raise ArithmeticError("fixed-norm factorization returned an incorrect square")
+            found.append((x, y))
+    return tuple(found)
+
+
+def _binary_split_isotropic_basis(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
+    r"""The two primitive null lines of a split binary lattice, as integer rows (``binary_split_null_basis`` of its Gram form)."""
+    gram = _gram_matrix(lattice)
+    basis = matrix(SageZZ, binary_split_null_basis((gram[0, 0], gram[0, 1], gram[1, 1])))
+    basis.set_immutable()
+    return basis
 
 
 def _binary_split_isometries(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
@@ -307,37 +345,15 @@ def binary_split_vectors_of_square(lattice: Lattices.ParentMethods, square: int)
     arises from one factor pair of square*k^2/(2c), followed by the
     exact integral-preimage check in the pinned routine.
     """
-    square = int(square)
-    if not square:
-        raise ValueError("the fixed-norm factorization requires nonzero square; zero has infinitely many integral vectors")
     if int(lattice.rank()) != 2 or tuple(map(int, lattice.signature_pair())) != (1, 1) or not lattice.is_isotropic():
         raise ValueError("fixed-norm null factorization requires a split Lorentzian plane")
-    null_basis = _binary_split_isotropic_basis(lattice)
-    first, second = null_basis.rows()
-    determinant = SageZZ(null_basis.det())
-    pairing = SageZZ((first * _gram_matrix(lattice) * second.column())[0])
-    if not determinant or not pairing:
-        raise ArithmeticError("primitive null generators must span a nondegenerate plane")
-    product_value = SageQQ(square) * determinant**2 / (2 * pairing)
-    if product_value.denominator() != 1:
-        return ()
-    value = SageZZ(product_value)
-    # Row coordinates recover z=(m1*u+m2*v)/det(u,v).
-    inverse_factor_forms = null_basis.transpose().change_ring(SageQQ) / determinant
+    gram = _gram_matrix(lattice)
     labels = tuple(lattice.module_generating_set())
-    found: list[Lattices.ElementMethods] = []
-    for divisor in SageZZ(abs(value)).divisors():
-        for sign in (-1, 1):
-            left = SageZZ(sign * divisor)
-            right = value // left
-            row = inverse_factor_forms * vector(SageQQ, (left, right))
-            if any(entry.denominator() != 1 for entry in row):
-                continue
-            point = lattice.linear_combination({label: lattice.base_ring()(int(entry)) for label, entry in zip(labels, row, strict=True) if entry})
-            if point.q() != lattice.base_ring()(square):
-                raise ArithmeticError("fixed-norm factorization returned an incorrect square")
-            found.append(point)
-    return tuple(found)
+    ring = lattice.base_ring()
+    return tuple(
+        lattice.linear_combination({label: ring(entry) for label, entry in zip(labels, row, strict=True) if entry})
+        for row in binary_split_form_vectors_of_square((gram[0, 0], gram[0, 1], gram[1, 1]), square)
+    )
 
 
 def binary_split_primitive_vector_classes(lattice: Lattices.ParentMethods, square: int) -> tuple[Lattices.ElementMethods, ...]:
@@ -1241,7 +1257,8 @@ class LorentzianPerfectLocalBackend:
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
-        direction = _positive_direction(normalized)
+        rng = Random(GENERATOR_SEED)
+        direction = _positive_direction(normalized, rng)
         # The search runs on coordinate rows; L and its normalized twist share them.
         critical = _search_initial_vectors(normalized, direction, allowed_squares)
         gram = _gram_matrix(normalized).change_ring(SageQQ)
@@ -1260,7 +1277,7 @@ class LorentzianPerfectLocalBackend:
             # Normalizing only the span basis globally changes the source's
             # candidate rows and therefore its negative-vector search order.
             directions = _outside_ray_directions(nullspace, gram)
-            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
+            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal, rng)
             direction_covector = gram * outside_direction.column()
             critical_row = vector(SageQQ, critical[0])
             direction_scalar = (critical_row * direction_covector)[0]
@@ -1308,12 +1325,14 @@ class LorentzianPerfectLocalBackend:
         coordinate_rows: tuple[tuple[int, ...], ...],
     ) -> tuple[tuple[int, ...], ...]:
         r"""The same permutation certificate for points already in lattice coordinates."""
-        lattice = cell.lattice
-        labels = tuple(lattice.module_generating_set())
         positions = {row: position for position, row in enumerate(coordinate_rows)}
         if len(positions) != len(coordinate_rows):
             raise ArithmeticError("a stable point configuration contains repeated points")
         generators = self.cell_stabilizer(cell)
+        actions = self._stabilizer_actions[cell]
+        assert len(actions) == len(generators), (
+            "the cell stabilizer's generators were not computed with their row actions"
+        )
         if not coordinate_rows:
             # The unique action on the empty set is the empty permutation.
             # Sage represents matrix(ZZ, ()) as 0-by-0, which cannot be
@@ -1321,12 +1340,10 @@ class LorentzianPerfectLocalBackend:
             return tuple(() for _generator in generators)
         point_matrix = matrix(SageZZ, coordinate_rows)
         permutations = []
-        for generator in generators:
-            # The rows of this matrix are g(e_i). Linearity therefore gives
-            # g(x) = x * action for every row of point_matrix. Evaluate the
-            # categorical isometry only on the ambient basis, rather than
-            # separately on every vertex of a large perfect cell.
-            action = matrix(SageZZ, [_coordinate_row(lattice, generator(lattice.module_generator(label)), SageZZ) for label in labels])
+        for action in actions:
+            # The rows of the action are g(e_i), retained by the stabilizer
+            # search that built g. Linearity therefore gives g(x) = x * action
+            # for every row of point_matrix.
             images = point_matrix * action
             try:
                 permutation = tuple(positions[tuple(int(entry) for entry in row)] for row in images.rows())
@@ -2329,6 +2346,9 @@ class LorentzianPerfectLocalBackend:
         # Cache proper partial spans; full-rank leaves instead receive
         # the complete integral transporter certificate.
         stabilizer_elements: list[LatticeIsometryMethods] = []
+        # Each stabilizer generator's integral row action, x -> x * action,
+        # retained beside it so its permutation of the rays is one product.
+        stabilizer_actions: list[Matrix_integer_dense] = []
         first_witness: LatticeIsometryMethods | None = None
         first_only = not all_images
         # Lorentzian.g:660-696 supplies the target automorphism group to
@@ -2434,6 +2454,7 @@ class LorentzianPerfectLocalBackend:
                         }
                     )
                     stabilizer_elements.append(witness)
+                    stabilizer_actions.append(action)
                 group_permutations.append(permutation)
             # Construct the initial generated subgroup once, after all exact
             # seed candidates have been certified. Rebuilding a degree-n
@@ -2557,6 +2578,7 @@ class LorentzianPerfectLocalBackend:
                 if generators_only:
                     if permutation is not None and (subgroup is None or permutation not in subgroup):
                         stabilizer_elements.append(witness)
+                        stabilizer_actions.append(action)
                         group_permutations.append(permutation)
                         subgroup = symmetric.subgroup(group_permutations)
                         gap_subgroup = libgap(subgroup)
@@ -2802,6 +2824,8 @@ class LorentzianPerfectLocalBackend:
             return None
 
         backtrack({}, (), ())
+        if generators_only:
+            self.__dict__.setdefault("_stabilizer_actions", {})[source] = tuple(stabilizer_actions)
         return first_witness if first_only else tuple(stabilizer_elements)
 
 
@@ -4579,16 +4603,10 @@ def _transfer(target: Lattices.ParentMethods, element: Lattices.ElementMethods) 
 def _ambient_element(lattice: Lattices.ParentMethods, coordinates: tuple[Integer, ...]) -> Lattices.ElementMethods:
     ring = lattice.base_ring()
     labels = lattice.module_generating_set()
-    return lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, coordinates, strict=True) if entry})
-
-
-def _owned_rational(
-    lattice: Lattices.ParentMethods, value: Rational, *, field: Parent | None = None
-) -> RingElement:
-    r"""Raise an exact rational through the selected fraction-field realization."""
-    if field is None:
-        field = lattice.base_ring().fraction_field()
-    return _owned_engine_element(field, SageQQ(value))
+    # Each nonzero engine coordinate is raised once into the owned integers.
+    return lattice.linear_combination(
+        {label: _owned_engine_element(ring, entry) for label, entry in zip(labels, coordinates, strict=True) if entry}
+    )
 
 
 def _pinned_diagonalize_symmetric_matrix(
@@ -4993,8 +5011,9 @@ def _source_integral_vector_allmeth(
     gram: Matrix_integer_dense,
     critical_norm: Rational,
     strict_inequality: bool,
+    rng: Random,
     *,
-    reduction: Callable[[Matrix_integer_dense], tuple[Matrix_integer_dense, Matrix_integer_dense]] = _indefinite_reduction,
+    reduction: Callable[[Matrix_integer_dense, Random], tuple[Matrix_integer_dense, Matrix_integer_dense]] = _indefinite_reduction,
     isotropic_reduction: Callable[..., tuple[Matrix_integer_dense, Matrix_integer_dense, object]] = _compute_indefinite_reduction,
     find_vector: Callable[[Matrix_integer_dense, Matrix_integer_dense, Matrix_integer_dense, Rational, bool], tuple[Integer, ...]] = _source_integral_vector_allmeth_v2,
 ) -> tuple[Integer, ...]:
@@ -5012,7 +5031,7 @@ def _source_integral_vector_allmeth(
     isotropic_fine = critical_norm < 0 if strict_inequality else critical_norm <= 0
     reduced_result = None
     if isotropic_fine:
-        basis, reduced, isotropic = isotropic_reduction(gram, look_for_isotropic=True)
+        basis, reduced, isotropic = isotropic_reduction(gram, rng, look_for_isotropic=True)
         if isotropic is not None:
             integral = vector(SageZZ, _source_remove_fraction_vector(isotropic))
             if not any(integral) or (integral * gram * integral.column())[0] != 0:
@@ -5022,7 +5041,7 @@ def _source_integral_vector_allmeth(
         # used by the source fallback; do not run IndefiniteReduction again.
         reduced_result = basis, reduced
     if reduced_result is None:
-        basis, reduced = reduction(gram)
+        basis, reduced = reduction(gram, rng)
     else:
         basis, reduced = reduced_result
     _source_validate_integral_reduction(gram, basis, reduced)
@@ -5051,12 +5070,12 @@ def _source_certify_positive_integral_vector(
     return integral
 
 
-def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
+def _integral_positive_vector_allmeth(gram: Matrix_integer_dense, rng: Random) -> tuple[Integer, ...]:
     r"""Port ``GetIntegralPositiveVector_allmeth`` from Positivity.h:499-518."""
     if gram.nrows() == 0:
         raise ValueError("the Gram matrix has no positive direction")
     return _source_certify_positive_integral_vector(
-        gram, _source_integral_vector_allmeth(gram, SageQQ.zero(), True)
+        gram, _source_integral_vector_allmeth(gram, SageQQ.zero(), True, rng)
     )
 
 
@@ -5082,22 +5101,19 @@ def _source_graver_k_basis(dimension: int, degree: int) -> tuple[tuple[int, ...]
 
 def _source_random_matrix_perturbation(
     dimension: int,
-    *,
-    choose: Callable[[tuple[int, ...]], int] = choice,
-    shuffle_values: Callable[[list[int]], None] = shuffle,
-    choose_index: Callable[[int], int] = randrange,
+    rng: Random,
 ) -> Matrix_integer_dense:
     r"""Port ``GetRandomMatrixPerturbation`` from Positivity.h:536-559."""
     if dimension < 1:
         raise ValueError("a random matrix perturbation needs positive dimension")
-    if choose((0, 1)) == 0:
+    if rng.choice((0, 1)) == 0:
         permutation = list(range(dimension))
-        shuffle_values(permutation)
-        signs = tuple(choose((-1, 1)) for _ in range(dimension))
+        rng.shuffle(permutation)
+        signs = tuple(rng.choice((-1, 1)) for _ in range(dimension))
         return _source_permutation_sign_matrix(permutation, signs).change_ring(SageZZ)
-    row = choose_index(dimension)
-    column = choose_index(dimension)
-    sign = choose((-1, 1))
+    row = rng.randrange(dimension)
+    column = rng.randrange(dimension)
+    sign = rng.choice((-1, 1))
     return _source_elementary_perturbation(dimension, row, column, sign).change_ring(SageZZ)
 
 
@@ -5187,7 +5203,7 @@ def _source_positive_search_best(
 def _source_indefinite_short_positive_vector(
     gram: Matrix_integer_dense,
     find_positive: Callable[[Matrix_integer_dense], tuple[Integer, ...]],
-    perturbation_factory: Callable[[int], Matrix_integer_dense] = _source_random_matrix_perturbation,
+    perturbation_factory: Callable[[int], Matrix_integer_dense],
 ) -> tuple[Integer, ...]:
     r"""Port the complete ``INDEFINITE_GetShortPositiveVector`` loop.
 
@@ -5261,10 +5277,17 @@ def _source_indefinite_short_positive_vector(
 
 
 
-def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
+def _positive_direction(lattice: Lattices.ParentMethods, rng: Random) -> tuple[Rational, ...]:
     r"""Pinned polyhedral_common@a55fcb7b ``INDEFINITE_GetShortPositiveVector``."""
     gram = _gram_matrix(lattice)
-    return tuple(SageQQ(entry) for entry in _source_indefinite_short_positive_vector(gram, _integral_positive_vector_allmeth))
+    return tuple(
+        SageQQ(entry)
+        for entry in _source_indefinite_short_positive_vector(
+            gram,
+            lambda perturbed: _integral_positive_vector_allmeth(perturbed, rng),
+            lambda dimension: _source_random_matrix_perturbation(dimension, rng),
+        )
+    )
 
 
 def _primitive_integral_direction(
@@ -5545,8 +5568,6 @@ class _PositiveVectorEnumerator:
         # iterator for the same finite gcd.
         pairing_coordinates = tuple(int(entry) for entry in self.timelike_covector.column(0))
         self.d = SageQQ(gcd(*pairing_coordinates))
-        fraction_map = lattice.base_ring().fraction_field_map()
-        self.rational_field = fraction_map.codomain()
         # Match the pinned ComputeGcdDot/PositivityNormalizeGcdDot coefficient
         # recurrence exactly: a different valid Bezout partner changes the
         # affine CVP center and therefore the first candidate used by flipping.
@@ -5679,18 +5700,12 @@ class _PositiveVectorEnumerator:
         r"""The coordinate rows of the shell vectors at this multiplier; elements are raised only for a returned cell."""
         if multiplier <= 0:
             raise ValueError("the positive-vector shell multiplier must be positive")
-        # Scale the cached exact coordinate vector directly. The generic
-        # scalar-action morphism repeatedly flattens owned categories here;
-        # this is the same module element as scalar_multiple, assembled once
-        # through the owning module's linear-combination constructor.
+        # The coordinate CVP engine reads exact rational carriers directly
+        # (its private lowering contract), so the scaled target and bound
+        # stay engine rationals instead of being raised and lowered again.
         scalar = SageQQ(multiplier)
-        target = tuple(
-            _owned_engine_element(self.rational_field, scalar * coordinate)
-            for coordinate in self.base_target_engine_coordinates
-        )
-        bound = _owned_rational(
-            self.lattice, (SageQQ(multiplier) ** 2) * self.base_bound, field=self.rational_field
-        )
+        target = tuple(scalar * coordinate for coordinate in self.base_target_engine_coordinates)
+        bound = (scalar**2) * SageQQ(self.base_bound)
         # Keep the same exact coordinate Gram, target, and squared-distance
         # bound as close_vectors. Isotropic mode uses the dedicated exact-sphere
         # recursion; total mode keeps PARI-backed bounded CVP and falls back to
@@ -5823,6 +5838,15 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
     # maximum.  Increasing the bound cannot change those exact shells;
     # resume at the first previously unexamined multiplier instead of
     # repeatedly scanning the same empty prefix.
+    # Termination (Lorentzian.g:400-421, LORENTZ_SearchInitialVectorOpt).
+    # The enumerator accepts only t with q(t) > 0, and scaled_max starts at
+    # q(t) for the primitive t, so scaled_max > 0; the loop only increases
+    # it. Thus the scaled_max <= 0 guards here are unreachable invariants.
+    # With NONNEGATIVE_SQUARES, t itself lies in the fibre of multiplier
+    # q(t)/d <= scaled_max/d, so the first pass returns. With ZERO_SQUARES
+    # the lattice is isotropic (checked above): a primitive isotropic v has
+    # b(v, t) != 0, since t^perp is definite, so -v or v pairs positively
+    # with t, and the loop returns once scaled_max >= b(v, t).
     next_multiplier = 1
     while True:
         maximum = enumerator.max_multiplier()
@@ -5921,8 +5945,10 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
         raise ArithmeticError("LORENTZ_Kernel_Flipping requires a positive-norm base normal")
     if direction_square >= 0:
         raise ArithmeticError("LORENTZ_Kernel_Flipping requires a negative-norm direction normal")
-    # Lorentzian.g:778-790. The required negative-norm direction guarantees
-    # eventual negativity, so the reference's doubling search terminates.
+    # Lorentzian.g:778-790. Termination: f(s) = A + 2Bs + Cs^2 with
+    # A = base_square > 0 and C = direction_square < 0, both checked above.
+    # The roots of f are real, and f(s) < 0 for every s > s+, the larger
+    # root. The doubling of s from 1 passes s+ after finitely many steps.
     shift = SageQQ.one()
     while base_square + 2 * cross * shift + direction_square * shift * shift >= 0:
         shift *= 2
@@ -6090,6 +6116,7 @@ def _negative_direction_in_span(
     spanning_rows: Matrix_rational_dense,
     critical: tuple[tuple[int, ...], ...],
     base_normal: FreeModuleElement[Rational],
+    rng: Random,
     excluded_directions: list[FreeModuleElement[Rational]] | None = None,
 ) -> FreeModuleElement[Rational]:
     r"""The negative direction accepted by Lorentzian.g's GetOneOutsideRay.
@@ -6131,15 +6158,15 @@ def _negative_direction_in_span(
         # Match GetRandomMatrixPerturbation verbatim: the selected entry is
         # overwritten by +/-1, including when it is diagonal. Both the signed
         # permutation and identity-with-one-entry branches are unimodular.
-        if choice((1, 2)) == 1:
+        if rng.choice((1, 2)) == 1:
             permutation = list(range(dimension))
-            shuffle(permutation)
-            signs = tuple(choice((-1, 1)) for _ in range(dimension))
+            rng.shuffle(permutation)
+            signs = tuple(rng.choice((-1, 1)) for _ in range(dimension))
             modification = _source_permutation_sign_matrix(permutation, signs)
         else:
-            index = randrange(dimension)
-            image = randrange(dimension)
-            sign = choice((-1, 1))
+            index = rng.randrange(dimension)
+            image = rng.randrange(dimension)
+            sign = rng.choice((-1, 1))
             modification = _source_elementary_perturbation(dimension, index, image, sign)
         perturbation *= modification
 

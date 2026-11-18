@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import weakref
 from math import gcd
-from random import choice, randrange, sample
+from random import Random
 
 from sage_extensions.all import Lattices, Modules
 from sage_extensions.categories.eichler_criterion import TwoUEichlerModel
@@ -53,6 +53,7 @@ from sage.structure.sage_object import SageObject
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer
 from sage_indefinite_port.indefinite.exact_isotropic import find_isotropic_exact
 from sage_indefinite_port.indefinite.indefinite_reduction import (
+    GENERATOR_SEED,
     _compute_indefinite_reduction,
     _gram_l1,
     _indefinite_lll,
@@ -103,23 +104,23 @@ def _owned_integer_square(ring, value) -> RingElement:
     return ring(integer)
 
 
-def _source_random_matrix_perturbation(rank: int):
+def _source_random_matrix_perturbation(rank: int, rng: Random):
     """GetRandomMatrixPerturbation (IndefiniteFormsFundamental.g:11-30).
 
     Random signed permutation, or one elementary entry replacement, exactly
     as in the pinned GAP source (including the diagonal replacement case).
     """
     step = identity_matrix(SageZZ, rank)
-    if randrange(2) == 0:
+    if rng.randrange(2) == 0:
         step = matrix(SageZZ, rank, rank)
-        for row, column in enumerate(sample(range(rank), rank)):
-            step[row, column] = choice((-1, 1))
+        for row, column in enumerate(rng.sample(range(rank), rank)):
+            step[row, column] = rng.choice((-1, 1))
     else:
-        step[randrange(rank), randrange(rank)] = choice((-1, 1))
+        step[rng.randrange(rank), rng.randrange(rank)] = rng.choice((-1, 1))
     return step
 
 
-def _source_find_isotropic(gram):
+def _source_find_isotropic(gram, rng: Random):
     """INDEF_FindIsotropic/FindIsotropic, pinned ApproximateModels.h:130-166
     and Isotropic.h:76-198,252-377.
 
@@ -151,7 +152,7 @@ def _source_find_isotropic(gram):
 
     if rank <= 2:
         # FindIsotropicExact: skip the LLL and reduction branches.
-        return raise_vector(find_isotropic_exact(gram))
+        return raise_vector(find_isotropic_exact(gram, rng))
 
     def easy_vector(form):
         # get_isotropic_easy_method, Isotropic.h:76-112.
@@ -191,23 +192,23 @@ def _source_find_isotropic(gram):
             if next_norm >= previous_norm:
                 break
             previous_norm = next_norm
-            perturbation = _random_signed_permutation(rank)
+            perturbation = _random_signed_permutation(rank, rng)
             step_transform = perturbation * step_transform
             step_working = perturbation * step_working * perturbation.transpose()
-        perturbation = _random_signed_permutation(rank)
+        perturbation = _random_signed_permutation(rank, rng)
         transform = perturbation * transform
         working = perturbation * working * perturbation.transpose()
 
-    reduction, reduced_gram, isotropic = _compute_indefinite_reduction(gram, look_for_isotropic=True)
+    reduction, reduced_gram, isotropic = _compute_indefinite_reduction(gram, rng, look_for_isotropic=True)
     if isotropic is not None:
         return raise_vector(isotropic)
-    exact_coordinates = find_isotropic_exact(reduced_gram)
+    exact_coordinates = find_isotropic_exact(reduced_gram, rng)
     if exact_coordinates is None:
         return None
     return raise_vector(reduction.transpose() * exact_coordinates)
 
 
-def _source_hyperbolic_pair(lattice: Lattices.ParentMethods):
+def _source_hyperbolic_pair(lattice: Lattices.ParentMethods, rng: Random):
     """GetHyperbolicPlane, polyhedral_common ApproximateModels.h:996-1180.
 
     The pinned C++ revision of IndefiniteForms.g:465-534 maintains a set
@@ -237,9 +238,9 @@ def _source_hyperbolic_pair(lattice: Lattices.ParentMethods):
         nonlocal perturbation
         repeats = 0
         while True:
-            perturbation *= _source_random_matrix_perturbation(rank)
+            perturbation *= _source_random_matrix_perturbation(rank, rng)
             changed_gram = perturbation * gram * perturbation.transpose()
-            selected = _source_find_isotropic(changed_gram)
+            selected = _source_find_isotropic(changed_gram, rng)
             if selected is None:
                 raise ValueError("the source isotropic search found no vector")
             original_row = selected * perturbation
@@ -387,11 +388,12 @@ class EichlerEnvelope:
             if not construction_lattice.is_even():
                 raise ArithmeticError("the kernel of the norm-parity homomorphism must be even")
 
-        first, first_partner = _source_hyperbolic_pair(construction_lattice)
+        rng = Random(GENERATOR_SEED)
+        first, first_partner = _source_hyperbolic_pair(construction_lattice, rng)
         first_plane = construction_lattice.subobject_on([first, first_partner])
         complement = first_plane.orthogonal_complement()
         complement_lattice = complement.inclusion().domain()
-        second, second_partner = _source_hyperbolic_pair(complement_lattice)
+        second, second_partner = _source_hyperbolic_pair(complement_lattice, rng)
         embed = complement.inclusion()
         second, second_partner = embed(second), embed(second_partner)
         planes = construction_lattice.subobject_on([first, first_partner, second, second_partner])

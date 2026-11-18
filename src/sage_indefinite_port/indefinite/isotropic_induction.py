@@ -143,14 +143,8 @@ class IsotropicInduction:
                 if any(_rational(moved(target)).denominator() != 1 for target in labels):
                     raise ArithmeticError("the perpendicular lift does not preserve the common invariant lattice")
         # MapOrthogonalSublatticeGroupUsingSublattice retains the resulting
-        # matrix, not a composition to evaluate for every later action.
-        # Supply its exact basis images to the owned isometry constructor.
-        transported = frame * extension * inverse
-        ambient = frame.codomain()
-        return ambient.Isom(ambient)({
-            label: transported(ambient.module_generator(label))
-            for label in ambient.module_generating_set()
-        })
+        # matrix F E F^-1; owned composition is that matrix product.
+        return frame * extension * inverse
 
     def __init__(self, recursion: EichlerRecursion) -> None:
         self.recursion = recursion

@@ -36,8 +36,8 @@ from __future__ import annotations
 from math import gcd
 
 from sage.matrix.constructor import matrix
-from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
+from sage.rings.integer_ring import ZZ
 
 __all__ = [
     "adjacent_incidences",

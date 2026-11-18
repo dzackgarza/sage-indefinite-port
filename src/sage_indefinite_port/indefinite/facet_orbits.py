@@ -40,9 +40,11 @@ from fractions import Fraction
 from heapq import heappop, heappush
 from math import gcd
 
-from sage.all import Permutation, PermutationGroup, matrix, vector
-from sage.rings.integer_ring import ZZ
+from sage.matrix.constructor import matrix
 from sage.rings.rational_field import QQ
+from sage.rings.integer_ring import ZZ
+from sage.modules.free_module_element import vector
+from sage.all import Permutation, PermutationGroup
 from sage.libs.gap.libgap import libgap
 
 from sage_indefinite_port.indefinite.facet_certificates import (
@@ -372,6 +374,20 @@ def _orbit(incidence, permutations):
     return members
 
 
+def _orbit_members(incidence, permutations):
+    r"""The orbit of a facet incidence under the ray permutations, as a set."""
+    members = {incidence}
+    queue = deque([incidence])
+    while queue:
+        current = queue.popleft()
+        for permutation in permutations:
+            moved = frozenset(permutation[position] for position in current)
+            if moved not in members:
+                members.add(moved)
+                queue.append(moved)
+    return members
+
+
 def _stabilizer_on_facet(group, incidence, orbit_size, *, orbit_words=None, permutations=()):
     r"""The induced action of the exact set stabilizer on its facet.
 
@@ -466,8 +482,14 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
         domain=tuple(range(1, len(rays) + 1)),
     )
     order = int(group.order())
+    gap_group = libgap(group)
     records: list[FacetOrbitRecord] = []
     covered: set[frozenset[int]] = set()
+    point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
+    # RepresentativeAction is asked only between facets of equal incidence
+    # size; an incidence met again in the walk keeps its earlier decision.
+    by_size: dict[int, list[FacetOrbitRecord]] = {}
+    decided: set[frozenset[int]] = set()
 
     def register(normal, incidence):
         if retain_words:
@@ -480,15 +502,28 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
             # SetFunctionality.g:174-201,234-260: compare orbit
             # representatives by RepresentativeAction(..., OnSets), and
             # retain |G|/|Stab_G(F)| rather than enumerating the orbit.
+            if incidence in decided or incidence in covered:
+                return None
+            decided.add(incidence)
             positions = sorted(position + 1 for position in incidence)
-            for previous in records:
-                if len(previous.incidence) != len(incidence):
-                    continue
+            key = len(incidence)
+            for previous in by_size.get(key, ()):
                 target = sorted(position + 1 for position in previous.incidence)
-                if libgap.RepresentativeAction(group, positions, target, libgap.OnSets) != libgap.eval("fail"):
+                if libgap.RepresentativeAction(gap_group, positions, target, libgap.OnSets) != libgap.eval("fail"):
                     return None
-            stabilizer_order = int(group.stabilizer(positions, action="OnSets").order())
+            # Only |Stab_G(F)| is read, so GAP's Stabilizer is not raised to
+            # a Sage permutation group.
+            stabilizer_order = int(libgap.Stabilizer(gap_group, positions, libgap.OnSets).Size())
             record = FacetOrbitRecord(normal, incidence, order // stabilizer_order, ())
+            by_size.setdefault(key, []).append(record)
+            # A listed orbit recognizes its later members by lookup instead
+            # of by RepresentativeAction; either test decides the same orbit.
+            # An orbit is listed when it has at most n d members, as many as
+            # the n x d ray matrix has entries, so each list holds at most
+            # n^2 d integers, polynomial in the input; a larger orbit keeps
+            # the source's |G|/|Stab_G(F)| record.
+            if record.orbit_size <= len(rays) * dimension:
+                covered.update(_orbit_members(incidence, permutations))
         records.append(record)
         return record
 
@@ -525,13 +560,48 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
         # POLY_DirectDualDesc.h:334-337 rejects an empty direct result.
         if not hyperplanes:
             raise ArithmeticError("the direct facet computation returned no facets")
+        direct_facets = {}
         for row in hyperplanes:
             normal, incidence, values = _orient(rays, _primitive(row))
             if not _is_facet_certificate_from_pairings(normal, incidence, rays, values):
                 raise ArithmeticError("a direct facet failed certification")
+            if not retain_words:
+                direct_facets.setdefault(incidence, normal)
+                continue
             record = register(normal, incidence)
             if record is not None:
                 yield record
+        if not retain_words:
+            # Direct dual description has already supplied *every* facet.
+            # The ray permutations therefore act on this finite set of
+            # incidences. Enumerate its generated orbits by closure, not by
+            # repeated RepresentativeAction/Stabilizer searches in the
+            # potentially enormous group of ray permutations. This performs
+            # one incidence image per (facet, supplied generator), regardless
+            # of the order of the ambient group.
+            #
+            # A generator is a permutation of the rays, so its inverse is a
+            # positive power; forward-generator closure is the full group
+            # orbit. The complete normalised facet domain must be invariant.
+            # Keep Normaliz's first facet for each orbit to preserve the
+            # historical representative and traversal order.
+            covered_facets: set[frozenset[int]] = set()
+            for incidence, normal in direct_facets.items():
+                if incidence in covered_facets:
+                    continue
+                orbit = {incidence}
+                pending = deque((incidence,))
+                while pending:
+                    current = pending.popleft()
+                    for permutation in permutations:
+                        moved = frozenset(permutation[position] for position in current)
+                        if moved not in direct_facets:
+                            raise ArithmeticError("the stabilizer action did not preserve the complete facet domain")
+                        if moved not in orbit:
+                            orbit.add(moved)
+                            pending.append(moved)
+                covered_facets.update(orbit)
+                yield FacetOrbitRecord(normal, incidence, len(orbit), ())
         return
     seed_normal, seed, values = _seed_facet(rays, dimension)
     if not _is_facet_certificate_from_pairings(seed_normal, seed, rays, values):
@@ -542,7 +612,6 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
     # expand a pending facet of minimum incidence, rather than the last one
     # discovered. Equal incidences retain their discovery order.
     pending = [(len(seed), 0)]
-    point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
     processed_any = False
     yield seed_record
     while pending:

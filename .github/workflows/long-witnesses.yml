@@ -1,0 +1,201 @@
+name: Long witnesses
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - witnesses/**
+      - .github/workflows/long-witnesses.yml
+permissions:
+  contents: read
+  packages: read
+jobs:
+  julia:
+    # Instantiates the bridge environment once into the Julia depot cache that every shard restores.
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: ghcr.io/dzackgarza/sage:develop
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /sage/.venv/bin/sage
+      # The image's read-only depot holds Oscar; the cached writable depot
+      # in front of it holds the bridge environment's resolved packages.
+      JULIA_DEPOT_PATH: '/github/home/.julia:/opt/julia-depot:'
+    outputs:
+      key: ${{ steps.key.outputs.key }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - id: key
+        run: echo "key=$(just ci-julia-key)" >> "$GITHUB_OUTPUT"
+      - id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ steps.key.outputs.key }}
+      - run: just ci-provision-julia
+      - if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ steps.key.outputs.key }}
+  witness:
+    needs:
+      - julia
+    name: ${{ matrix.test }}
+    runs-on: ubuntu-latest
+    # The family's own cap plus setup margin, from the plan step. A single 360 here let a
+    # hung family hold the concurrency group for six hours and starve the next run.
+    timeout-minutes: 360
+    container:
+      image: ghcr.io/dzackgarza/sage:develop
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /sage/.venv/bin/sage
+      # The image's read-only depot holds Oscar; the cached writable depot
+      # in front of it holds the bridge environment's resolved packages.
+      JULIA_DEPOT_PATH: '/github/home/.julia:/opt/julia-depot:'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - file: test_hermitian_levi.sage
+            test: test_split_gaussian_rank_two_levi_index
+          - file: test_hermitian_levi.sage
+            test: test_glued_eisenstein_rank_two_levi_index
+          - file: test_orbits.sage
+            test: test_gamma_three_splits_null_lines_of_two_hyperbolic_planes_into_sixteen_orbits
+          - file: test_orbits.sage
+            test: test_rank_three_discriminant_image
+          - file: test_degenerate_ambient_consumers.sage
+            test: test_degenerate_vector_classes_of_square_two_and_fifty
+          - file: test_degenerate_ambient_consumers.sage
+            test: test_congruence_image_and_kernel_generators
+          - file: test_degenerate_ambient_consumers.sage
+            test: test_square_zero_classes_are_a_lazy_set
+          - file: test_prescribed_gram.sage
+            test: test_prescribed_rank_two_gram_fixtures
+          - file: test_hermitian_parabolic_stabilizers.sage
+            test: test_flag_stabilizers_based_and_setwise_on_the_split_frame
+          - file: test_hermitian_parabolic_stabilizers.sage
+            test: test_setwise_line_stabilizer_of_the_glued_lattice_induces_the_hand_levi_image
+          - file: test_orbits.sage
+            test: test_gamma_two_splits_null_lines_of_two_hyperbolic_planes_into_nine_orbits
+          - file: test_orbits.sage
+            test: test_gamma_three_transporters_between_null_lines_of_two_hyperbolic_planes
+          - file: test_orbits.sage
+            test: test_rank_three_null_stabilizer_of_twisted_hyperbolic_sum_fixes_one_isotropic_line
+          - file: test_orbits.sage
+            test: test_gamma_three_line_stabilizer_has_schreier_generators_of_index_72
+          - file: test_hermitian_parabolic_stabilizers.sage
+            test: test_act_eisenstein_cusp_has_the_full_split_levi_image
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_based_null_vectors_split_into_thirty_two_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_a_based_vector_and_its_negative_under_gamma_three_and_gamma_two
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_based_vector_stabilizer_in_gamma_three_fixes_the_vector
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_null_vectors_under_the_preimage_of_a_non_normal_stabilizer
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_null_lines_split_into_sixteen_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_null_planes_split_into_eight_gamma_three_orbits_with_stabilizers
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_null_flags_split_into_thirty_two_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_hyperbolic_summands_split_into_seventy_two_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_based_pairs_of_prescribed_gram_split_into_288_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_complete_flags_of_rank_three_split_into_630_gamma_two_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_joint_level_and_discriminant_image_on_u_plus_six
+          - file: test_hermitian_negative_transporter_and_preimages.sage
+            test: test_two_i_lines_with_isometric_quotients_have_no_transporter
+          - file: test_hermitian_negative_transporter_and_preimages.sage
+            test: test_gaussian_line_stabilizer_meets_a_joint_residue_and_determinant_preimage
+          - file: test_commutant_groups.sage
+            test: test_levi_transporter_to_the_inverse_on_one_summand
+          - file: test_li_margulis_box.sage
+            test: test_isotropic_orbits_of_u_plus_u2
+          - file: test_li_margulis_box.sage
+            test: test_isotropic_orbits_of_u_plus_u
+          - file: test_witt_one_fixed_norm_classes.sage
+            test: test_sqrt_ten_norm_two_transporter_and_divisor_obstruction
+          - file: test_commutant_groups.sage
+            test: test_nonmaximal_levi_transporter
+          - file: test_commutant_groups.sage
+            test: test_hermitian_quaternion_transporters
+          - file: test_commutant_groups.sage
+            test: test_golden_orthogonal_transporters_rank_four
+          - file: test_finite_normalizers.sage
+            test: test_arithmetic_normalizer_of_the_full_orthogonal_group_of_two_hyperbolic_planes
+          - file: test_commutant_groups.sage
+            test: test_definite_hermitian_quaternion_transporters
+          - file: test_commutant_groups.sage test_skew_hermitian_quaternion_transporters
+            test: ""
+          - file: test_equivariant_markings.sage test_unipotent_transporter_beyond_the_linear_step
+            test: ""
+          - file: test_finite_normalizers.sage
+            test: test_orthogonal_pair_owner_gives_the_normalizer_of_sl2_times_sl2_on_two_hyperbolic_planes
+          - file: test_dawes_u2u2a2_incidence_records.py
+            test: test_u2u2a2_stable_building_records
+          - file: test_ternary_orthogonal_number_field.sage
+            test: test_ternary_orthogonal_group_of_one_minus_eleven_minus_nineteen_over_sqrt5
+          - file: test_bianchi_groups.sage
+            test: test_swan_generators_of_gl2_over_sqrt_minus_five
+          - file: test_semisimple_voronoi_cubic_division.sage
+            test: test_units_are_integral_of_reduced_norm_plus_minus_one_and_one_has_infinite_order
+          - file: test_split_quaternary_orthogonal_number_field.sage
+            test: test_split_quaternary_orthogonal_group_of_the_norm_form_of_eleven_nineteen_over_sqrt5
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ needs.julia.outputs.key }}
+          fail-on-cache-miss: true
+      - run: just ci-provision-julia
+      - run: just ci-witness ${{ matrix.file }} ${{ matrix.test }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witness-${{ matrix.test }}
+          path: .tmp/ci/results/
+concurrency:
+  group: long-witnesses-${{ github.ref }}
+  cancel-in-progress: true

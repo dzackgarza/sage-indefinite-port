@@ -32,11 +32,20 @@ certificates. General source routines are translated with their parameters
 intact. Full upstream isotropic k-plane and flag functionality is required;
 general induction is implemented, with remaining public branch coverage tracked in #44.
 
-Milestones and test samples order delivery and verification. They do not
-authorize a smaller port. Every missing source-supported capability remains
-required until implemented through its public consumers. See
-[full upstream coverage](AGENTS.md#full-upstream-coverage) and
-[the remaining parity obligation](https://github.com/dzackgarza/sage-indefinite-port/issues/44).
+Milestones and test samples order delivery and verification; they do not
+reduce the required mathematics. Follow the **live ordered GitHub issue tree**
+[#4](https://github.com/dzackgarza/sage-indefinite-port/issues/4), with
+[T8: v1 public algorithms](https://github.com/dzackgarza/sage-indefinite-port/milestone/9),
+[T9: unchanged final-pair acceptance](https://github.com/dzackgarza/sage-indefinite-port/milestone/10), and
+[T10: retained beyond-v1 arithmetic](https://github.com/dzackgarza/sage-indefinite-port/milestone/11).
+The actual unfinished v1 computational consumers are on
+[#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64) and its
+subissues, not in a copied status table here. Source-supported capabilities
+recorded in [#69](https://github.com/dzackgarza/sage-indefinite-port/issues/69)
+remain required for **full port completion** even where scheduled beyond a
+staged v1 milestone. [Full upstream coverage](AGENTS.md#full-upstream-coverage)
+and [general isotropic scope](https://github.com/dzackgarza/sage-indefinite-port/issues/44)
+remain binding.
 
 ## Cloud-agent entry point
 
@@ -59,7 +68,7 @@ Read [AGENTS.md](AGENTS.md) for ownership and source-fidelity constraints; then 
 - [Academic citations](CITATIONS.md) and [review criteria](references/review-guidelines.md)
 - [Acceptance workflow](.github/workflows/acceptance.yml) and [Acceptance runs](https://github.com/dzackgarza/sage-indefinite-port/actions/workflows/acceptance.yml)
 
-The CI workflow provisions Sage and installs the published `research` dependency; it runs the frozen fixture suite only by manual dispatch, with `corpus=sample` or `corpus=full`. Each run is tied to its own port commit and recorded research revision. The accepted development criterion for large families is **branch-representative sample evidence**, not completion of all long-tail cases; see [issue #33's October 22 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665) and the acceptance table on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64). No fixture or assertion is deleted to form a sample.
+The CI workflow provisions Sage and installs the published `research` dependency; it runs the frozen fixture suite only by manual dispatch, with `corpus=tier1`, `corpus=tier2` or `corpus=full` (tiers in `references/complexity/triage.md`). Each run is tied to its own port commit and recorded research revision. The accepted development criterion for large families is **branch-representative sample evidence**, not completion of all long-tail cases; see [issue #33's October 22 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665) and the acceptance table on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64). No fixture or assertion is deleted to form a sample.
 
 ## Local development checks
 

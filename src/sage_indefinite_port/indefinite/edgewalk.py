@@ -13,19 +13,22 @@ q(k) <= 0, and the walls through it are the roots r with b(r, k) = 0, all others
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from dataclasses import dataclass
-from functools import cmp_to_key
+from functools import cache, cmp_to_key
 
 from sage_extensions.all import ZZ, HyperbolicLattices, Lattices
 from sage_extensions.categories.definite_lattices import _ExactCVPEngine
-from sage_extensions.categories.group.g_sets import FiniteGSets
 from sage_extensions.categories.hyperbolic_lattices import AllcockEdgewalkReport
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
-from sage_extensions.categories.polyhedral_cones import RationalPolyhedralCones
+from sage_extensions.categories.polyhedral_cones import RationalPolyhedralCones, _primitive_integral_coordinates
 from sage_extensions.categories.sets.set_categories import Sets
 from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.geometry.polyhedron.constructor import Polyhedron
+from sage.libs.pari import pari
 from sage.matrix.constructor import identity_matrix, matrix
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import FreeModuleElement, vector
@@ -44,7 +47,8 @@ from sage_indefinite_port.indefinite.edgewalk_extensions import (
 from sage_indefinite_port.indefinite.edgewalk_rank2 import anisotropic_cycle
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
 from sage_indefinite_port.indefinite.lorentzian_cells import (
-    binary_split_vectors_of_square,
+    binary_split_form_vectors_of_square,
+    binary_split_null_basis,
 )
 
 type _Vector = Lattices.ElementMethods
@@ -65,19 +69,24 @@ def edgewalk_fundamental_domain(
     Returns the preamble's ``AllcockEdgewalkReport`` of ``lattice``: the simple roots of a
     fundamental polyhedron of the reflection group W(L), as elements of ``lattice``, and whether
     ``lattice`` is reflective.
+
+    edgewalk.h:55-67, :2100-2126. ``option_norms`` is ``"all"`` or ``"K3"``
+    (norm-two roots only). With ``early_termination`` false the walk continues
+    past an infinite polyhedron symmetry group and lists every vertex orbit.
+    ``initial_vertex`` is a vertex, or a vertex with its simple roots.
     """
+    if initial_vertex is not None:
+        # A prescribed corner belongs to the original presentation and must
+        # be used as the start, including in the special rank-two cycle.
+        return _Edgewalk(lattice, option_norms=option_norms,
+                         early_termination=early_termination,
+                         initial_vertex=initial_vertex).walk()
     if int(lattice.rank()) > 2 and not lattice.is_isotropic():
         from sage_indefinite_port.indefinite.indefinite_reduction import (
             indefinite_reduced_presentation,
         )
 
         reduction = indefinite_reduced_presentation(lattice)
-        if initial_vertex is not None:
-            if isinstance(initial_vertex, tuple):
-                initial_vertex = (reduction.isometry.inverse()(initial_vertex[0]),
-                                  tuple(reduction.isometry.inverse()(root) for root in initial_vertex[1]))
-            else:
-                initial_vertex = reduction.isometry.inverse()(initial_vertex)
         result = _Edgewalk(reduction.reduced, option_norms=option_norms,
                            early_termination=early_termination, initial_vertex=initial_vertex).walk()
         inverse = reduction.isometry
@@ -94,6 +103,7 @@ def edgewalk_fundamental_domain(
                 for cone in result.vertices()
             ),
             isometry_generators=tuple(inverse * generator * inverse.inverse() for generator in result.polyhedron_isometry_generators()),
+            reason_non_reflective=result.reason_non_reflective(),
         )
     return _Edgewalk(lattice, option_norms=option_norms,
                      early_termination=early_termination, initial_vertex=initial_vertex).walk()
@@ -190,6 +200,52 @@ def _isometry_row_matrix_in_coordinate_order(lattice: Lattices.ParentMethods, is
     )
 
 
+def _hermite_rows(rows: list[list[int]]) -> tuple[list[list[int]], list[list[int]]]:
+    r"""The nonzero rows of the row Hermite normal form H = U A of integer rows A, and the rows of U spanning the left kernel of A.
+
+    Cohen, *A Course in Computational Algebraic Number Theory*, Algorithm 2.4.4
+    (Hermite normal form by Euclidean row operations, transposed to rows) and
+    Proposition 2.4.9: with U unimodular and U A = [H; 0], the rows of U beside
+    the zero rows of U A are a basis of the integral left kernel of A. Pivots are
+    positive and the entries above a pivot lie in [0, pivot), Sage's convention
+    for ``hermite_form``; the form of a lattice is unique, so this is the basis
+    Sage computes.
+    """
+    a = [list(row) for row in rows]
+    u = [[int(i == j) for j in range(len(a))] for i in range(len(a))]
+    width = len(a[0]) if a else 0
+    pivot_row = 0
+    for column in range(width):
+        while True:
+            live = [i for i in range(pivot_row, len(a)) if a[i][column]]
+            if not live:
+                break
+            least = min(live, key=lambda i: abs(a[i][column]))
+            a[pivot_row], a[least] = a[least], a[pivot_row]
+            u[pivot_row], u[least] = u[least], u[pivot_row]
+            if len(live) == 1:
+                break
+            pivot = a[pivot_row][column]
+            for i in range(pivot_row + 1, len(a)):
+                if a[i][column]:
+                    q = a[i][column] // pivot
+                    a[i] = [x - q * y for x, y in zip(a[i], a[pivot_row])]
+                    u[i] = [x - q * y for x, y in zip(u[i], u[pivot_row])]
+        if pivot_row == len(a) or not a[pivot_row][column]:
+            continue
+        if a[pivot_row][column] < 0:
+            a[pivot_row] = [-x for x in a[pivot_row]]
+            u[pivot_row] = [-x for x in u[pivot_row]]
+        pivot = a[pivot_row][column]
+        for i in range(pivot_row):
+            q = a[i][column] // pivot
+            if q:
+                a[i] = [x - q * y for x, y in zip(a[i], a[pivot_row])]
+                u[i] = [x - q * y for x, y in zip(u[i], u[pivot_row])]
+        pivot_row += 1
+    return a[:pivot_row], u[pivot_row:]
+
+
 def _oriented_determinant(left: _Key, right: _Key) -> int:
     return left[0] * right[1] - left[1] * right[0]
 
@@ -213,6 +269,23 @@ def _signed_sqrt_compare(sign_left: int, square_left: Rational, sign_right: int,
     if sign_left > 0:
         return -1 if square_left < square_right else 1
     return -1 if square_left > square_right else 1
+
+
+def _cone_of_rays(rank: int, rows) -> Polyhedron:
+    r"""The cone spanned by coordinate rows, as the engine polyhedron of ``RationalPolyhedralCones.from_rays``.
+
+    The owned cone rebuilds the rays' polyhedron from the primitive integral
+    rows of its H-representation, which fixes the order of its facets and
+    its extreme rays; this is the same engine polyhedron, without the owned
+    covectors and vectors.
+    """
+    rays = Polyhedron(vertices=[(0,) * rank], rays=rows, base_ring=SageQQ)
+    return Polyhedron(
+        ambient_dim=rank,
+        ieqs=[[0, *_primitive_integral_coordinates(tuple(row.A()))] for row in rays.inequalities()],
+        eqns=[[0, *_primitive_integral_coordinates(tuple(row.A()))] for row in rays.equations()],
+        base_ring=SageQQ,
+    )
 
 
 def _primitive_positive_direction(entries) -> tuple[int, ...]:
@@ -255,20 +328,29 @@ class _Candidate:
 class _EdgePlane:
     r"""The rank-two lattice of an edge: the projection Pi of the root sublattice C onto the edge plane (span of the edge's roots)^perp.
 
-    ``plane`` is Pi with its form scaled by ``scale`` to be integral, in the oriented basis ``basis``
-    (rational rows of L tensor Q); ``r0`` is the edge's orientation vector in Pi.
-    ``constraint_inverse`` inverts the rows of a basis of C, so a row v of L tensor Q lies in C
-    exactly when ``v * constraint_inverse`` is integral (edgewalk.h:905, SolutionIntMat(Latt, v_T)).
+    ``form`` is the Gram coefficients (a, b, c) of Pi with its form scaled by ``scale`` to be integral,
+    in the oriented basis ``basis`` (rational rows of L tensor Q); ``r0`` is the coordinate pair of
+    the edge's primitive orientation vector in Pi (edgewalk.h:747, r0_work).
+    ``basis`` holds integer rows h_0, h_1 with b_i = h_i / ``basis_denominator``.
+    ``constraint_inverse`` is (M, e) with M / e the inverse of the rows of a basis of C, so an
+    integral row v lies in C exactly when e divides v * M (edgewalk.h:905, SolutionIntMat(Latt, v_T)).
     ``intersection`` holds the rows, in the coordinates of ``basis``, of a basis of C cap P, the
     sublattice of Pi whose quotient controls the period (edgewalk.h:803, Expr_t).
     """
 
-    constraint_inverse: Matrix_rational_dense
-    basis: Matrix_rational_dense
-    plane: Lattices.ParentMethods
+    constraint_inverse: tuple[tuple[tuple[int, ...], ...], int]
+    basis: tuple[_Key, _Key]
+    basis_denominator: int
+    form: tuple[int, int, int]
     scale: Integer
-    r0: _Vector
+    r0: _Key
     intersection: Matrix_rational_dense
+
+    @property
+    def plane(self) -> Parent:
+        r"""The exact integral rank-two form represented by the cached coefficients."""
+        a, b, c = self.form
+        return Lattices(ZZ)([[a, b], [b, c]])
 
 
 class _Edgewalk:
@@ -355,6 +437,12 @@ class _Edgewalk:
         return matrix(SageQQ, [self.row(item) for item in vectors]).rank() if vectors else 0
 
     def perpendicular_rows(self, vectors: tuple[_RationalRow, ...]) -> Matrix_rational_dense:
+        r"""The echelon basis of the rational perpendicular of ``vectors``.
+
+        Sage's generic Gaussian elimination returns the same unique echelon
+        kernel basis as its default route through FLINT, without the
+        conversions that cost ten times as much on these small matrices.
+        """
         return (
             matrix(
                 SageQQ,
@@ -363,7 +451,7 @@ class _Edgewalk:
                 [entry for row in vectors for entry in row],
             )
             * self.gram
-        ).right_kernel_matrix()
+        ).right_kernel_matrix(algorithm="generic")
 
     def initial_isotropic_vertex(self, k: _Vector | None = None) -> _Vertex | None:
         r"""The ``isotropic_vinberg`` starting corner of pinned edgewalk.h:1880–2055.
@@ -371,41 +459,40 @@ class _Edgewalk:
         The source finds a primitive null vector, enumerates each admissible
         root-norm shell in the projection of C_N ∩ k-perp to k-perp/k,
         selects one simple cone, lifts its walls and completes the affine
-        cusp roots. The preamble supplies the isotropic reduction and exact
-        definite-lattice fixed-square enumeration.
+        cusp roots. The quotient k^perp/k, its norm shells (PARI qfminim) and
+        the simple cone (pplpy) are computed on engine data.
         """
         if k is None:
             k = self.lattice.isotropic_vector()
-        reduction = k.isotropic_reduction()
-        perpendicular = reduction.orthogonal_complement()
-        perpendicular_inclusion = perpendicular.inclusion()
-        quotient_projection = reduction.projection()
-        rank = int(reduction.rank())
-        projected_roots: list[tuple[_Vector, _Vector]] = []
-
-        # Coordinate rows, as for the edge planes: the rows of a basis of
-        # k^perp in L, and the rows of their images in the framing of the
-        # quotient k^perp/k (the projection pi of edgewalk.h:1955-1968,
-        # LatticeProjectionFramework onto the complement of k in k^perp).
-        perpendicular_basis = _coordinate_basis(perpendicular)
-        perpendicular_rows = matrix(SageQQ, [self.row(perpendicular_inclusion(generator)) for generator in perpendicular_basis])
-        quotient_rows = matrix(SageQQ, [_key(quotient_projection(generator)) for generator in perpendicular_basis])
+        # k^perp/k on engine data (edgewalk.h:1955-1968, LatticeProjectionFramework):
+        # the rows K of an integral basis of k^perp (the integral left kernel
+        # of G k), and the Smith transform U of the column c^T of the
+        # coordinates of k in K, U c^T = (+-1, 0, ..., 0)^T, as Sage frames
+        # the cokernel of k -> k^perp (the owned isotropic reduction's Smith
+        # generators).  A vector x K of k^perp projects to the last
+        # coordinates of U x^T; the columns of U^-1 after the first lift
+        # the quotient generators.
         k_column = self.gram * self.row(k).column()
+        perpendicular_rows = (k_column.denominator() * k_column).change_ring(SageZZ).left_kernel_matrix(algorithm="pari").echelon_form().change_ring(SageQQ)
+        k_coordinates = perpendicular_rows.solve_left(self.row(k))
+        smith, unimodular, _right = matrix(SageZZ, [k_coordinates]).transpose().smith_form()
+        if smith[0, 0] != 1:
+            raise ArithmeticError("an isotropic vector must be primitive in k^perp")
+        rank = int(perpendicular_rows.nrows()) - 1
+        quotient_rows = unimodular.matrix_from_rows(range(1, rank + 1)).transpose().change_ring(SageQQ)
+        complement = unimodular.inverse().matrix_from_columns(range(1, rank + 1)).transpose().change_ring(SageQQ) * perpendicular_rows
+        quotient_gram = complement * self.gram * complement.transpose()
+        projected_roots: list[tuple[_RationalRow, _Vector]] = []
 
         for norm in self.norms:
             # edgewalk.h:1951-1954: Latt_inter_NSP = IntersectionLattice(Latt, NSP),
             # the integral left kernel of B G k on the rows B of a basis of C_N.
-            constraint = self.constraint(_rational(norm))
-            constraint_domain = constraint.inclusion().domain()
-            constraint_basis = _coordinate_basis(constraint_domain)
-            constraint_rows = matrix(SageQQ, [self.row(constraint.inclusion()(generator)) for generator in constraint_basis])
-            if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
-                raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
+            constraint_rows, _inverse = self.constraint_rows(self.divisor(norm))
             equations = constraint_rows * k_column
             denominator = SageZZ.one()
             for entry in equations.list():
                 denominator = denominator.lcm(entry.denominator())
-            intersection_rows = (denominator * equations).change_ring(SageZZ).left_kernel().basis_matrix().change_ring(SageQQ) * constraint_rows
+            intersection_rows = (denominator * equations).change_ring(SageZZ).left_kernel_matrix(algorithm="pari").echelon_form().change_ring(SageQQ) * constraint_rows
             # fr.BasisProj (edgewalk.h:1955-1960): the projected generators,
             # read through the perpendicular basis and the quotient framing.
             projected_rows = perpendicular_rows.solve_left(intersection_rows) * quotient_rows
@@ -415,11 +502,21 @@ class _Edgewalk:
             image_rank = hermite.rank()
             image_basis = hermite.matrix_from_rows(range(image_rank)).change_ring(SageQQ)
             lift_rows = transformation.matrix_from_rows(range(image_rank)).change_ring(SageQQ) * intersection_rows
-            image = reduction.subobject_on(tuple(self.plane_element(reduction, row) for row in image_basis.rows()))
-            for root in image.vectors_of_square(reduction.base_ring()(_integer(norm))):
-                projected = image.inclusion()(root)
+            # The norm shell of the image lattice (edgewalk.h:1969-2000) on its
+            # Gram matrix in the basis image_basis: PARI qfminim, the vectors
+            # of square exactly N, each followed by its negative, as the
+            # definite shell enumeration orders them.
+            image_gram = (image_basis * quotient_gram * image_basis.transpose()).change_ring(SageZZ)
+            if not image_gram.is_positive_definite():
+                raise ArithmeticError("the projected root lattice k^perp/k must be positive definite")
+            target = _integer(norm)
+            shell = []
+            for column in pari(image_gram).qfminim(target, None, 0)[2].sage().columns():
+                if column * image_gram * column == target:
+                    shell.extend((column, -column))
+            for coefficients in shell:
+                projected = coefficients * image_basis
                 # fr.GetOnePreimage (edgewalk.h:2010): one preimage in C_N cap k^perp.
-                coefficients = image_basis.solve_left(vector(SageQQ, _key(projected)))
                 lifted = self.element(tuple(coefficients * lift_rows))
                 if self.norm(lifted) != norm:
                     raise ArithmeticError("the isotropic-reduction lift changed a prescribed root norm")
@@ -429,13 +526,7 @@ class _Edgewalk:
             # get_simple_cone: an empty projected root system certifies
             # non-reflectivity, rather than an arithmetic failure.
             return None
-        labels = tuple(reduction.module_generating_set())
-
-        def quotient_row(point: _Vector) -> _RationalRow:
-            coordinates = point.to_vector()
-            return vector(SageQQ, [_rational(coordinates(label)) for label in labels])
-
-        projected_rows = tuple(quotient_row(projected) for projected, _root in projected_roots)
+        projected_rows = tuple(projected for projected, _root in projected_roots)
         if matrix(SageQQ, projected_rows).rank() != rank:
             # edgewalk.h: the projected roots must span the rank-(n-2)
             # quotient for a reflective cusp.
@@ -457,11 +548,13 @@ class _Edgewalk:
                 break
             parameter += 1
         positive = [(projected, root, row) for (projected, root), row in zip(projected_roots, projected_rows, strict=True) if splitting.dot_product(row) > 0]
-        cone = RationalPolyhedralCones(reduction).from_rays([projected for projected, _root, _row in positive])
+        # The extreme rays of the cone of the positive projected roots in
+        # k^perp/k (pplpy dual description, as the owned cone's engine).
+        cone = Polyhedron(rays=[row for _projected, _root, row in positive], base_ring=SageQQ, backend="ppl")
         simple_roots: list[_Vector] = []
         simple_projected_rows: list[_RationalRow] = []
-        for ray in cone.primitive_rays():
-            ray_row = quotient_row(ray)
+        for ray in cone.rays():
+            ray_row = vector(SageQQ, ray.vector())
             # get_one_root (edgewalk.h:2001-2022): the admissible root on this
             # ray, i.e. a positive multiple of it (the quotient is definite).
             for _projected, root, root_row in positive:
@@ -717,6 +810,21 @@ class _Edgewalk:
             roots.append(self.element(tuple(row)))
         return tuple(roots)
 
+    def prescribed_vertex(self, initial: _Vector | tuple[_Vector, _Roots]) -> _Vertex:
+        r"""The vertex given by edgewalk.h:2100-2115 FileVertexRoots or FileVertex."""
+        if isinstance(initial, tuple):
+            generator, roots = initial
+            return _Vertex(generator, tuple(roots))
+        if self.norm(initial) == 0:
+            vertex = self.initial_isotropic_vertex(initial)
+            if vertex is None:
+                raise ValueError(f"the null vector {initial} is not a vertex of a chamber")
+            return vertex
+        roots = self.ordinary_vertex_roots(initial)
+        if self.span_rank(roots) != self.rank - 1:
+            raise ValueError(f"{initial} is not a vertex: its perpendicular roots have rank {self.span_rank(roots)}")
+        return _Vertex(initial, roots)
+
     def initial_vertex(self) -> _Vertex | None:
         r"""Find a corner, first checking the finite root system at a timelike point.
 
@@ -832,7 +940,7 @@ class _Edgewalk:
             if rank < self.rank - 1:
                 return None
             if rank == self.rank - 1:
-                generator = self.primitive(equations.right_kernel_matrix().row(0))
+                generator = self.primitive(equations.right_kernel_matrix(algorithm="generic").row(0))
                 if self.pairing(generator, timelike) > 0:
                     generator = -generator
                 if self.norm(generator) > 0 or self.pairing(generator, timelike) >= 0:
@@ -922,16 +1030,28 @@ class _Edgewalk:
         Lexicographic positivity is a regular ordering on this finite root
         system. Its positive-root cone has precisely the simple-root rays.
         """
-        inclusion = timelike.orthogonal_complement().inclusion()
-        complement = inclusion.domain()
+        # edgewalk.h:1845-1866: one FindFixedDistVectors per norm on the
+        # Gram matrix of the definite complement k^perp.  The complement's
+        # basis rows and Gram matrix are its engine data; PARI qfminim (the
+        # engine of the complement's vectors_of_square) returns one vector
+        # of each sign pair, in the order that shell lists them, and only
+        # the accepted roots are wrapped as lattice vectors.
+        # The rows of k^perp: the echelon basis of the integral left kernel
+        # of G k, the basis of the owned orthogonal complement.
+        gram = self.gram.change_ring(SageZZ)
+        basis = (gram * vector(SageZZ, self.key(timelike))).column().left_kernel_matrix(algorithm="pari").echelon_form()
+        complement_gram = pari(basis * gram * basis.transpose())
         positive: list[_Vector] = []
         for norm in self.norms:
-            for point in complement.vectors_of_square(complement.base_ring()(_integer(norm))):
-                root = inclusion(point)
-                if next(entry for entry in _key(root) if entry) < 0:
+            for point in complement_gram.qfminim(norm, None, 0)[2].sage().columns():
+                root = point * basis
+                if root * gram * root != norm:
                     continue
-                if all((2 * int(self.pairing(root, basis))) % norm == 0 for basis in self.lattice.module_generators()):
-                    positive.append(root)
+                if next(entry for entry in root if entry) < 0:
+                    root = -root
+                if any((2 * entry) % norm for entry in gram * root):
+                    continue
+                positive.append(self.element(tuple(root)))
         if not positive:
             if require_full:
                 # The upstream ordinary-cone constructor rejects a root
@@ -942,7 +1062,7 @@ class _Edgewalk:
         # roots from FindFixedDistVectors, not primitive multiples of them.
         # Use geometric rays only to identify which original roots span
         # the selected cone, retaining each root's prescribed norm.
-        rays = RationalPolyhedralCones(self.lattice).from_rays(positive).primitive_rays()
+        rays = tuple(_primitive_integral_coordinates(tuple(ray.vector())) for ray in _cone_of_rays(self.rank, [self.row(root) for root in positive]).rays())
         if require_full and len(rays) != self.rank - 1:
             # edgewalk.h get_simple_cone_from_lattice requires exactly
             # dimSpace selected walls for an ordinary starting vertex.
@@ -950,37 +1070,62 @@ class _Edgewalk:
         roots_by_direction = {}
         for root in positive:
             roots_by_direction.setdefault(_primitive_positive_direction(_key(root)), root)
-        return tuple(roots_by_direction[_primitive_positive_direction(_key(ray))] for ray in rays)
+        return tuple(roots_by_direction[_primitive_positive_direction(ray)] for ray in rays)
 
-    def constraint(self, norm: Rational) -> Parent:
-        r"""C = {v in L : 2 b(v, L) / norm in Z}, the vectors whose reflection of that norm is integral."""
+    @staticmethod
+    def divisor(norm: Rational) -> int:
+        r"""The divisor d with C_N = {v in L : b(v, L) in d Z}: N/2 for even N, N for odd N."""
         integral_norm = int(norm)
-        return self.constraint_for_divisor(integral_norm // 2 if integral_norm % 2 == 0 else integral_norm)
+        return integral_norm // 2 if integral_norm % 2 == 0 else integral_norm
 
     @cached_method
-    def constraint_for_divisor(self, divisor: int) -> Parent:
-        return self.lattice.divisible_sublattice(divisor)
+    def constraint_rows(self, divisor: int) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
+        r"""The rows of a basis of C = {v in L : b(v, L) in d Z} and their inverse, computed once per norm.
 
-    def edge_plane(self, roots: _Roots, discarded: _Vector, k: _Vector, norm: Rational) -> _EdgePlane:
-        integral_norm = int(norm)
-        return self.edge_plane_for_divisor(
-            roots,
-            discarded,
-            k,
-            integral_norm // 2 if integral_norm % 2 == 0 else integral_norm,
+        edgewalk.h:110-131 ComputeLattice_LN and ComputeSublatticeInfos:
+        C = IntersectionLattice(I, d G^-1), the integral vectors of the
+        lattice d L^# written in the framing of L.  Generic callees: the
+        intersection is Sage's exact ZZ-module intersection (echelon basis)
+        in place of the pinned IntersectionLattice, and the pinned
+        SublatticeBasisReduction (LLL) is not applied.  Every consumer
+        (the edge plane projection, C cap k^perp and the cusp root) reads
+        only the integral span of these rows, so the basis does not matter.
+        """
+        # C = {v in Z^n : G v in d Z^n}.  The integral kernel of [G | -d I]
+        # is {(v, w) : G v = d w}; G is nondegenerate, so w is determined
+        # by v and the projection to v is an isomorphism onto C.  Its
+        # Hermite form is the echelon basis of the ZZ-module intersection.
+        gram = self.gram.change_ring(SageZZ)
+        kernel = gram.augment(-divisor * identity_matrix(SageZZ, self.rank)).right_kernel_matrix(algorithm="pari")
+        rows = kernel.matrix_from_columns(range(self.rank)).hermite_form(include_zero_rows=False).change_ring(SageQQ)
+        if rows.nrows() != self.rank or rows.rank() != self.rank:
+            raise ArithmeticError("C_N must be a full-rank sublattice")
+        rows.set_immutable()
+        inverse = rows.inverse()
+        inverse.set_immutable()
+        return rows, inverse
+
+    @cached_method
+    def constraint_engine(self, divisor: int) -> tuple[tuple[_Key, ...], tuple[tuple[tuple[int, ...], ...], int]]:
+        r"""The integer rows of the basis of C and (M, e) with M / e their inverse, read once per norm from ``constraint_rows``."""
+        rows, inverse = self.constraint_rows(divisor)
+        denominator = inverse.denominator()
+        return (
+            tuple(tuple(int(entry) for entry in row) for row in rows.rows()),
+            (tuple(tuple(int(entry) for entry in row) for row in (denominator * inverse).rows()), int(denominator)),
         )
 
     @cached_method
-    def edge_perpendicular(self, roots: _Roots) -> Parent:
-        r"""The sublattice L cap P of the edge plane P = (span of the edge's roots)^perp.
+    def gram_entries(self) -> tuple[tuple[Rational, ...], ...]:
+        r"""The rows of the Gram matrix as tuples of rationals, read once per walk."""
+        return tuple(tuple(row) for row in self.gram.rows())
 
-        edgewalk.h:598 computes Pplane once per edge; only Latt = C_N varies
-        with the root norm (edgewalk.h:761-764, IntersectionLattice_VectorSpace).
-        """
-        return self.lattice.subobject_on(list(roots)).orthogonal_complement()
+    def edge_plane(self, roots: _Roots, discarded: _Vector, k: _Vector, norm: Rational) -> _EdgePlane:
+        return self.edge_plane_for_divisor(roots, discarded, k, self.divisor(norm))
 
     @cached_method
-    def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
+    def edge_orientation(self, roots: _Roots, discarded: _Vector, k: _Vector) -> tuple[Matrix_rational_dense, _RationalRow]:
+        r"""The oriented basis of the edge plane and the orientation vector r0, computed once per edge (edgewalk.h:598-668)."""
         root_rows = tuple(self.row(root) for root in roots)
         plane_basis = self.perpendicular_rows(root_rows)
         if plane_basis.nrows() != 2:
@@ -994,74 +1139,136 @@ class _Edgewalk:
         if self.norm(k) < 0:
             oriented_basis = matrix(SageQQ, [r0, self.row(k)])
         else:
-            plane = self.rational.subobject_on([self.rational_element(row) for row in plane_basis.rows()])
-            positive = self.rational_row(plane.inclusion()(plane.vector_of_sign(1)))
+            # A vector of positive square in the Lorentzian plane, on its
+            # basis rows b_0, b_1 with Gram g: b_0 if g_00 > 0; else, for
+            # g_00 < 0, b_1 - (g_01/g_00) b_0 of square det(g)/g_00 > 0; and for
+            # g_00 = 0, b_1 + t b_0 of square g_11 + 2 t g_01 = 1.  Every such
+            # vector with b(., k) < 0 lies in one component of the positive
+            # cone, which k bounds, so the orientation of (positive, k) and
+            # the isotropy of the plane do not depend on the choice.
+            first, second = plane_basis.rows()
+            g00, g01, g11 = self.pair(first, first), self.pair(first, second), self.pair(second, second)
+            if g00 > 0:
+                positive = first
+            elif g00 < 0:
+                positive = second - (g01 / g00) * first
+            else:
+                positive = second + ((1 - g11) / (2 * g01)) * first
+            if self.pair(positive, positive) <= 0:
+                raise ArithmeticError("the edge plane must contain a vector of positive square")
             if self.pair(positive, self.row(k)) > 0:
                 positive = -positive
             oriented_basis = matrix(SageQQ, [positive, self.row(k)])
             r0 = -self.row(k)
+        return oriented_basis, r0
 
-        constraint = self.constraint_for_divisor(divisor)
-        constraint_domain = constraint.inclusion().domain()
-        constraint_basis = _coordinate_basis(constraint_domain)
-        constraint_rows = matrix(SageQQ, [self.row(constraint.inclusion()(generator)) for generator in constraint_basis])
-        wall_matrix = matrix(
-            SageQQ,
-            len(root_rows),
-            self.rank,
-            [entry for row in root_rows for entry in row],
-        )
-        # The walls through an edge need not be linearly independent.  The
-        # projection only depends on their rational span; invert the pairing
-        # on an independent basis of that span, not the (possibly singular)
-        # Gram matrix of every wall.  The edge plane is Lorentzian, so its
-        # orthogonal complement must be positive definite and nondegenerate.
-        root_matrix = wall_matrix.row_space().basis_matrix()
+    @cached_method
+    def edge_is_isotropic(self, roots: _Roots, discarded: _Vector, k: _Vector) -> bool:
+        r"""Whether the edge plane P is isotropic, decided once per edge (edgewalk.h:871-889).
+
+        The source factors Gtest = Pplane G Pplane^T (GetIsotropicFactorization).
+        P is Lorentzian of rank two, so it is isotropic exactly when -det(Gtest)
+        is a square in QQ.
+        """
+        oriented_basis, _r0 = self.edge_orientation(roots, discarded, k)
+        return (-(oriented_basis * self.gram * oriented_basis.transpose()).det()).is_square()
+
+    @cached_method
+    def edge_wall_data(self, roots: _Roots) -> tuple[tuple[_Key, ...], int, tuple[_Key, ...]]:
+        r"""The projection of L (x) QQ onto the edge plane and the pairings G W^T with the edge walls, computed once per edge (edgewalk.h:598, Pplane).
+
+        The walls through an edge need not be linearly independent.  The
+        projection only depends on their rational span; invert the pairing
+        on an independent basis of that span (the reduced row echelon rows),
+        not the possibly singular Gram matrix of every wall.  The edge plane
+        is Lorentzian, so its orthogonal complement must be positive definite
+        and nondegenerate.  Row vectors x map to x * K / e for the integer
+        rows K and denominator e returned; the wall pairings are returned as
+        integer rows of a positive multiple of G W^T (only their integral
+        left kernel is read).
+        """
+        root_rows = tuple(self.row(root) for root in roots)
+        wall_matrix = matrix(SageQQ, len(root_rows), self.rank, [entry for row in root_rows for entry in row])
+        echelon = wall_matrix.echelon_form()
+        root_matrix = echelon.matrix_from_rows(range(echelon.rank()))
         root_gram = root_matrix * self.gram * root_matrix.transpose()
         if not root_gram.is_invertible():
             raise ArithmeticError("the edge-wall span must be nondegenerate")
-        projected = [row - (row * self.gram * root_matrix.transpose()) * root_gram.inverse() * root_matrix for row in constraint_rows.rows()]
-        basis = matrix(
-            SageQQ,
-            list((SageQQ**self.rank).span(projected, SageZZ).basis_matrix().rows()),
+        complement = identity_matrix(SageQQ, self.rank) - self.gram * root_matrix.transpose() * root_gram.inverse() * root_matrix
+        wall_pairings = self.gram * wall_matrix.transpose()
+        complement_denominator = complement.denominator()
+        wall_pairings = wall_pairings.denominator() * wall_pairings
+        return (
+            tuple(tuple(int(entry) for entry in row) for row in (complement_denominator * complement).rows()),
+            int(complement_denominator),
+            tuple(tuple(int(entry) for entry in row) for row in wall_pairings.rows()),
         )
-        if basis.nrows() != 2:
+
+    @cached_method
+    def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
+        r"""The rank-two lattice Pi of an edge for one norm, on integer rows (edgewalk.h:747-803)."""
+        oriented_basis, r0 = self.edge_orientation(roots, discarded, k)
+        constraint, constraint_inverse = self.constraint_engine(divisor)
+        complement, denominator, wall_pairings = self.edge_wall_data(roots)
+        columns = range(self.rank)
+        # The ZZ span of the projected rows C K / e is (1/e) times the span of
+        # the integer rows C K; the Hermite normal form is unique and scales
+        # with a positive factor, so this is the echelon basis of Sage's ZZ span.
+        hermite, _kernel = _hermite_rows([[sum(c * row[j] for c, row in zip(row_c, complement)) for j in columns] for row_c in constraint])
+        if len(hermite) != 2:
             raise ArithmeticError("the projected constraint lattice must have rank two")
-        if oriented_basis.transpose().solve_right(basis.transpose()).transpose().det() < 0:
-            basis.rescale_row(0, -1)
-        work_gram = basis * self.gram * basis.transpose()
-        scale = SageZZ.one()
-        for entry in work_gram.list():
-            scale = scale.lcm(entry.denominator())
-        plane_lattice = Lattices(ZZ)([[ZZ(int(scale * work_gram[row, column])) for column in range(2)] for row in range(2)])
-        r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
-        r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
+        first, second = (tuple(row) for row in hermite)
+        # The basis (h_0, h_1) / e is positively oriented against (o_0, o_1)
+        # exactly when the 2 x 2 minors of both on one pair of columns i, j
+        # (with nonzero minor of o) have one sign (Cramer's rule).
+        top, bottom = oriented_basis.row(0), oriented_basis.row(1)
+        i, j, oriented_minor = next((i, j, top[i] * bottom[j] - top[j] * bottom[i]) for i in columns for j in range(i + 1, self.rank) if top[i] * bottom[j] - top[j] * bottom[i])
+        if (first[i] * second[j] - first[j] * second[i] > 0) != (oriented_minor > 0):
+            first = tuple(-entry for entry in first)
+        i, j, minor = next((i, j, first[i] * second[j] - first[j] * second[i]) for i in columns for j in range(i + 1, self.rank) if first[i] * second[j] - first[j] * second[i])
+        gram = self.gram_entries()
+        gram_first = [sum(g * h for g, h in zip(row, first)) for row in gram]
+        gram_second = [sum(g * h for g, h in zip(row, second)) for row in gram]
+        square = denominator * denominator
+        work = [
+            SageQQ(sum(h * g for h, g in zip(first, gram_first))) / square,
+            SageQQ(sum(h * g for h, g in zip(first, gram_second))) / square,
+            SageQQ(sum(h * g for h, g in zip(second, gram_second))) / square,
+        ]
+        scale = work[0].denominator().lcm(work[1].denominator()).lcm(work[2].denominator())
+        form = (int(scale * work[0]), int(scale * work[1]), int(scale * work[2]))
+
+        def coordinates(row) -> tuple[Rational, Rational]:
+            # e * row = x h_0 + y h_1 on columns i, j.
+            x, y = denominator * row[i], denominator * row[j]
+            return (SageQQ(x * second[j] - y * second[i]) / minor, SageQQ(first[i] * y - first[j] * x) / minor)
+
+        r0_work = self.primitive_coordinates(coordinates(r0))
 
         # edgewalk.h:763-764, Basis_P_inter_LN = IntersectionLattice_VectorSpace(Latt, Pplane):
         # C cap P on the same coordinate rows as the projection above. A
         # vector c * B of C (B the rows of a basis of C) lies in P exactly
         # when it pairs to zero with every edge wall, so the coefficient
         # lattice of C cap P is the integral left kernel of B G R^T.
-        if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
-            raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
-        equations = constraint_rows * self.gram * wall_matrix.transpose()
-        denominator = SageZZ.one()
-        for entry in equations.list():
-            denominator = denominator.lcm(entry.denominator())
-        coefficients = (denominator * equations).change_ring(SageZZ).left_kernel().basis_matrix()
-        intersection_rows = coefficients.change_ring(SageQQ) * constraint_rows
-        if intersection_rows.nrows() != 2:
+        _image, kernel = _hermite_rows([[sum(c * row[w] for c, row in zip(row_c, wall_pairings)) for w in range(len(wall_pairings[0]))] for row_c in constraint])
+        # The Hermite normal form of a basis of the integral left kernel is the
+        # echelon basis Sage's left_kernel() carries (the form is unique for
+        # the kernel lattice).
+        coefficients, _zero = _hermite_rows(kernel)
+        if len(coefficients) != 2:
             raise ArithmeticError("C cap P must have rank two")
-        intersection_coordinates = basis.transpose().solve_right(intersection_rows.transpose()).transpose()
-        if any(entry.denominator() != 1 for entry in intersection_coordinates.list()):
+        intersection_rows = [[sum(c * row[j] for c, row in zip(row_c, constraint)) for j in columns] for row_c in coefficients]
+        intersection_coordinates = [entry for row in intersection_rows for entry in coordinates(row)]
+        if any(entry.denominator() != 1 for entry in intersection_coordinates):
             raise ArithmeticError("the perpendicular intersection must be integral in the projected lattice")
         return _EdgePlane(
-            constraint_rows.inverse(),
-            basis,
-            plane_lattice,
+            constraint_inverse,
+            (first, second),
+            denominator,
+            form,
             scale,
-            r0_vector,
-            intersection_coordinates,
+            r0_work,
+            matrix(SageQQ, 2, 2, intersection_coordinates),
         )
 
     @staticmethod
@@ -1070,20 +1277,18 @@ class _Edgewalk:
         return plane.linear_combination({label: ring(_integer(entry)) for label, entry in zip(plane.module_generating_set(), coordinates, strict=True) if entry})
 
     @staticmethod
-    def plane_primitive(plane: Lattices.ParentMethods, coordinates: _RationalRow) -> _Vector:
-        r"""The primitive vector of the plane lattice on the ray of nonzero rational coordinates."""
+    def primitive_coordinates(coordinates: _RationalRow) -> _Key:
+        r"""The coordinates of the primitive integral vector on the ray of nonzero rational coordinates (RemoveFractionVector)."""
         denominator = SageZZ.one()
         for entry in coordinates:
             denominator = denominator.lcm(_rational(entry).denominator())
-        scaled = _Edgewalk.plane_element(plane, vector(SageQQ, [denominator * entry for entry in coordinates]))
-        entries = _key(scaled)
-        content = SageZZ(int(scaled.content()))
+        integral = [SageZZ(denominator * entry) for entry in coordinates]
+        content = SageZZ(0)
+        for entry in integral:
+            content = content.gcd(entry)
         if content == 0:
             raise ValueError("the zero vector does not determine a primitive ray")
-        primitive = vector(SageZZ, (SageZZ(int(entry)).quo_rem(content)[0] for entry in entries))
-        if any(SageZZ(int(entry)) % content for entry in entries):
-            raise ArithmeticError("content does not divide the integral ray coordinates")
-        return _Edgewalk.plane_element(plane, primitive)
+        return tuple(int(entry // content) for entry in integral)
 
     @cached_method
     def _anisotropic_edge_candidate_family(
@@ -1092,7 +1297,7 @@ class _Edgewalk:
         discarded: _Vector,
         k: _Vector,
         norm: Rational,
-    ) -> _Roots:
+    ) -> tuple[_Key, ...]:
         """The complete anisotropic edge-plane family for one root length.
 
         polyhedral_common edgewalk.h:753-845 computes Anisotropic once per
@@ -1103,23 +1308,21 @@ class _Edgewalk:
         original enumeration order.
         """
         edge = self.edge_plane(roots, discarded, k, norm)
-        plane, scale, r0 = edge.plane, edge.scale, edge.r0
-        cycle = anisotropic_cycle(plane, scale * _rational(norm), r0)
+        form, scale = edge.form, edge.scale
+        cycle = anisotropic_cycle(form, scale * _rational(norm), edge.r0)
         if cycle is None:
             return ()
-        automorph, representatives = cycle
+        action, representatives = cycle
+        a, b, c = form
         bound = _rational(scale * norm)
-        multiples: list[_Vector] = []
-        for item in representatives:
-            square = _rational(item.q())
+        multiples: list[_Key] = []
+        for x, y in representatives:
+            square = a * x * x + 2 * b * x * y + c * y * y
             if square <= 0:
                 raise ArithmeticError("Anisotropic must return primitive positive-square vectors")
             multiplier = 1
             while multiplier * multiplier * square <= bound:
-                candidate = plane.scalar_multiple(plane.base_ring()(multiplier), item)
-                if _rational(candidate.q()) != multiplier * multiplier * square:
-                    raise ArithmeticError("anisotropic scalar multiplication changed the square")
-                multiples.append(candidate)
+                multiples.append((multiplier * x, multiplier * y))
                 multiplier += 1
 
         # lorentzian_linalg.h:70-143,
@@ -1133,7 +1336,6 @@ class _Edgewalk:
         # With M the rows of a basis of S = C cap Pi, h preserves S exactly
         # when M h M^{-1} is integral, and acts trivially on Pi/S exactly
         # when (h - 1) M^{-1} is integral.
-        action = _isometry_row_matrix_in_coordinate_order(plane, automorph)
         sublattice = edge.intersection
         sublattice_inverse = sublattice.inverse()
         identity = identity_matrix(SageQQ, 2)
@@ -1153,9 +1355,10 @@ class _Edgewalk:
             quotient_order += 1
         period_order = preserving_order * quotient_order
 
+        (p00, p01), (p10, p11) = ((int(entry) for entry in row) for row in action.rows())
         family = list(multiples)
         for _ in range(1, period_order):
-            multiples = [automorph(item) for item in multiples]
+            multiples = [(x * p00 + y * p10, x * p01 + y * p11) for x, y in multiples]
             family.extend(multiples)
         return tuple(family)
 
@@ -1167,31 +1370,36 @@ class _Edgewalk:
         k: _Vector,
         norm: Rational,
         residual: Rational,
-    ) -> _Roots:
+    ) -> tuple[_Key, ...]:
         # The pinned fixed-norm factorization admits negative residual
         # squares as well as positive ones. Only the zero-square case lacks
         # a finite signed factor-pair enumeration.
         if residual == 0:
             return ()
         edge = self.edge_plane(roots, discarded, k, norm)
-        plane, scale, r0 = edge.plane, edge.scale, edge.r0
-        if plane.is_isotropic():
+        scale = edge.scale
+        if self.edge_is_isotropic(roots, discarded, k):
             square = scale * residual
             if square.denominator() != 1:
                 return ()
+            a, b, c = edge.form
+            x0, y0 = edge.r0
             # Pinned edgewalk.h:921-961 uses the *entire* signed factor-pair
             # enumeration, including imprimitive vectors, before ordering
             # roots and checking their ambient integral reconstructions.
             # A vector-orbit representative family is not that candidate set.
-            vectors = [item for item in binary_split_vectors_of_square(plane, int(square)) if _oriented_determinant(_key(r0), _key(item)) > 0]
+            # The source factors the form on integers (Factor_GP_LN); so does
+            # binary_split_form_vectors_of_square, with no plane lattice.
+            vectors = [item for item in binary_split_form_vectors_of_square(edge.form, int(square)) if _oriented_determinant(edge.r0, item) > 0]
             if self.norm(k) < 0:
-                vectors = [item for item in vectors if plane.b(r0, item) > 0]
-            vectors.sort(key=lambda item: cmp_to_key(_orientation_compare)(_key(item)))
+                vectors = [(x, y) for x, y in vectors if a * x0 * x + b * (x0 * y + y0 * x) + c * y0 * y > 0]
+            vectors.sort(key=cmp_to_key(_orientation_compare))
             return tuple(vectors)
         target_square = _rational(scale * residual)
         if target_square <= 0 or target_square > _rational(scale * norm) or target_square.denominator() != 1:
             return ()
-        return tuple(item for item in self._anisotropic_edge_candidate_family(roots, discarded, k, norm) if _rational(item.q()) == target_square)
+        a, b, c = edge.form
+        return tuple((x, y) for x, y in self._anisotropic_edge_candidate_family(roots, discarded, k, norm) if a * x * x + 2 * b * x * y + c * y * y == target_square)
 
     def extension_roots(
         self,
@@ -1202,18 +1410,22 @@ class _Edgewalk:
     ) -> _Roots:
         edge = self.edge_plane(roots, discarded, k, extension.norm)
         work_vectors = self.binary_candidates(roots, discarded, k, extension.norm, extension.residual_norm)
-        component = vector(SageQQ, extension.u_component)
-        for work_vector in work_vectors:
-            ambient = component + edge.basis.transpose() * vector(SageQQ, _key(work_vector))
+        first, second = edge.basis
+        denominator = edge.basis_denominator
+        inverse, inverse_denominator = edge.constraint_inverse
+        component = extension.u_component
+        for x, y in work_vectors:
+            ambient = [u + SageQQ(x * a + y * b) / denominator for u, a, b in zip(component, first, second, strict=True)]
             if any(entry.denominator() != 1 for entry in ambient):
                 continue
+            ambient = [int(entry) for entry in ambient]
             # edgewalk.h:905,988 get_next_anisotropic/get_next_isotropic:
             # SolutionIntMat(Latt, v_T), every integral candidate must
             # belong to the norm-specific lattice.
-            if any(entry.denominator() != 1 for entry in ambient * edge.constraint_inverse):
+            if any(sum(a * row[j] for a, row in zip(ambient, inverse)) % inverse_denominator for j in range(self.rank)):
                 continue
             root = self.element(tuple(ambient))
-            if self.pair(ambient, ambient) != extension.norm:
+            if sum(a * g * b for a, row in zip(ambient, self.gram_entries()) for g, b in zip(row, ambient)) != extension.norm:
                 raise ArithmeticError("rank-two reconstruction changed the root norm")
             # edgewalk.h get_next_anisotropic/get_next_isotropic returns the
             # FIRST integral member of this ordered family. Later members
@@ -1273,30 +1485,51 @@ class _Edgewalk:
         # the reference algorithm's subsequent extensions and stabilizers.
         return _Vertex(generator, (*roots, alpha))
 
-    def cusp_root(self, constraint: Parent, component: tuple[Rational, ...], k: _Vector) -> _Vector | None:
-        r"""The point u + c k of C on the line through the component u in direction k with the least c > 0."""
-        points = constraint.affine_line_points(self.rational_element(vector(SageQQ, component)), k)
-        if points is None:
+    def cusp_root(self, divisor: int, component: tuple[Rational, ...], k: _Vector) -> _Vector | None:
+        r"""The point u + c k of C on the line through the component u in direction k with the least c > 0.
+
+        lorentzian_linalg.h:160-215 ResolveLattEquation: express u and k in a
+        basis of C cap span(u, k), make the k coordinate a single gcd entry by
+        a unimodular change, and read the solvability condition and the least
+        positive parameter from the remaining entries.
+        """
+        rows, inverse = self.constraint_rows(divisor)
+        u = vector(SageQQ, component) * inverse
+        d = self.row(k) * inverse
+        span = matrix(SageQQ, [u, d])
+        if span.rank() != 2:
+            raise ArithmeticError("the parabolic component and the cusp must be independent")
+        denominator = SageZZ.one()
+        for entry in span.list():
+            denominator = denominator.lcm(entry.denominator())
+        # IntersectionLattice_VectorSpace(Latt, {u, k}): Z^n cap span in the
+        # coordinates of the basis of C.
+        intersection = (denominator * span).change_ring(SageZZ).saturation().change_ring(SageQQ)
+        u1, u2 = intersection.solve_left(u)
+        k1, k2 = intersection.solve_left(d)
+        # ComputePairGcd(k1, k2): a unimodular P with (k1, k2) P = (g, 0).
+        scale = k1.denominator().lcm(k2.denominator())
+        gcd, s, t = SageZZ(scale * k1).xgcd(SageZZ(scale * k2))
+        left, right = SageZZ(scale * k1) // gcd, SageZZ(scale * k2) // gcd
+        # P = [[s, -right], [t, left]] has determinant s*left + t*right = 1.
+        u1_norm = s * u1 + t * u2
+        u2_norm = -right * u1 + left * u2
+        k1_norm = gcd / scale
+        if u2_norm.denominator() != 1:
             return None
-        base, step = (constraint.inclusion()(point) for point in points)
-        position = next(index for index, entry in enumerate(_key(k)) if entry)
-
-        def coefficient(row: _RationalRow) -> Rational:
-            return row[position] / _key(k)[position]
-
-        offset = coefficient(self.row(base) - vector(SageQQ, component))
-        increment = coefficient(self.row(step))
-        threshold = -offset / increment
-        shift = threshold.floor() + 1 if increment > 0 else threshold.ceil() - 1
-        root = base + self.lattice.scalar_multiple(self.lattice.base_ring()(int(shift)), step)
-        if offset + shift * increment <= 0:
+        c0 = -u1_norm / k1_norm
+        step = 1 / k1_norm
+        threshold = -c0 / step
+        h = threshold.floor() + 1 if step > 0 else threshold.ceil() - 1
+        c = c0 + h * step
+        if c <= 0:
             raise ArithmeticError("the cusp equation must return c > 0")
-        return root
+        return self.element(tuple(vector(SageQQ, component) + c * self.row(k)))
 
     def cusp_roots(self, roots: _Roots, k: _Vector, previous: _Vector) -> _Roots:
         candidates: list[tuple[int, Rational, Rational, _Vector]] = []
         for extension in parabolic_extensions(self.lattice, roots, self.norms):
-            root = self.cusp_root(self.constraint(extension.norm), extension.u_component, k)
+            root = self.cusp_root(self.divisor(extension.norm), extension.u_component, k)
             if root is None:
                 continue
             scalar = -_rational(self.pairing(previous, root))
@@ -1324,11 +1557,16 @@ class _Edgewalk:
         return tuple(accepted)
 
     def isotropic_next_vertex(self, roots: _Roots, discarded: _Vector, k: _Vector) -> _Vertex:
-        perpendicular = self.edge_perpendicular(roots)
-        plane = perpendicular.inclusion().domain()
+        # The two null lines of the split edge plane L cap P on engine rows:
+        # P is the integral left kernel of G R^T (R the rows of the walls),
+        # and each line is primitive in L cap P, which is saturated in L.
+        gram = self.gram.change_ring(SageZZ)
+        walls = matrix(SageZZ, [self.key(root) for root in roots])
+        plane_rows = (gram * walls.transpose()).left_kernel_matrix(algorithm="pari").echelon_form()
+        plane_gram = plane_rows * gram * plane_rows.transpose()
         choices: dict[_Key, _Vector] = {}
-        for isotropic in plane.primitive_isotropic_vectors():
-            candidate = perpendicular.inclusion()(isotropic)
+        for line in binary_split_null_basis((plane_gram[0, 0], plane_gram[0, 1], plane_gram[1, 1])):
+            candidate = self.element(tuple(vector(SageZZ, line) * plane_rows))
             # edgewalk.h:1094-1120, get_can_gen orients each isotropic
             # line by b(k, v) < 0 *before* testing the discarded wall.
             # Primitive-isotropic-line enumerators need not return the
@@ -1373,7 +1611,7 @@ class _Edgewalk:
         # has no vertex in the projective closure, so the reflection chamber
         # cannot be a finite-volume fundamental polyhedron.  This is a
         # nonreflective terminal edge, not a failed cusp computation.
-        if not self.edge_perpendicular(roots).is_isotropic():
+        if not self.edge_is_isotropic(roots, discarded, vertex.generator):
             return None
         return self.isotropic_next_vertex(roots, discarded, vertex.generator)
 
@@ -1382,23 +1620,47 @@ class _Edgewalk:
         r"""The walls along each outgoing edge and a wall orienting that edge."""
         if len(vertex.roots) == 1:
             return ()
-        cone = RationalPolyhedralCones(self.lattice).from_rays(vertex.roots)
+        rows = [self.row(root) for root in vertex.roots]
+        cone = _cone_of_rays(self.rank, rows)
+        if cone.dim() <= 0:
+            return ()
         directions: list[tuple[_Roots, _Vector]] = []
-        for covector in cone.facet_covectors():
-            included = tuple(root for root in vertex.roots if cone.evaluate_covector(covector, root) == 0)
-            omitted = tuple(root for root in vertex.roots if cone.evaluate_covector(covector, root) != 0)
+        for inequality in cone.inequalities():
+            covector = vector(SageQQ, inequality.A())
+            included = tuple(root for root, row in zip(vertex.roots, rows, strict=True) if covector.dot_product(row) == 0)
+            omitted = tuple(root for root, row in zip(vertex.roots, rows, strict=True) if covector.dot_product(row) != 0)
             if not omitted:
                 raise ArithmeticError("a root-cone facet must omit a wall")
-            # An ideal corner with several affine components can omit more
-            # than one wall. Any omitted wall fixes the same forward side.
-            directions.append((included, omitted[0]))
+            # edgewalk.h:525-539 GetAdjacencyDirection: v_disc is the last
+            # root outside the facet. An ideal vertex with several affine
+            # components has facets that omit several walls (U+<2>+<2>
+            # under K3 norms). Every omitted wall gives the same edge: the
+            # roots vanish at k, so a point x = a k + c d of the edge plane
+            # P = (included)^perp pairs with an omitted root r as
+            # b(r, x) = c b(r, d), where d spans the edge ray and
+            # b(r, d) < 0 because r is not a wall of that edge. The tests
+            # in edge_plane, vertex_from_root and isotropic_next_vertex
+            # read only this sign, which is -sign(c) for every omitted r.
+            directions.append((included, omitted[-1]))
         return tuple(directions)
+
+    @cached_method
+    def coloured_points(self) -> tuple[Parent, tuple[Element, Element]]:
+        r"""The product L x {0, 1} and its two colours, built once per walk."""
+        colours = Sets.Δ[1]
+        return Sets().product((self.lattice, colours)), (colours[0], colours[1])
 
     def coloured_family(self, pairs: tuple[tuple[_Vector, int], ...]) -> Element:
         r"""The coloured family i -> (v_i, c_i) in Sets().Mor(I, L x {0, 1})."""
-        colours = Sets.Δ[1]
-        points = Sets().product((self.lattice, colours))
-        return Sets().Mor(Sets.Δ[len(pairs) - 1], points)(lambda index: points((pairs[int(index)][0], colours[pairs[int(index)][1]])))
+        points, colours = self.coloured_points()
+
+        # The stabilizer and transporter read each value many times; each
+        # point of L x {0, 1} is built on its first reading only.
+        @cache
+        def point(index: int) -> Element:
+            return points((pairs[index][0], colours[pairs[index][1]]))
+
+        return Sets().Mor(Sets.Δ[len(pairs) - 1], points)(lambda index: point(int(index)))
 
     @cached_method
     def vertex_configuration(self, vertex: _Vertex) -> Element:
@@ -1416,20 +1678,52 @@ class _Edgewalk:
         colours = [0] * len(vertex.roots) + [1]
         return self.coloured_family(tuple(zip(vectors, colours, strict=True)))
 
+    @cached_method
+    def configuration_invariant(self, vertex: _Vertex) -> tuple:
+        r"""An isometry invariant of the coloured configuration of ``vertex``.
+
+        # source: edgewalk.h:1457 func_insert_vertex tests LORENTZ_TestEquivalence
+        # only for known vertices of equal hash, the hash of the canonical
+        # weighted matrix (fund_domain_vertices.h:365, ComputeHashWeightMatrix_raw).
+
+        Each vector contributes its colour, its norm and the sorted coloured
+        pairings with the other vectors. An isometry carrying one
+        configuration to the other up to a colour-preserving reindexing
+        preserves every entry, so configurations with different invariants
+        have no transporter, and only equal invariants are tested.
+        """
+        vectors = (*vertex.roots, vertex.generator)
+        colours = (0,) * len(vertex.roots) + (1,)
+        return tuple(
+            sorted(
+                (
+                    colour,
+                    self.norm(vector_),
+                    tuple(sorted((colours[other], self.pairing(vector_, vectors[other])) for other in range(len(vectors)) if other != index)),
+                )
+                for index, (vector_, colour) in enumerate(zip(vectors, colours, strict=True))
+            )
+        )
+
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
         return tuple(self.key(isometry(generator)) for generator in _coordinate_basis(self.lattice))
 
-    @staticmethod
-    def common_fixed_space(invariant: Parent, isometry: LatticeIsometryMethods) -> Parent | None:
-        r"""The sublattice fixed by the group generated so far, or None once that group is infinite.
+    def common_fixed_space(self, invariant: Matrix_rational_dense, isometry_matrix: Matrix_integer_dense) -> Matrix_rational_dense | None:
+        r"""The rows of the rational space fixed by the group generated so far, or None once that group is infinite.
 
         A finite cone-preserving group fixes a timelike vector by averaging.
         Conversely its integral stabilizer is discrete in a compact real
-        orthogonal group, hence finite. The common fixed lattice decides both
+        orthogonal group, hence finite. The common fixed space decides both
         directions, without separate order computations for the generators.
+        An isometry acts on rows by x -> x M, so its fixed space is the left
+        kernel of M - 1; the negative index of the form on the intersection
+        is PARI qfsign of its Gram matrix.
         """
-        fixed = invariant.intersection(isometry.invariant_lattice())
-        _positive, negative = fixed.inclusion().domain().signature_pair()
+        fixed_rows = (isometry_matrix - 1).change_ring(SageQQ).left_kernel_matrix()
+        fixed = invariant.row_space().intersection(fixed_rows.row_space()).basis_matrix()
+        if not fixed.nrows():
+            return None
+        _positive, negative = pari(fixed * self.gram * fixed.transpose()).qfsign()
         return None if int(negative) == 0 else fixed
 
     @cached_method
@@ -1446,11 +1740,17 @@ class _Edgewalk:
         """
         if not roots:
             return False
-        inequalities = tuple(self.wall_covector(root) for root in roots)
-        chamber = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
-        if not chamber.is_pointed():
+        # DualDescriptionStandard of ListIneq = -LVect * G (edgewalk.h:1721-1726)
+        # on the Gram matrix and the root coordinates: the cone
+        # {x : -b(root, x) >= 0} and its extreme rays.
+        chamber = Polyhedron(
+            ieqs=[(0, *(-(self.gram * self.row(root)))) for root in roots],
+            base_ring=SageQQ,
+            backend="ppl",
+        )
+        if chamber.lines():
             return False
-        rays = tuple(chamber.primitive_rays())
+        rays = tuple(vector(SageQQ, ray.vector()) for ray in chamber.rays())
         # The dual-description norm check alone is vacuous on the zero
         # cone.  A hyperbolic chamber must have full span and contain a
         # timelike vector.  Moreover, different nonspacelike rays must
@@ -1458,13 +1758,13 @@ class _Edgewalk:
         # span contains spacelike vectors despite each ray having q <= 0.
         # Pairwise nonpositive inner products make the entire positive span
         # nonspacelike by expanding the square of any positive combination.
-        if not rays or self.span_rank(rays) != self.rank:
+        if not rays or matrix(SageQQ, rays).rank() != self.rank:
             return False
-        if any(self.norm(ray) > 0 for ray in rays):
+        if any(self.pair(ray, ray) > 0 for ray in rays):
             return False
-        if any(self.pairing(left, right) > 0 for index, left in enumerate(rays) for right in rays[index + 1 :]):
+        if any(self.pair(left, right) > 0 for index, left in enumerate(rays) for right in rays[index + 1 :]):
             return False
-        return any(self.norm(ray) < 0 for ray in rays) or any(self.pairing(left, right) < 0 for index, left in enumerate(rays) for right in rays[index + 1 :])
+        return any(self.pair(ray, ray) < 0 for ray in rays) or any(self.pair(left, right) < 0 for index, left in enumerate(rays) for right in rays[index + 1 :])
 
     def report(
         self,
@@ -1485,18 +1785,38 @@ class _Edgewalk:
         )
 
     def edge_orbits(self, vertex: _Vertex, local_generators: tuple[LatticeIsometryMethods, ...]) -> tuple[tuple[_Roots, _Vector], ...]:
-        """Outgoing edges modulo the supplied full vertex stabilizer."""
+        r"""Outgoing edges modulo the supplied full vertex stabilizer, the first direction of each orbit in facet order.
+
+        edgewalk.h:1555 OrbitSplittingSet(vf, GRP1_integral): the facets of
+        the root cone split into orbits of the stabilizer acting on the roots.
+        A generator acts on root coordinates by x -> x * M, M the rows of the
+        images of the basis (``isometry_key``), so the orbits are swept on the
+        root coordinates and the integral matrices of the generators.
+        """
         directions = self.edge_directions(vertex)
-        direction_positions = {frozenset(self.key(root) for root in roots): index for index, (roots, _discarded) in enumerate(directions)}
+        root_rows = [tuple(vector(SageZZ, self.key(root)) for root in roots) for roots, _discarded in directions]
+        position = {frozenset(tuple(row) for row in rows): index for index, rows in enumerate(root_rows)}
+        actions = tuple(matrix(SageZZ, self.isometry_key(generator)) for generator in local_generators)
+        reached = [False] * len(directions)
+        representatives = []
+        for start in range(len(directions)):
+            if reached[start]:
+                continue
+            reached[start] = True
+            representatives.append(start)
+            frontier = [start]
+            while frontier:
+                images = []
+                for index in frontier:
+                    for action in actions:
+                        image = position[frozenset(tuple(row * action) for row in root_rows[index])]
+                        if not reached[image]:
+                            reached[image] = True
+                            images.append(image)
+                frontier = images
+        return tuple(directions[index] for index in representatives)
 
-        def act_on_direction(isometry: LatticeIsometryMethods, index: int) -> int:
-            return direction_positions[frozenset(self.key(isometry(root)) for root in directions[index][0])]
-
-        local_group = self.lattice.O().subgroup(local_generators)
-        direction_orbits = FiniteGSets(local_group)(tuple(range(len(directions))), act_on_direction).orbits()
-        return tuple(directions[int(orbit.representative())] for orbit in direction_orbits)
-
-    def binary_walk(self) -> AllcockEdgewalkReport:
+    def binary_walk(self, initial: _Vertex | None = None) -> AllcockEdgewalkReport:
         """The edgewalk of a binary lattice: a compact segment between two walls, or no finite chamber.
 
         # source: edgewalk.h:2147-2188 StandardEdgewalkAnalysis, with rank two.
@@ -1512,7 +1832,7 @@ class _Edgewalk:
         its own edge returns to k.
         """
         supplied = self.supplied_initial_vertex
-        if supplied is not None:
+        if supplied is not None and initial is None:
             point = supplied[0] if isinstance(supplied, tuple) else supplied
             if point.parent() is not self.lattice or self.norm(point) > 0:
                 raise ValueError("the starting vertex must be a nonspacelike vector of the walking lattice")
@@ -1521,16 +1841,21 @@ class _Edgewalk:
             # perpendicular quotient. The source's get_simple_cone raises
             # NonReflectivityException("list of roots is empty").
             return self.report([], False, (), [], "list of roots is empty")
-        if supplied is None:
-            initial = self.initial_vertex()
-        elif isinstance(supplied, tuple):
-            point, roots = supplied
-            if any(root.parent() is not self.lattice or self.pairing(point, root) != 0
-                   or self.norm(root) not in self.norms for root in roots):
-                raise ValueError("the starting vertex has invalid wall roots")
-            initial = _Vertex(point, tuple(roots))
-        else:
-            initial = _Vertex(supplied, self.ordinary_vertex_roots(supplied))
+        if initial is None:
+            if supplied is None:
+                initial = self.initial_vertex()
+            elif isinstance(supplied, tuple):
+                point, roots = supplied
+                initial = _Vertex(point, tuple(roots))
+            else:
+                initial = _Vertex(supplied, self.ordinary_vertex_roots(supplied))
+        if initial is not None and (initial.generator.parent() is not self.lattice
+                                   or self.norm(initial.generator) > 0
+                                   or any(root.parent() is not self.lattice
+                                          or self.pairing(initial.generator, root) != 0
+                                          or self.norm(root) not in self.norms
+                                          for root in initial.roots)):
+            raise ValueError("the binary starting vertex has invalid wall roots")
         if initial is None or len(initial.roots) != 1:
             raise ValueError("a binary starting vertex must have exactly one wall root")
         (root,) = initial.roots
@@ -1545,51 +1870,66 @@ class _Edgewalk:
         vertices = [initial] if symmetry is not None else [initial, neighbor]
         return self.report(vertices, True, (root, neighbor_root), [] if symmetry is None else [symmetry])
 
-    def walk(self) -> AllcockEdgewalkReport:
-        if self.rank == 2:
-            return self.binary_walk()
-        supplied = self.supplied_initial_vertex
-        if supplied is None:
-            initial = self.initial_vertex()
-        elif isinstance(supplied, tuple):
-            point, roots = supplied
-            if point.parent() is not self.lattice or any(root.parent() is not self.lattice for root in roots):
-                raise ValueError("the starting vertex and its roots must belong to the walking lattice")
-            if self.norm(point) > 0 or any(self.pairing(point, root) != 0 or
-                                           self.norm(root) not in self.norms for root in roots):
-                raise ValueError("the supplied starting vertex has invalid wall roots")
-            initial = _Vertex(point, tuple(roots))
-        else:
-            if supplied.parent() is not self.lattice or self.norm(supplied) > 0:
-                raise ValueError("the starting vertex must be a nonspacelike lattice vector")
-            initial = (self.initial_isotropic_vertex(supplied) if self.norm(supplied) == 0
-                       else _Vertex(supplied, self.ordinary_vertex_roots(supplied)))
+    def walk(self, initial: _Vertex | None = None, visit: Callable[[_Vertex], bool] | None = None) -> AllcockEdgewalkReport:
+        r"""edgewalk.h:1697-1792. A visit callback returning True stops at that vertex."""
+        if self.rank == 2 and visit is None:
+            return self.binary_walk(initial)
+        if initial is None:
+            supplied = self.supplied_initial_vertex
+            if supplied is None:
+                initial = self.initial_vertex()
+            elif isinstance(supplied, tuple):
+                point, roots = supplied
+                initial = _Vertex(point, tuple(roots))
+            else:
+                if supplied.parent() is not self.lattice or self.norm(supplied) > 0:
+                    raise ValueError("the starting vertex must be a nonspacelike lattice vector")
+                initial = (self.initial_isotropic_vertex(supplied) if self.norm(supplied) == 0
+                           else _Vertex(supplied, self.ordinary_vertex_roots(supplied)))
+        if initial is not None and (
+            initial.generator.parent() is not self.lattice
+            or self.norm(initial.generator) > 0
+            or any(root.parent() is not self.lattice
+                   or self.pairing(initial.generator, root) != 0
+                   or self.norm(root) not in self.norms for root in initial.roots)
+        ):
+            raise ValueError("the supplied starting vertex has invalid wall roots")
         if initial is None:
             return self.report([], False, (), [])
+        if visit is not None and visit(initial):
+            return self.report([initial], False, (), [])
 
         vertices = [initial]
         configurations = [self.vertex_configuration(initial)]
         seen: set[tuple[_Key, ...]] = {self.identity_key}
         isometries: list[LatticeIsometryMethods] = []
-        invariant = self.lattice.subobject_on(list(_coordinate_basis(self.lattice)))
+        # A rational row x is fixed by a chamber symmetry with row matrix M
+        # precisely when x(M-I)=0. A finite cone-preserving group fixes a
+        # timelike vector by averaging; conversely the integral stabilizer of
+        # a timelike vector is discrete in a compact orthogonal group and is
+        # therefore finite. Store the complete common fixed space exactly.
+        isometry_matrices: list[Matrix_integer_dense] = []
+        invariant = identity_matrix(SageQQ, self.rank)
         nonreflective = False
         nonreflective_reason = None
 
         def admit(isometry: LatticeIsometryMethods) -> bool:
-            r"""Record a new symmetry of the polyhedron; False once the group they generate is infinite."""
+            r"""Adjoin the isometry, preserving an exact infinite-group certificate."""
             nonlocal invariant, nonreflective, nonreflective_reason
             key = self.isometry_key(isometry)
             if key in seen:
                 return True
             seen.add(key)
             isometries.append(isometry)
+            action = matrix(SageZZ, key)
+            isometry_matrices.append(action)
             if nonreflective:
                 return True
-            fixed = self.common_fixed_space(invariant, isometry)
+            fixed = self.common_fixed_space(invariant, action)
             if fixed is None:
                 nonreflective = True
                 if self.early_termination:
-                    nonreflective_reason = "The generated chamber-isometry group has no nonzero common fixed vector"
+                    nonreflective_reason = "The generated chamber-isometry group has no nonzero common fixed timelike vector"
                 return not self.early_termination
             invariant = fixed
             return True
@@ -1597,12 +1937,32 @@ class _Edgewalk:
         def certified_roots() -> _Roots:
             # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate: close the
             # accumulated walls under every discovered chamber symmetry.
-            group = self.lattice.O().subgroup(tuple(isometries))
-            seeds = tuple({self.key(root): root for vertex in vertices for root in vertex.roots}.values())
-            closure = FiniteGSets(group).from_finite_orbits(seeds, lambda isometry, root: isometry(root))
-            return tuple(sorted(closure, key=self.key))
+            # compute_full_root_orbit_iter (edgewalk.h:1216-1258): the
+            # orbits of the simple roots under the generators, on the
+            # coordinates of the roots and the integral matrices of the
+            # isometries; each root is wrapped once per walk.
+            for vertex in vertices:
+                for root in vertex.roots:
+                    root_elements.setdefault(self.key(root), root)
+            frontier = [vector(SageZZ, key) for key in root_elements]
+            closed = set(root_elements)
+            while frontier:
+                images = []
+                for row in frontier:
+                    for generator in isometry_matrices:
+                        image = row * generator
+                        key = tuple(image)
+                        if key not in closed:
+                            closed.add(key)
+                            images.append(image)
+                frontier = images
+            for key in closed:
+                if key not in root_elements:
+                    root_elements[key] = self.element(key)
+            return tuple(root_elements[key] for key in sorted(closed))
 
         certified_root_count = 0
+        root_elements: dict[_Key, _Vector] = {}
 
         def try_reflectivity_certificate() -> AllcockEdgewalkReport | None:
             # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate tests the dual
@@ -1645,7 +2005,12 @@ class _Edgewalk:
                         "An anisotropic chamber edge has no finite root extension or rational ideal endpoint",
                     )
                 neighbour_configuration = self.vertex_configuration(neighbour)
-                isometries_to_neighbour = (self.lattice.O().transporter(known, neighbour_configuration) for known in configurations)
+                invariant_of_neighbour = self.configuration_invariant(neighbour)
+                isometries_to_neighbour = (
+                    self.lattice.O().transporter(known, neighbour_configuration)
+                    for known, known_vertex in zip(configurations, vertices, strict=True)
+                    if self.configuration_invariant(known_vertex) == invariant_of_neighbour
+                )
                 transporter = next(
                     (isometry for isometry in isometries_to_neighbour if isometry is not None),
                     None,
@@ -1653,6 +2018,8 @@ class _Edgewalk:
                 if transporter is None:
                     vertices.append(neighbour)
                     configurations.append(neighbour_configuration)
+                    if visit is not None and visit(neighbour):
+                        return self.report(vertices, False, (), isometries)
                     certificate = try_reflectivity_certificate()
                     if certificate is not None:
                         return certificate

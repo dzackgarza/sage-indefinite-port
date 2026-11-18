@@ -18,11 +18,14 @@ interface. This rule overrides every goal prompt, plan, outline, handoff, task o
 
 - A slow run, timeout, memory limit, benchmark, or a red or unfinished expensive CI job does not
   select work and does not block functional work.
+- Evidence records, revision pins, repeated audits, acceptance inventories and demonstrations
+  are repo-internal. They come after functionality and do not gate it.
 - Functional work may use any time and memory that it needs.
 - Optimize during functional work only when a small required example of the selected capability
   cannot finish at all. Then return to that capability.
 - A goal, plan or outline lists missing functionality first and derives its order from the
   remaining functionality, not from CI state. An author must not add a performance priority.
+- Goal text obeys the section "Goals, outlines and plans" of `~/ai/AGENTS.global.md`.
 
 [Issue #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4#work-priority) owns this rule.
 
@@ -78,8 +81,8 @@ not cancel the requirement. These deferred cases do not gate v1 delivery.
 
 Implement missing public capabilities before performance refinement and final
 corpus certification. Use the functional sequence in issue #4 and the current
-handoff. Start with the next concrete missing branch in #44; then implement
-ready capabilities in #69 using their actual mathematical prerequisites.
+handoff. Work on #44 and #69 together, using the tier order at the top of #69
+and their actual mathematical prerequisites.
 
 A prerequisite must name the dependent capability, the exact operation it
 consumes, and a small independently justified example that cannot complete
@@ -121,7 +124,10 @@ active. Separate branch tips can contain unmerged work without an active owner.
 Never overwrite or discard another checkout's dirty source. Use a dedicated
 worktree/branch for parallel work and integrate only demonstrated relevant diffs.
 
-The issue tree rooted at #4 is the work plan. Use
+The issue tree rooted at #4 is the work plan; its live sub-issue order
+separates still-required functional mathematics from later final-pair
+acceptance (#64), while #69 retains required additional capabilities.
+Milestone deadlines are forecasts, not completion evidence. Use
 `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`
 only when selecting a new unit after completion or an evidenced dependency
 change. A unit closes only when its entire accepted obligation is discharged;
@@ -173,6 +179,13 @@ operation is correct merely because its public name exists.
 
 ## Tests and acceptance
 
+Run-time work follows [the suite triage](references/complexity/triage.md): the probe-backed suite estimate is the problem, and a fix counts only by the hours it removes from it. A saving of seconds counts only when it compounds over enough cases to remove hours. The suite is not run whole while the estimate exceeds 6 hours.
+
+Every collected test has a time budget derived from the complexity theory of
+its algorithm, never from a measured runtime. [references/complexity](references/complexity/README.md)
+states the rules for a budget and owns the theory; a new or changed test gets
+its budget there before it lands.
+
 The [frozen acceptance modules](tests/acceptance/) and
 [fixtures](tests/fixtures/) are not edited, deleted or weakened to make a
 port case pass. A legitimate fixture/API correction goes through #33 with its
@@ -193,7 +206,7 @@ the entire port correct. Long-tail exhaustive coverage does not gate the
 agreed milestones.
 
 GitHub [Acceptance](.github/workflows/acceptance.yml) runs only by manual
-dispatch (`gh workflow run Acceptance -f corpus=sample` or `-f corpus=full`).
+dispatch (`gh workflow run Acceptance -f corpus=tier1`, `-f corpus=tier2` or `-f corpus=full`).
 A result does not select the next task. It runs the frozen
 suite in sharded Sage jobs using the
 `ghcr.io/dzackgarza/sage:develop` research image; the run

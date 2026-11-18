@@ -560,13 +560,11 @@ def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsom
     r"""The generators ``h`` of O(R) carried to L by ``transport: R -> L``, each built once from ``P H P^-1``.
 
     source: IndefiniteForms.g:1487 ``Inverse(RecRed.B) * eGen1 * RecRed.B``.
-    Each conjugate is constructed from the images of the generators of L, so
-    later evaluations do not compose the three maps again.
+    Owned composition is the product of the framed matrices, so each
+    conjugate retains the matrix P H P^-1.
     """
-    lattice = transport.codomain()
-    change = _column_matrix(transport)
-    inverse = change.inverse().change_ring(SageZZ)
-    return tuple(_isometry_from_column_matrix(lattice, lattice, change * _column_matrix(generator) * inverse) for generator in generators)
+    inverse = ~transport
+    return tuple(transport * generator * inverse for generator in generators)
 
 
 def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsometryMethods, source_transport: LatticeIsometryMethods) -> LatticeIsometryMethods:
@@ -575,9 +573,70 @@ def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsome
     source: IndefiniteForms.g:1389 ``Inverse(RecRed2.B) * test * RecRed1.B`` and
     :1419 (the degenerate extension ``Inverse(FullBasis2) * TheEquivTest * FullBasis1``).
     """
-    source, target = source_transport.codomain(), target_transport.codomain()
-    columns = _column_matrix(target_transport) * _column_matrix(witness) * _column_matrix(source_transport).inverse().change_ring(SageZZ)
-    return _isometry_from_column_matrix(source, target, columns)
+    return target_transport * witness * ~source_transport
+
+
+def _witt_zero_generators(lattice):
+    r"""Return ``O(L)`` generators for ``L`` isometric to the norm lattice of ``ZZ<1,i,j,k>`` of ``(-1, 3)``, or ``None``."""
+    from sage.matrix.constructor import matrix as sage_matrix
+
+    from sage_indefinite_port.indefinite.li_margulis import is_isometric_in_box
+    from sage_indefinite_port.indefinite.quaternion_lattices import QuaternionNormLattice
+    from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi, orthogonal_group_generators
+
+    model = QuaternionNormLattice(-1, 3, 2)
+    source = model.lattice()
+    transport = is_isometric_in_box(source, lattice, 3)
+    if transport is None:
+        return None
+    frame = tuple(source.module_generators())
+    columns = sage_matrix([[int(c) for c in transport(v)] for v in frame]).transpose()
+    inverse = columns.inverse()
+    labels = tuple(lattice.module_generating_set())
+    target = tuple(lattice.module_generators())
+    result = []
+    for generator in orthogonal_group_generators(model, QuaternionVoronoi(-1, 3), model.normalizer_classes_in_box(3)):
+        on_model = sage_matrix([[int(c) for c in generator(v)] for v in frame]).transpose()
+        moved = columns * on_model * inverse
+        result.append(
+            lattice.O()(
+                {
+                    label: sum(
+                        (lattice.scalar_multiple(int(c), g) for c, g in zip(moved.column(j), target, strict=True)),
+                        lattice.zero(),
+                    )
+                    for j, label in enumerate(labels)
+                }
+            )
+        )
+    return tuple(result)
+
+
+def _witt_one_generators(lattice):
+    r"""Return isometries generating ``O(L)`` from the Hilbert modular model, or ``None``.
+
+    For every real quadratic maximal order: Vaserstein's generation of ``SL_2(O)`` by elementary matrices plus
+    the exact cusp links (:func:`recognized_generators`).
+    """
+    from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_generators
+
+    matrices = recognized_generators(lattice)
+    if matrices is None:
+        return None
+    frame = tuple(lattice.module_generators())
+    labels = tuple(lattice.module_generating_set())
+    return tuple(
+        lattice.O()(
+            {
+                label: sum(
+                    (lattice.scalar_multiple(int(c), g) for c, g in zip(m.column(j), frame, strict=True)),
+                    lattice.zero(),
+                )
+                for j, label in enumerate(labels)
+            }
+        )
+        for m in matrices
+    )
 
 
 @dataclass(frozen=True)
@@ -1188,6 +1247,22 @@ class EichlerRecursion:
             match profile.positive_index:
                 case 1:
                     generators = lorentzian_orthogonal_group_generators(profile.signed_view)
+                case _ if int(profile.signed_view.module_rank()) == 4 and int(profile.signed_view.witt_index()) == 0 and (
+                    witt_zero := _witt_zero_generators(profile.signed_view)
+                ) is not None:
+                    generators = witt_zero
+                case _ if int(profile.signed_view.module_rank()) == 4 and int(profile.signed_view.witt_index()) == 1 and (
+                    witt_one := _witt_one_generators(profile.signed_view)
+                ) is not None:
+                    generators = witt_one
+                case _ if int(profile.signed_view.witt_index()) < 2:
+                    # The approximate model needs two hyperbolic planes; the source
+                    # stops below rational Witt index two (IndefiniteForms.g:830).
+                    raise UnfinishedCapability(
+                        f"O(L) generators for {profile.signed_view}: positive index {profile.positive_index}, "
+                        f"rational Witt index {profile.signed_view.witt_index()} and no recognized model; "
+                        "work unit #69 owns this case"
+                    )
                 case _:
                     generators = self._generation_step(profile.signed_view)
             reduced_generators = tuple(_untwisted(generator, profile) for generator in generators)
@@ -1244,7 +1319,23 @@ class EichlerRecursion:
         return witness
 
     def _indefinite_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
+        r"""An isometry between reduced indefinite lattices, or None.
+
+        source: IndefiniteForms.g:1320-1359 and ApproximateModels.h:1305-1390.
+
+        Documented departure (#68): over ZZ at rank at least 3 the verdict is
+        decided before the covering search by genus and spinor-genus equality.
+        Eichler-Kneser (Kneser 1956; Cassels, Rational Quadratic Forms, Ch. 11,
+        Thm. 1.3 and Cor.; Conway-Sloane, SPLAG Ch. 15 Sec. 9): an indefinite
+        genus of rank at least 3 has one class per spinor genus. The source
+        reaches a negative verdict only by exhausting the covering family; for
+        a same-genus pair of large 2-adic index (diag(1,-2,-64,128) and the
+        other class of its genus) its coset expansion exceeds 10^6 cosets and
+        does not finish. The positive witness keeps the source covering route,
+        which must then succeed.
+        """
         cacheable = source.base_ring() == ZZ and target.base_ring() == ZZ
+        spinor_decided = cacheable and source.module_rank() >= 3
         if cacheable:
             known, cached = self._groupoid.cached_isometry(source, target)
             if known:
@@ -1263,6 +1354,21 @@ class EichlerRecursion:
             if cacheable:
                 self._groupoid.record_isometry(source, target, result)
             return result
+        if spinor_decided:
+            # Departure from IndefiniteForms.g:1320-1359 and
+            # ApproximateModels.h:1305-1390 (#68): the source decides a
+            # same-genus pair only by exhausting the covering family, whose
+            # coset expansion exceeds 10^6 cosets at large 2-adic index.
+            # Eichler-Kneser (Kneser 1956; Cassels, Rational Quadratic Forms,
+            # Ch. 11, Thm. 1.3 and Cor.; SPLAG Ch. 15 Sec. 9): an indefinite
+            # genus of rank >= 3 has one class per spinor genus. So distinct
+            # genera or spinor genera give None, and otherwise the covering
+            # search below must find a witness.
+            from sage_extensions.categories.lattice_engines import isometric_within_genus
+
+            if source.genus() != target.genus() or not isometric_within_genus(source, target):
+                self._groupoid.record_isometry(source, target, None)
+                return None
         match source_profile.positive_index:
             case 1:
                 witness = lorentzian_isometry(signed_source, signed_target)
@@ -1283,6 +1389,8 @@ class EichlerRecursion:
                     (isometry for candidate in covering if (isometry := self.pointed_isometry(vector, candidate)) is not None),
                     None,
                 )
+        if spinor_decided:
+            assert witness is not None, "Eichler-Kneser: one spinor genus is one class, so the covering search must find a witness"
         result = None if witness is None else _untwisted(witness, source_profile)
         if cacheable:
             self._groupoid.record_isometry(source, target, result)
@@ -1988,8 +2096,7 @@ class EichlerRecursion:
         correction = self._radical_pointed_isometry(image, target)
         if correction is None:
             return None
-        columns = _column_matrix(correction) * _column_matrix(transport)
-        composed = _isometry_from_column_matrix(source_lattice, target_lattice, columns)
+        composed = correction * transport
         if composed(source) != target:
             raise ArithmeticError("the composed radical isometry does not carry the marking onto its image")
         if composed.domain() is not source_lattice or composed.codomain() is not target_lattice:
@@ -2556,6 +2663,21 @@ class EichlerRecursion:
         # rational hyperbolic pairs of the Eichler envelope.
         if square == 0 and not lattice.is_isotropic():
             return ()
+        # Rational Witt index one has no second hyperbolic pair for the
+        # Eichler envelope (#40). A recognized rank-four Hilbert model decides
+        # its classes, isotropic ones included, by the cusps of SL_2(O); every
+        # other Witt-index-one lattice uses the proved Li-Margulis box, whose
+        # isotropic orbits are its cusps.
+        if int(lattice.witt_index()) == 1:
+            from sage_indefinite_port.indefinite.li_margulis import primitive_vector_orbits
+            from sage_indefinite_port.indefinite.witt_one_fixed_norm_classes import witt_one_fixed_norm_vector_classes
+            from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_model
+
+            if int(lattice.module_rank()) == 4 and recognized_model(lattice) is not None:
+                vectors = witt_one_fixed_norm_vector_classes(lattice, int(square), True)
+            else:
+                vectors = primitive_vector_orbits(lattice, int(square))
+            return tuple(VectorClass(v, ()) for v in vectors)
         buckets: dict[VectorPrefilter, list[tuple[Lattices.ElementMethods, list[LatticeIsometryMethods]]]] = {}
         for candidate in self._model(profile.signed_view).primitive_covering_vectors(profile.sign * int(square)):
             bucket = buckets.setdefault(VectorPrefilter.from_vector(candidate), [])

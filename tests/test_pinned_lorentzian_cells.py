@@ -3,6 +3,9 @@
 These probes are deliberately separate from the frozen acceptance corpus.
 """
 
+from random import Random
+
+from sage_indefinite_port.indefinite.indefinite_reduction import GENERATOR_SEED
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     _PositiveVectorEnumerator,
     _dual_lll_enumeration_key,
@@ -403,14 +406,17 @@ def test_definite_dual_lll_uses_inverse_of_sage_transform() -> None:
     assert direct_reduced == direct * gram * direct.transpose()
 
 
-def test_simple_indefinite_reduction_certifies_each_l1_descent(monkeypatch) -> None:
+def test_simple_indefinite_reduction_certifies_each_l1_descent() -> None:
     """The pinned shear search strictly decreases L1 and preserves congruence."""
     from sage.all import ZZ, matrix
     import sage_indefinite_port.indefinite.indefinite_reduction as reduction
 
-    monkeypatch.setattr(reduction, "randrange", lambda _n: 0)
+    class FirstIndex(Random):
+        def randrange(self, *_args):
+            return 0
+
     gram = matrix(ZZ, [[1, 10, 0], [10, 1, 1], [0, 1, -2]])
-    basis, reduced = reduction._simple_indefinite_reduction(gram)
+    basis, reduced = reduction._simple_indefinite_reduction(gram, FirstIndex())
     assert abs(basis.det()) == 1
     assert reduced == basis * gram * basis.transpose()
     assert sum(abs(x) for row in reduced.rows() for x in row) <= sum(
@@ -433,7 +439,7 @@ def test_compute_indefinite_reduction_rejects_false_lll_certificate(
         lambda current: (identity, current + identity, None),
     )
     try:
-        reduction._compute_indefinite_reduction(gram)
+        reduction._compute_indefinite_reduction(gram, Random(GENERATOR_SEED))
     except ArithmeticError as error:
         assert "false Gram certificate" in str(error)
     else:
@@ -452,10 +458,10 @@ def test_nondegenerate_reduction_rejects_false_operation_certificate(
     monkeypatch.setattr(
         reduction,
         "_compute_indefinite_reduction",
-        lambda current: (identity, current + identity, None),
+        lambda current, _rng: (identity, current + identity, None),
     )
     try:
-        reduction._nondegenerate_reduction(gram)
+        reduction._nondegenerate_reduction(gram, Random(GENERATOR_SEED))
     except ArithmeticError as error:
         assert "false Gram certificate" in str(error)
     else:
@@ -476,7 +482,7 @@ def test_indefinite_reduction_integrates_source_radical_and_completion() -> None
         matrix(ZZ, 3, 3, 0),
     )
     for gram in forms:
-        basis, reduced = _indefinite_reduction(gram)
+        basis, reduced = _indefinite_reduction(gram, Random(GENERATOR_SEED))
         assert abs(basis.det()) == 1
         assert reduced == basis * gram * basis.transpose()
         assert reduced.rank() == gram.rank()
@@ -811,7 +817,8 @@ def test_source_integral_vector_allmeth_rejects_invalid_gram_before_reduction() 
                 gram,
                 QQ.zero(),
                 True,
-                reduction=lambda _gram: (_ for _ in ()).throw(
+                Random(GENERATOR_SEED),
+                reduction=lambda _gram, _rng: (_ for _ in ()).throw(
                     AssertionError("reduction called")
                 ),
                 isotropic_reduction=lambda *_args, **_kwargs: (_ for _ in ()).throw(
@@ -831,12 +838,12 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
     gram = matrix(ZZ, [[0, 0], [0, 1]])
     calls = []
 
-    def isotropic_reduction(_gram, *, look_for_isotropic):
+    def isotropic_reduction(_gram, _rng, *, look_for_isotropic):
         assert look_for_isotropic
         calls.append("isotropic")
         return identity_matrix(ZZ, 2), gram, (QQ(1) / 2, QQ.zero())
 
-    def reduction(_gram):
+    def reduction(_gram, _rng):
         calls.append("reduction")
         return identity_matrix(ZZ, 2), gram
 
@@ -848,6 +855,7 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
         gram,
         QQ.zero(),
         False,
+        Random(GENERATOR_SEED),
         reduction=reduction,
         isotropic_reduction=isotropic_reduction,
         find_vector=find_vector,
@@ -860,6 +868,7 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
         gram,
         QQ.zero(),
         True,
+        Random(GENERATOR_SEED),
         reduction=reduction,
         isotropic_reduction=isotropic_reduction,
         find_vector=find_vector,
@@ -872,6 +881,7 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
         gram,
         -QQ.one(),
         True,
+        Random(GENERATOR_SEED),
         reduction=reduction,
         isotropic_reduction=isotropic_reduction,
         find_vector=find_vector,
@@ -881,7 +891,7 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
 
     calls.clear()
 
-    def no_isotropic(_gram, *, look_for_isotropic):
+    def no_isotropic(_gram, _rng, *, look_for_isotropic):
         assert look_for_isotropic
         calls.append("isotropic-no-witness")
         return identity_matrix(ZZ, 2), gram, None
@@ -890,6 +900,7 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
         gram,
         -QQ.one(),
         True,
+        Random(GENERATOR_SEED),
         reduction=reduction,
         isotropic_reduction=no_isotropic,
         find_vector=find_vector,
@@ -909,13 +920,13 @@ def test_integral_positive_vector_consumer_uses_pinned_diagonalization() -> None
         diagonal_matrix(ZZ, [3, -2, 0, 5]),
     )
     for gram in forms:
-        candidate = vector(ZZ, _integral_positive_vector_allmeth(gram))
+        candidate = vector(ZZ, _integral_positive_vector_allmeth(gram, Random(GENERATOR_SEED)))
         assert candidate in ZZ ** gram.nrows()
         assert (candidate * gram * candidate.column())[0] > 0
 
     for gram in (matrix(ZZ, [[-1, 0], [0, -2]]), matrix(ZZ, 2, 2, 0)):
         try:
-            _integral_positive_vector_allmeth(gram)
+            _integral_positive_vector_allmeth(gram, Random(GENERATOR_SEED))
         except ValueError as error:
             assert "no positive direction" in str(error)
         else:
@@ -1165,7 +1176,9 @@ def test_source_indefinite_short_positive_vector_certifies_search_witnesses() ->
     from sage.all import ZZ, identity_matrix, matrix
 
     gram = matrix(ZZ, [[1]])
-    result = _source_indefinite_short_positive_vector(gram, lambda _gram: (ZZ(1),))
+    result = _source_indefinite_short_positive_vector(
+        gram, lambda _gram: (ZZ(1),), lambda dimension: identity_matrix(ZZ, dimension)
+    )
     assert result == (ZZ(1),)
     assert all(type(entry) is type(ZZ(0)) for entry in result)
     for bad_gram, witness in (
@@ -1176,7 +1189,9 @@ def test_source_indefinite_short_positive_vector_certifies_search_witnesses() ->
     ):
         try:
             _source_indefinite_short_positive_vector(
-                bad_gram, lambda _gram, w=witness: w
+                bad_gram,
+                lambda _gram, w=witness: w,
+                lambda dimension: identity_matrix(ZZ, dimension),
             )
         except (ValueError, ArithmeticError):
             pass
@@ -1350,32 +1365,29 @@ def test_source_random_matrix_perturbation_dispatches_both_pinned_branches() -> 
     """The public random perturbation operation composes the pinned constructors."""
     from sage.all import ZZ, matrix
 
-    choices = iter((0, -1, 1, -1))
+    class Scripted(Random):
+        """Replays fixed draws; the draw source is the only input that varies."""
 
-    def choose(options):
-        value = next(choices)
-        assert value in options
-        return value
+        def __init__(self, choices, indices=()):
+            super().__init__(GENERATOR_SEED)
+            self.choices = iter(choices)
+            self.indices = iter(indices)
 
-    def reverse(values):
-        values.reverse()
+        def choice(self, options):
+            value = next(self.choices)
+            assert value in options
+            return value
 
-    signed = _source_random_matrix_perturbation(
-        3, choose=choose, shuffle_values=reverse
-    )
+        def shuffle(self, values):
+            values.reverse()
+
+        def randrange(self, *_args):
+            return next(self.indices)
+
+    signed = _source_random_matrix_perturbation(3, Scripted((0, -1, 1, -1)))
     assert signed == matrix(ZZ, [[0, 0, -1], [0, 1, 0], [-1, 0, 0]])
 
-    choices = iter((1, -1))
-
-    def choose_elementary(options):
-        value = next(choices)
-        assert value in options
-        return value
-
-    indices = iter((1, 2))
-    elementary = _source_random_matrix_perturbation(
-        3, choose=choose_elementary, choose_index=lambda _dimension: next(indices)
-    )
+    elementary = _source_random_matrix_perturbation(3, Scripted((1, -1), (1, 2)))
     assert elementary == matrix(ZZ, [[1, 0, 0], [0, 1, -1], [0, 0, 1]])
     assert abs(signed.det()) == abs(elementary.det()) == 1
 
