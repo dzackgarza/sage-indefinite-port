@@ -43,6 +43,28 @@ def test_public_edgewalk_rejects_unsupported_root_norm_selection():
         ambient.allcock_edgewalk(option_norms="unknown")
 
 
+def test_reduced_edgewalk_preserves_nonreflectivity_certificate(monkeypatch):
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+    from sage_indefinite_port.indefinite.edgewalk import _Edgewalk
+
+    ambient = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [1, 0, 0], [0, 1, 0], [0, 0, -3],
+    ]))
+    assert not ambient.is_isotropic()
+    original = _Edgewalk.walk
+
+    def nonreflective(self):
+        return self.report([], False, (), [], "certified terminal anisotropic edge")
+
+    monkeypatch.setattr(_Edgewalk, "walk", nonreflective)
+    try:
+        report = ambient.allcock_edgewalk()
+    finally:
+        monkeypatch.setattr(_Edgewalk, "walk", original)
+    assert not report.is_reflective()
+    assert report.reason_non_reflective() == "certified terminal anisotropic edge"
+
+
 def test_public_binary_edgewalk_accepts_explicit_starting_wall():
     from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
 

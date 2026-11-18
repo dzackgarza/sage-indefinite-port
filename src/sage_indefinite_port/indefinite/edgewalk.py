@@ -94,6 +94,7 @@ def edgewalk_fundamental_domain(
                 for cone in result.vertices()
             ),
             isometry_generators=tuple(inverse * generator * inverse.inverse() for generator in result.polyhedron_isometry_generators()),
+            reason_non_reflective=result.reason_non_reflective(),
         )
     return _Edgewalk(lattice, option_norms=option_norms,
                      early_termination=early_termination, initial_vertex=initial_vertex).walk()
