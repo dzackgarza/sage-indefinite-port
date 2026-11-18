@@ -133,7 +133,12 @@ def edgewalk_isometry(
     first, second = _Edgewalk(source), _Edgewalk(target)
     first_vertex, second_vertex = first.initial_vertex(), second.initial_vertex()
     if first_vertex is None or second_vertex is None:
-        return None
+        # Absence of an edgewalk starting corner is not an isometry
+        # obstruction. The complete Lorentzian perfect-cell equivalence
+        # algorithm remains available for this non-vertex branch.
+        from sage_indefinite_port.indefinite.lorentzian_cells import lorentzian_isometry
+
+        return lorentzian_isometry(source, target)
     goal = second.vertex_configuration(second_vertex)
     seen = []
     frontier = [first_vertex]

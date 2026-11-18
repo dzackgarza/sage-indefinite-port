@@ -132,3 +132,18 @@ def test_public_edgewalk_isometry_of_anisotropic_binary_presentations():
     assert witness is not None
     assert all(second.b(witness(x), witness(y)) == first.b(x, y)
                for x in first.module_generators() for y in first.module_generators())
+
+
+def test_edgewalk_missing_starting_corner_uses_exact_lorentzian_equivalence(monkeypatch):
+    import sage_indefinite_port.indefinite.edgewalk as edgewalk
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+
+    gram = [[0, 1, 0], [1, 0, 0], [0, 0, 2]]
+    source = HyperbolicLattices(ZZ)(Lattices(ZZ)(gram))
+    target = HyperbolicLattices(ZZ)(Lattices(ZZ)(
+        gram, module_generators=("a", "b", "c")))
+    monkeypatch.setattr(edgewalk._Edgewalk, "initial_vertex", lambda self: None)
+    witness = source.edgewalk_isometry(target)
+    assert witness is not None
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
