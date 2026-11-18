@@ -265,6 +265,28 @@ def test_exact_vector_orbit_iterator_binary_rank_one_radical_classes():
     assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2))) == 1
 
 
+def test_exact_vector_orbit_iterator_rank_one_quotient_higher_radical():
+    from itertools import islice
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for rank in (3, 4):
+        gram = [[2 if i == j == 0 else 0 for j in range(rank)] for i in range(rank)]
+        original = matrix(SageZZ, gram)
+        change = matrix.identity(SageZZ, rank)
+        change[1, 0] = 1
+        changed = change * original * change.transpose()
+        ambient = lattice([[int(value) for value in row] for row in changed.rows()])
+        nulls = tuple(islice(RECURSION.exact_vector_orbit_iterator(ambient, 0), 5))
+        assert [int(v.content()) for v in nulls] == [0, 1, 2, 3, 4]
+        assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True))) == 1
+        # x=6, q=72; gcd(6,y) ranges over 1,2,3,6.
+        representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 72))
+        assert len(representatives) == 4
+        assert all(int(v.q()) == 72 for v in representatives)
+        assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 72, primitive_only=True))) == 1
+
+
 def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):
     from itertools import islice
     from sage_indefinite_port.indefinite import recursive

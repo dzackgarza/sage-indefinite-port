@@ -2711,6 +2711,39 @@ class EichlerRecursion:
             if int(square) == 0 and not primitive_only:
                 yield lattice.zero()
             return
+        if int(lattice.rank()) >= 3 and _gram_in_label_order(lattice).rank() == 1:
+            # For a rank-one nondegenerate quotient and radical rank >= 2,
+            # the reduced form is diag(a,0,...,0).  The full group is
+            # {+/-1} x GL(R) extended by every shear Hom(Z,R).
+            # For fixed |x|>0, the radical coordinates modulo |x| form
+            # GL(R)-orbits indexed exactly by gcd(|x|,y_1,...,y_k),
+            # i.e. the positive divisors of |x|.  When x=0 the radical
+            # content is the complete orbit invariant.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            coefficient = int(reduced_gram[0, 0])
+            if coefficient == 0 or any(reduced_gram[i, j] for i in range(int(lattice.rank()))
+                                         for j in range(int(lattice.rank())) if (i, j) != (0, 0)):
+                raise ArithmeticError("rank-one quotient reduction did not isolate the radical")
+            radical_zeros = (0,) * (int(lattice.rank()) - 2)
+            if int(square) == 0:
+                if primitive_only:
+                    yield reduction.isometry(_from_column(reduced, (0, 1, *radical_zeros)))
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield reduction.isometry(_from_column(reduced, (0, content, *radical_zeros)))
+                return
+            quotient = int(square) // coefficient if int(square) % coefficient == 0 else 0
+            if quotient <= 0 or isqrt(quotient) ** 2 != quotient:
+                return
+            x = isqrt(quotient)
+            for divisor in range(1, x + 1):
+                if x % divisor or (primitive_only and divisor != 1):
+                    continue
+                yield reduction.isometry(_from_column(reduced, (x, divisor, *radical_zeros)))
+            return
         if int(lattice.rank()) == 2 and _gram_in_label_order(lattice).rank() == 1:
             # In a reduced basis the form is diag(a,0), a != 0.  Its
             # integral orthogonal group consists exactly of
