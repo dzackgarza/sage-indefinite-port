@@ -28,6 +28,20 @@ def test_finite_primitive_classes_reject_prime_power_obstruction_without_eichler
     assert RECURSION.primitive_vector_classes(ambient, 18) == ()
 
 
+def test_finite_primitive_classes_reject_mod_five_obstruction_without_eichler_model(monkeypatch):
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    # Modulo 5, q=x^2, and 2 is not a square.  The integral
+    # value ideal is (1), so it does not detect this obstruction.
+    ambient = lattice([[1, 0, 0, 0], [0, 5, 0, 0], [0, 0, -5, 0], [0, 0, 0, -5]])
+    def forbidden(*args, **kwargs):
+        raise AssertionError("mod-five nonrepresentability must precede Eichler reduction")
+
+    monkeypatch.setattr(RECURSION, "_model", forbidden)
+    assert RECURSION.primitive_vector_classes(ambient, 2) == ()
+    assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2)) == ()
+
+
 def test_exact_vector_orbit_iterator_terminates_on_certified_empty_and_singleton_null_fibres():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

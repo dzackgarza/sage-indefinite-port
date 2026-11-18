@@ -2580,7 +2580,7 @@ class EichlerRecursion:
         # to small ranks; it never rejects a norm on heuristic grounds.
         # Primitive integral vectors must remain nonzero modulo each prime.
         if int(lattice.rank()) <= 6:
-            for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3)):
+            for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3), (5, 5), (7, 7), (25, 5)):
                 # Exhaustive modular testing costs modulus**rank; keep
                 # this certificate bounded independently of the lattice.
                 if modulus ** int(lattice.rank()) > 4096:
@@ -2656,7 +2656,7 @@ class EichlerRecursion:
         # modulo the underlying prime, so failure of every such residue
         # is an exact obstruction and needs no rational Witt envelope.
         if int(lattice.rank()) <= 6:
-            for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3)):
+            for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3), (5, 5), (7, 7), (25, 5)):
                 if modulus ** int(lattice.rank()) > 10000:
                     continue
                 if not any(
