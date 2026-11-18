@@ -817,10 +817,24 @@ class IsotropicInduction:
                         inclusion = saturation.inclusion()
                         s_labels = tuple(inclusion.domain().module_generating_set())
                         s_basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
-                        source_radical_frame = frames[0][:t, n:].stack(
-                            _source_subspace_completion_int(frames[0][:t, n:], k))
-                        target_radical_frame = frames[1][:t, n:].stack(
-                            _source_subspace_completion_int(frames[1][:t, n:], k))
+                        # Align the radical graph directions as well as T.
+                        # Completing T alone chooses unrelated complements,
+                        # which can obstruct an otherwise integral graph
+                        # shear when the characteristic T itself moves.
+                        radical_frames = []
+                        for frame in frames:
+                            prefix = frame[:t, n:]
+                            for row in frame[t:, n:].rows():
+                                extended = prefix.stack(matrix(SageZZ, [list(row)]))
+                                if int(extended.rank()) != int(extended.nrows()):
+                                    continue
+                                try:
+                                    _source_subspace_completion_int(extended, k)
+                                except ValueError:
+                                    continue
+                                prefix = extended
+                            radical_frames.append(prefix.stack(_source_subspace_completion_int(prefix, k)))
+                        source_radical_frame, target_radical_frame = radical_frames
                         radical_action = source_radical_frame.inverse().change_ring(SageZZ) * target_radical_frame
                         stabilizers = (_finite_index_sublattice_stabilizer_generators(projected[1])
                                        if modulus > 1 else ())
