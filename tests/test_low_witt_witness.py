@@ -371,6 +371,11 @@ def test_definite_quotient_degenerate_nonzero_norm_orbits_are_complete():
     assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25))) == 3
     assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25, primitive_only=True))) == 2
     assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, -1)) == ()
+    negative = lattice([[-int(value) for value in row] for row in
+                        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(negative, -25))) == 3
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(negative, -25, primitive_only=True))) == 2
+    assert tuple(RECURSION.exact_vector_orbit_iterator(negative, 25)) == ()
 
 
 def test_definite_quotient_degenerate_norm_orbits_under_basis_change():
@@ -389,6 +394,23 @@ def test_definite_quotient_degenerate_norm_orbits_under_basis_change():
         for second in representatives[i + 1:]:
             assert RECURSION.pointed_isometry(first, second) is None
     assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25, primitive_only=True))) == 2
+
+
+def test_definite_quotient_radical_residue_orbit_transporters():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[1, 0, 0, 0], [0, 1, 0, 0],
+                       [0, 0, 0, 0], [0, 0, 0, 0]])
+    labels = tuple(ambient.module_generating_set())
+    def point(x, y, r, s):
+        return ambient.linear_combination(dict(zip(labels, (x, y, r, s), strict=True)))
+
+    first = point(5, 0, 1, 0)
+    second = point(5, 0, 2, 0)
+    third = point(5, 0, 0, 5)
+    witness = RECURSION.pointed_isometry(first, second)
+    assert witness is not None and witness(first) == second
+    assert RECURSION.pointed_isometry(first, third) is None
 
 
 def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):

@@ -2821,6 +2821,11 @@ class EichlerRecursion:
             reduced_gram = _gram_in_label_order(reduced)
             quotient_rank = int(reduced_gram.rank())
             radical_rank = int(lattice.rank()) - quotient_rank
+            if quotient_rank == 0:
+                # A zero bilinear form represents no nonzero square;
+                # constructing its rank-zero complement from [] would
+                # also violate the owned lattice-constructor contract.
+                return
             if any(reduced_gram[i, j] for i in range(quotient_rank, int(lattice.rank()))
                    for j in range(int(lattice.rank()))):
                 raise ArithmeticError("degenerate reduction did not isolate the radical")
