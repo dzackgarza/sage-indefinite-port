@@ -1315,6 +1315,37 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     flag_dimensions=dimensions if len(dimensions) > 2 else (),
                     flag_basis=basis if len(dimensions) > 2 else (),
                 )
+            elif (not ambient.is_nondegenerate() and len(dimensions) >= 2
+                  and (radical_rank := dimensions[-1] + int(ambient.radical().rank())
+                       - int(ambient.subobject_on((*basis, *(
+                           ambient.radical().inclusion()(point)
+                           for point in ambient.radical().module_generators()
+                       ))).rank())) > 0
+                  and radical_rank < dimensions[-1]
+                  and radical_rank not in dimensions):
+                # J∩rad(L) is characteristic in J. An omitted stage at
+                # exactly its rank imposes no extra restriction: insert
+                # that stage for the graph-parabolic construction rather
+                # than falling back to nondegenerate Witt extension.
+                augmented = tuple(sorted((*dimensions, radical_rank)))
+                # Within an interval of the supplied flag, the adapted
+                # basis is not ordered by the characteristic intersection.
+                # Reorder only within intervals, retaining every given
+                # stage while exposing J intersect rad(L) as a prefix.
+                previous = 0
+                reordered = []
+                for rank in dimensions:
+                    reordered.extend(sorted(basis[previous:rank], key=lambda point:
+                                            not RECURSION.vector_lies_in_radical(point)))
+                    previous = rank
+                adapted = tuple(reordered)
+                if not all(RECURSION.vector_lies_in_radical(point)
+                           for point in adapted[:radical_rank]):
+                    raise ValueError("the radical intersection is not adapted to the supplied flag")
+                generators = INDUCTION.plane_automorphism_generators(
+                    ambient.primitive_isotropic_subobject(*adapted),
+                    flag_dimensions=augmented, flag_basis=adapted,
+                )
             elif (not ambient.is_nondegenerate()
                   and dimensions[0] >= int(ambient.radical().rank())
                   and dimensions[-1] > int(ambient.radical().rank())
