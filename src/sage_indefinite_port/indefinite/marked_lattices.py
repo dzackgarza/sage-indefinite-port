@@ -1133,6 +1133,64 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     source_flag_basis=source_basis,
                     target_flag_basis=target_basis,
                 )
+            if (len(source_dimensions) == 2 and source_dimensions[0] == 1
+                    and not ambient.is_nondegenerate() and not target_ambient.is_nondegenerate()
+                    and not RECURSION.vector_lies_in_radical(source_basis[0])
+                    and not RECURSION.vector_lies_in_radical(target_basis[0])):
+                # First align the terminal plane. If the projected first
+                # lines agree, a primitive radical-complement shear can
+                # then align their actual graph lifts while fixing J∩R.
+                from sage.matrix.constructor import identity_matrix, matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
+                from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
+
+                top_witness = INDUCTION.plane_isometry(
+                    ambient.primitive_isotropic_subobject(*source_basis),
+                    target_ambient.primitive_isotropic_subobject(*target_basis),
+                )
+                if top_witness is not None:
+                    target_line = target_ambient.primitive_isotropic_subobject(target_basis[0])
+                    if target_line.inclusion().is_in_image(top_witness(source_basis[0])):
+                        return top_witness
+                    reduction = indefinite_reduced_presentation(target_ambient)
+                    reduced = reduction.reduced
+                    gram = _gram_in_label_order(reduced)
+                    n, size = int(gram.rank()), int(gram.nrows())
+                    labels = tuple(reduced.module_generating_set())
+                    rows = matrix(SageZZ, [[int((~reduction.isometry)(point).to_vector()(label))
+                                            for label in labels] for point in target_basis])
+                    if int(rows[:, :n].rank()) == 1:
+                        _smith, left, _right = rows[:, :n].smith_form()
+                        radical_rows = (left * rows)[1:, n:]
+                        if int(radical_rows.rank()) == int(radical_rows.nrows()):
+                            first = matrix(SageZZ, [[int((~reduction.isometry)(point).to_vector()(label))
+                                                     for label in labels]
+                                                    for point in (top_witness(source_basis[0]), target_basis[0])])
+                            for sign in (1, -1):
+                                if first[0, :n] != sign * first[1, :n]:
+                                    continue
+                                source_r = first[0, n:]
+                                target_r = sign * first[1, n:]
+                                try:
+                                    source_frame = radical_rows.stack(source_r)
+                                    target_frame = radical_rows.stack(target_r)
+                                    source_frame = source_frame.stack(_source_subspace_completion_int(source_frame, size - n))
+                                    target_frame = target_frame.stack(_source_subspace_completion_int(target_frame, size - n))
+                                except ValueError:
+                                    continue
+                                radical_action = source_frame.inverse().change_ring(SageZZ) * target_frame
+                                block = identity_matrix(SageZZ, size)
+                                block[n:, n:] = radical_action
+                                correction = (reduction.isometry
+                                              * _isometry_from_row_matrix(reduced, reduced, block)
+                                              * (~reduction.isometry))
+                                candidate = correction * top_witness
+                                if (target_line.inclusion().is_in_image(candidate(source_basis[0]))
+                                        and all(target_ambient.primitive_isotropic_subobject(*target_basis[:rank])
+                                                .inclusion().is_in_image(candidate(point))
+                                                for rank in source_dimensions for point in source_basis[:rank])):
+                                    return candidate
             if (int(ambient.rank()) == int(target_ambient.rank())
                     and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
                     and all(target_ambient.b(x, y) == 0 for x in target_ambient.module_generators()
