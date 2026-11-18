@@ -922,6 +922,7 @@ def test_line_stabilizer_rejects_nonnull_and_reduces_imprimitive_generator():
 
 
 def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
+    from sage.all import ZZ as SageZZ, matrix
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
     from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
@@ -936,6 +937,12 @@ def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
     for rank in (1, 3, 5):
         target = ambient.primitive_isotropic_subobject(*basis[1::2][:rank])
         assert all(target.inclusion().is_in_image(witness(point)) for point in basis[::2][:rank])
+    labels = tuple(ambient.module_generating_set())
+    action = matrix(SageZZ, [[int(witness(point).to_vector()(label))
+        for label in labels] for point in ambient.module_generators()])
+    # The five disjoint hyperbolic exchanges have determinant (-1)^5.
+    # Their transporter belongs to O(L), but not to SO(L).
+    assert action.det() == -1
 
 
 def test_public_five_u_partial_flag_rank_jumps_one_three_five_classes():
