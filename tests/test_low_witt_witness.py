@@ -13,6 +13,21 @@ def test_finite_primitive_classes_reject_impossible_norm_without_eichler_model(m
     assert RECURSION.primitive_vector_classes(ambient, 1) == ()
 
 
+def test_finite_primitive_classes_reject_prime_power_obstruction_without_eichler_model(monkeypatch):
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    # q=2(x^2+y^2)-6(z^2+w^2).  Its value ideal is (2),
+    # so norm 18 passes the ideal test.  Modulo 9, q=0 forces
+    # x=y=0 modulo 3 and then z=w=0 modulo 3: no primitive
+    # residue exists.
+    ambient = lattice([[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]])
+    def forbidden(*args, **kwargs):
+        raise AssertionError("a certified empty primitive fibre must not request an Eichler envelope")
+
+    monkeypatch.setattr(RECURSION, "_model", forbidden)
+    assert RECURSION.primitive_vector_classes(ambient, 18) == ()
+
+
 def test_exact_vector_orbit_iterator_terminates_on_certified_empty_and_singleton_null_fibres():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

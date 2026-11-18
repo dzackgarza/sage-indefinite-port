@@ -2651,6 +2651,21 @@ class EichlerRecursion:
                 value_ideal = gcd(value_ideal, 2 * _integer(gram[i, j]))
         if value_ideal and int(square) % value_ideal:
             return ()
+        # The finite API also admits certified empty primitive fibres
+        # modulo a prime power.  A primitive integral vector is nonzero
+        # modulo the underlying prime, so failure of every such residue
+        # is an exact obstruction and needs no rational Witt envelope.
+        if int(lattice.rank()) <= 6:
+            for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3)):
+                if modulus ** int(lattice.rank()) > 10000:
+                    continue
+                if not any(
+                    sum(int(gram[i, j]) * x[i] * x[j]
+                        for i in range(len(x)) for j in range(len(x))) % modulus == int(square) % modulus
+                    for x in itertools.product(range(modulus), repeat=int(lattice.rank()))
+                    if any(value % prime for value in x)
+                ):
+                    return ()
         buckets: dict[VectorPrefilter, list[tuple[Lattices.ElementMethods, list[LatticeIsometryMethods]]]] = {}
         for candidate in self._model(profile.signed_view).primitive_covering_vectors(profile.sign * int(square)):
             bucket = buckets.setdefault(VectorPrefilter.from_vector(candidate), [])
