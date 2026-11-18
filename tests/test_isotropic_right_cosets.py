@@ -45,3 +45,23 @@ def test_glued_line_right_cosets_are_distinct_integral_lattice_images():
         not action._carries_lattice((~first) * second, inclusion, inclusion)
         for first, second in combinations(representatives, 2)
     )
+
+
+def test_split_maximal_null_flag_has_one_right_coset():
+    r"""The integral block Borel of a maximal null plane in 2U extends
+    integrally to the dual hyperbolic summand; its rational extension
+    group therefore coincides with the integral flag stabilizer.
+    """
+    from sage_extensions.all import Cat
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    e, f, u, v = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, (e, u), (1, 2)))
+    cosets = tuple(isotropic_stabilizer_right_cosets(category, marked))
+    assert len(cosets) == 1
+    assert cosets[0].domain() is cosets[0].codomain()
+    assert all(ambient.b(cosets[0](point), cosets[0](other)) == ambient.b(point, other)
+               for point in (e, f, u, v) for other in (e, f, u, v))
