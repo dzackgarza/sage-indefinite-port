@@ -926,6 +926,33 @@ def test_proper_radical_intersection_four_stage_flag_stabilizer_and_transporter(
                    for point in (z, e + w, u, a)[:rank])
 
 
+def test_rank_two_proper_radical_intersection_partial_flag_parabolic_and_transporter():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        automorphism_group_generators, isometry, _flag_marking_from_basis,
+    )
+
+    ambient = (Lattices(ZZ)("U") + Lattices(ZZ)("U")
+               + Lattices(ZZ)([[0] * 3 for _ in range(3)]))
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (z, w, e + t, u), (2, 3, 4)))
+    second = category(_flag_marking_from_basis(ambient, (w, t, u + z, e), (2, 3, 4)))
+    generators = tuple(automorphism_group_generators(category, first))
+    assert generators
+    for rank in (2, 3, 4):
+        term = ambient.primitive_isotropic_subobject(*(z, w, e + t, u)[:rank])
+        assert all(term.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in (z, w, e + t, u)[:rank])
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for rank in (2, 3, 4):
+        term = ambient.primitive_isotropic_subobject(*(w, t, u + z, e)[:rank])
+        assert all(term.inclusion().is_in_image(witness(point))
+                   for point in (z, w, e + t, u)[:rank])
+
+
 def test_provider_proper_radical_intersection_flag_stabilizer_matches_marked_api():
     from sage_extensions.all import Cat, IsotropicFlag, FlagType, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
