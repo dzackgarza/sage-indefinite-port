@@ -539,6 +539,32 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
             yield _isometry_from_row_matrix(lattice, lattice, candidate)
 
 
+def _norm_fibre_has_local_obstruction(gram, square: int, *, primitive: bool) -> bool:
+    r"""Certify norm-fibre emptiness by integral-value and local congruences.
+
+    For primitive vectors the residue must remain nonzero modulo the
+    underlying prime.  Exhaustive tests are bounded to 10000 tuples.
+    """
+    rank = int(gram.nrows())
+    value_ideal = 0
+    for i in range(rank):
+        value_ideal = gcd(value_ideal, _integer(gram[i, i]))
+        for j in range(i + 1, rank):
+            value_ideal = gcd(value_ideal, 2 * _integer(gram[i, j]))
+    if value_ideal and int(square) % value_ideal:
+        return True
+    for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3), (5, 5), (7, 7), (25, 5)):
+        if modulus ** rank > 10000:
+            continue
+        if not any(
+            sum(int(gram[i, j]) * x[i] * x[j] for i in range(rank) for j in range(rank)) % modulus == int(square) % modulus
+            for x in itertools.product(range(modulus), repeat=rank)
+            if not primitive or any(value % prime for value in x)
+        ):
+            return True
+    return False
+
+
 def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
     r"""The integer coordinate tuples of a lattice with `max |entry| = height`, in a fixed order.
 
@@ -2568,32 +2594,8 @@ class EichlerRecursion:
         # square outside that ideal has no integral representatives, even
         # when the real quadratic space is indefinite and isotropic.
         gram = _gram_in_label_order(lattice)
-        norm_content = 0
-        for i in range(int(gram.nrows())):
-            norm_content = gcd(norm_content, _integer(gram[i, i]))
-            for j in range(i + 1, int(gram.ncols())):
-                norm_content = gcd(norm_content, 2 * _integer(gram[i, j]))
-        if norm_content and int(square) % norm_content:
+        if _norm_fibre_has_local_obstruction(gram, square, primitive=primitive_only):
             return
-        # A finite local obstruction is also an exact nonexistence
-        # certificate.  This bounded calculation is deliberately restricted
-        # to small ranks; it never rejects a norm on heuristic grounds.
-        # Primitive integral vectors must remain nonzero modulo each prime.
-        if int(lattice.rank()) <= 6:
-            for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3), (5, 5), (7, 7), (25, 5)):
-                # Exhaustive modular testing costs modulus**rank; keep
-                # this certificate bounded independently of the lattice.
-                if modulus ** int(lattice.rank()) > 4096:
-                    continue
-                residues = range(modulus)
-                target_residue = int(square) % modulus
-                if not any(
-                    sum(int(gram[i, j]) * x[i] * x[j]
-                        for i in range(len(x)) for j in range(len(x))) % modulus == target_residue
-                    for x in itertools.product(residues, repeat=int(lattice.rank()))
-                    if not primitive_only or any(value % prime for value in x)
-                ):
-                    return
         # A definite quadratic form has a finite norm fibre.  Cauchy--
         # Schwarz for the positive definite form H=+/-G gives
         # x_i^2 <= |square|*(H^-1)_ii.  This provides an exact finite
@@ -2644,28 +2646,8 @@ class EichlerRecursion:
         # lattice may have no two hyperbolic planes at all, yet its odd
         # norm fibres can be certified empty by the integral value ideal.
         gram = _gram_in_label_order(lattice)
-        value_ideal = 0
-        for i in range(int(gram.nrows())):
-            value_ideal = gcd(value_ideal, _integer(gram[i, i]))
-            for j in range(i + 1, int(gram.ncols())):
-                value_ideal = gcd(value_ideal, 2 * _integer(gram[i, j]))
-        if value_ideal and int(square) % value_ideal:
+        if _norm_fibre_has_local_obstruction(gram, square, primitive=True):
             return ()
-        # The finite API also admits certified empty primitive fibres
-        # modulo a prime power.  A primitive integral vector is nonzero
-        # modulo the underlying prime, so failure of every such residue
-        # is an exact obstruction and needs no rational Witt envelope.
-        if int(lattice.rank()) <= 6:
-            for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3), (5, 5), (7, 7), (25, 5)):
-                if modulus ** int(lattice.rank()) > 10000:
-                    continue
-                if not any(
-                    sum(int(gram[i, j]) * x[i] * x[j]
-                        for i in range(len(x)) for j in range(len(x))) % modulus == int(square) % modulus
-                    for x in itertools.product(range(modulus), repeat=int(lattice.rank()))
-                    if any(value % prime for value in x)
-                ):
-                    return ()
         buckets: dict[VectorPrefilter, list[tuple[Lattices.ElementMethods, list[LatticeIsometryMethods]]]] = {}
         for candidate in self._model(profile.signed_view).primitive_covering_vectors(profile.sign * int(square)):
             bucket = buckets.setdefault(VectorPrefilter.from_vector(candidate), [])
