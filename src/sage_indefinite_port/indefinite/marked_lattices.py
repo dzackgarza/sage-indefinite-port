@@ -804,6 +804,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             source_arrow, target_arrow = source.arrow(), target.arrow()
             ambient = source_arrow.codomain()
             if (int(source_arrow.domain().rank()) == int(ambient.rank())
+                    and int(target_arrow.domain().rank()) == int(target_arrow.codomain().rank())
                     and int(target_arrow.codomain().rank()) == int(ambient.rank())):
                 # A full-rank based frame determines the rational ambient
                 # isometry uniquely. Its integral existence is exactly the
