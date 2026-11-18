@@ -803,6 +803,7 @@ def test_proper_radical_intersection_first_flag_transporter_uses_top_subspace():
 
 
 def test_proper_radical_intersection_three_stage_flag_stabilizer():
+    from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
     from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators, _flag_marking_from_basis
@@ -820,6 +821,17 @@ def test_proper_radical_intersection_three_stage_flag_stabilizer():
     assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
                for generator in generators for x in (e, f, u, v, z, w)
                for y in (e, f, u, v, z, w))
+    labels = tuple(ambient.module_generating_set())
+    quotient_actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(labels[j])) for j in (0, 2)]
+        for point in (e + w, u)
+    ]) for generator in generators]
+    assert MatrixGroup(quotient_actions).order() == 2
+    radical_actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(labels[j])) for j in (4, 5)]
+        for point in (z, w)
+    ]) for generator in generators]
+    assert MatrixGroup(radical_actions).order() == 2
 
 
 def test_proper_radical_intersection_three_stage_flag_transporter():
