@@ -929,8 +929,22 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                         if x0 * action == x1:
                             r0, r1 = (kernel * frame[:, n:] for frame in frames)
                             try:
-                                r0_frame = r0.stack(_source_subspace_completion_int(r0, k))
-                                r1_frame = r1.stack(_source_subspace_completion_int(r1, k))
+                                # The marked radical kernel need not be
+                                # primitive. First solve its exact based
+                                # right-GL(k,Z) equivalence by column HNF,
+                                # then complete its primitive saturation.
+                                h0, h0_change = r0.transpose().hermite_form(transformation=True)
+                                h1, h1_change = r1.transpose().hermite_form(transformation=True)
+                                if h0 != h1:
+                                    return None
+                                base_radical_action = (h0_change.transpose()
+                                                       * h1_change.transpose().inverse())
+                                if r0 * base_radical_action != r1:
+                                    raise ArithmeticError("radical Hermite transporter does not map the based kernel")
+                                primitive_kernel = r0.row_module().saturation().basis_matrix()
+                                r0_frame = primitive_kernel.stack(
+                                    _source_subspace_completion_int(primitive_kernel, k))
+                                r1_frame = r0_frame * base_radical_action
                             except ValueError:
                                 pass
                             else:
