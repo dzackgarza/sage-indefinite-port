@@ -1478,8 +1478,29 @@ class IsotropicInduction:
                                 inclusion_r(reduced.module_generator(label)).underlying_element())))
                     span = OrbitSpanConstructions(reduced.base_ring())(
                         action.ambient_action_functor(), inclusion_r, containing=containing)
-                    return _conjugated(reduction.isometry, _integral_generator_set(
+                    integral_generators = list(_integral_generator_set(
                         reduced, action.with_stable_containing_bound(span.inclusion())))
+                    # The integral intersection must also retain the
+                    # unipotent radical Hom(R/T,T): these elementary
+                    # transformations fix T pointwise and add elements of
+                    # T to the complementary radical vectors. They preserve
+                    # the graph sublattice and every flag stage containing
+                    # T, independently of its projection divisibility.
+                    t = int(trows.nrows())
+                    if t and t < k:
+                        radical_frame = trows.stack(_source_subspace_completion_int(trows, k))
+                        frame = identity_matrix(SageZZ, size)
+                        for i in range(k):
+                            for j in range(k):
+                                frame[n + i, n + j] = radical_frame[i, j]
+                        inverse_frame = frame.inverse().change_ring(SageZZ)
+                        for i in range(t, k):
+                            for j in range(t):
+                                block = identity_matrix(SageZZ, size)
+                                block[n + i, n + j] = 1
+                                integral_generators.append(_isometry_from_row_matrix(
+                                    reduced, reduced, inverse_frame * block * frame))
+                    return _conjugated(reduction.isometry, tuple(integral_generators))
             radical = tuple(reduction.isometry(reduced.module_generator(label)) for label in labels[n:])
             if n and k and int(inclusion.domain().rank()) > k and all(
                 inclusion.is_in_image(point) for point in radical

@@ -1044,6 +1044,7 @@ def test_nonprimitive_rank_two_projection_rank_two_radical_first_flag():
 
 
 def test_nonprimitive_projection_nested_radical_flag_public_stabilizer():
+    from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
     from sage_indefinite_port.indefinite.marked_lattices import (
@@ -1064,6 +1065,15 @@ def test_nonprimitive_projection_nested_radical_flag_public_stabilizer():
     assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
                for generator in generators for x in ambient.module_generators()
                for y in ambient.module_generators())
+    # Independently, the image on R/2R is the full upper parabolic
+    # preserving the complete radical flag <z> < <z,w> < R.
+    # Its three independent off-diagonal entries give order 2^3.
+    labels = tuple(ambient.module_generating_set())
+    radical_actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(labels[j])) for j in (4, 5, 6)]
+        for point in (z, w, t)
+    ]) for generator in generators]
+    assert MatrixGroup(radical_actions).order() == 8
 
 
 def test_mixed_three_stage_flag_action_data_uses_sage_integer_matrices():
