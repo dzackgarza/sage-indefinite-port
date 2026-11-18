@@ -384,6 +384,32 @@ def test_anisotropic_quotient_degenerate_null_orbits_are_radical_contents():
     assert all(int(v.q()) == 0 for v in nulls)
 
 
+def test_isotropic_quotient_degenerate_null_orbits_include_primitive_shear_residues():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for gram in (
+        [[0, 1, 0], [1, 0, 0], [0, 0, 0]],
+        [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+        [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, -2, 0], [0, 0, 0, 0]],
+        [[0, 1, 0, 0, 0], [1, 0, 0, 0, 0], [0, 0, 0, 1, 0],
+         [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]],
+    ):
+        ambient = lattice(gram)
+        classes = tuple(islice(RECURSION.exact_vector_orbit_iterator(ambient, 0), 10))
+        assert len(classes) == 10
+        assert all(int(point.q()) == 0 for point in classes)
+        assert int(classes[0].content()) == 0
+        for i, first in enumerate(classes):
+            for second in classes[i + 1:]:
+                assert RECURSION.pointed_isometry(first, second) is None
+        primitive = tuple(islice(RECURSION.exact_vector_orbit_iterator(
+            ambient, 0, primitive_only=True
+        ), 6))
+        assert len(primitive) == 6
+        assert all(int(point.content()) == 1 for point in primitive)
+
+
 def test_definite_quotient_degenerate_nonzero_norm_orbits_are_complete():
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
 

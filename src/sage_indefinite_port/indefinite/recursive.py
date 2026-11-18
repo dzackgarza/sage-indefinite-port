@@ -3026,6 +3026,49 @@ class EichlerRecursion:
                 for content in count(1):
                     yield lattice.scalar_multiple(lattice.base_ring()(content), radical_point)
                 return
+            complement_profile = AttackProfile.from_lattice(complement)
+            quotient_supported = (
+                quotient_rank == 2
+                or complement_profile.positive_index == 1
+                or int(complement.witt_index()) >= 2
+            )
+            if quotient_supported:
+                # For L=C (+) R and q(v,r)=0, the quotient vector v has
+                # an invariant content c.  For c>0 the shears Hom(C,R)
+                # reduce r modulo cR, and GL(R) gives residue classes
+                # modulo sign when rank R=1, or gcd(c,r) when rank R>=2.
+                # For c=0, only the radical content survives.  Both c
+                # and the radical-only content are unbounded; interleave
+                # their finite strata to obtain a fair complete stream.
+                quotient_classes = tuple(self.exact_vector_orbit_iterator(
+                    complement, 0, primitive_only=True
+                ))
+                radical_rank = int(lattice.rank()) - quotient_rank
+                radical_zeros = (0,) * (radical_rank - 1)
+                radical_point = reduction.isometry(_from_column(
+                    reduced, (0,) * quotient_rank + (1,) + radical_zeros
+                ))
+                if not primitive_only:
+                    yield lattice.zero()
+                for content in count(1):
+                    if not primitive_only or content == 1:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), radical_point)
+                    for quotient_point in quotient_classes:
+                        quotient_coordinates = tuple(int(quotient_point.to_vector()(label))
+                                                     for label in complement.module_generating_set())
+                        if radical_rank == 1:
+                            residues = range(content // 2 + 1)
+                        else:
+                            residues = SageZZ(content).divisors()
+                        for residue in residues:
+                            if primitive_only and gcd(content, int(residue)) != 1:
+                                continue
+                            yield reduction.isometry(_from_column(
+                                reduced,
+                                tuple(content * value for value in quotient_coordinates)
+                                + (int(residue),) + radical_zeros,
+                            ))
+                return
         if int(square) == 0 and lattice.is_nondegenerate() and not lattice.is_isotropic():
             if not primitive_only:
                 yield lattice.zero()
