@@ -3703,6 +3703,10 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 and len(shape_arrows) == int(category.domain_category().object_set().cardinality()) - 1
                 and (
                     shape_arrows[-1].codomain() is lattice
+                    # A terminal ambient can have zero Gram and a distinct
+                    # presentation/parent. Full-rank terminal objects still
+                    # supply the ambient leg, not a further flag rank.
+                    or int(shape_arrows[-1].codomain().rank()) == int(lattice.rank())
                     or not all(
                         shape_arrows[-1].codomain().b(left, right) == 0
                         for left in shape_arrows[-1].codomain().module_generators()

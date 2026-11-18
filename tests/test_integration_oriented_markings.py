@@ -33,3 +33,26 @@ def test_two_u_oriented_plane_transporter_and_full_integral_stabilizer():
     assert family
     assert all(determinant(generator) == 1 for generator in family)
     assert len(primitive_marking_classes(category, lattices([[0, 0], [0, 0]]), ambient)) == 1
+
+
+def test_zero_form_full_flag_shape_from_distinct_ambient_parent():
+    """The terminal zero-form ambient is not an additional isotropic term."""
+    from sage_extensions.all import Cat
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        _flag_arrows,
+        _flag_marking_from_basis,
+    )
+
+    lattices = Lattices(ZZ)
+    source_ambient = lattices([[0] * 3 for _ in range(3)])
+    target = lattices([[0] * 3 for _ in range(3)], module_generators=("x", "y", "z"))
+    assert source_ambient is not target
+    category = Cat().Mor(FiniteOrdinalCategory(3), lattices)
+    source_basis = tuple(source_ambient.module_generators())
+    shape = category(_flag_marking_from_basis(source_ambient, source_basis[:2], (1, 2)))
+    classes = tuple(primitive_marking_classes(category, shape, target))
+    assert len(classes) == 1
+    arrows = _flag_arrows(classes[0])
+    assert tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2)
+    assert all(arrow.is_primitive() for arrow in arrows)
