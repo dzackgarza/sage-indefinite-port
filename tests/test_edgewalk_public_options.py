@@ -198,3 +198,23 @@ def test_public_edgewalk_handles_opposite_signature_convention():
     assert witness is not None
     assert all(target.b(witness(x), witness(y)) == source.b(x, y)
                for x in source.module_generators() for y in source.module_generators())
+
+
+def test_edge_root_intersection_rejects_spacelike_nonvertices():
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+    from sage_indefinite_port.indefinite.edgewalk import _Edgewalk
+
+    ambient = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [0, 1, 0], [1, 0, 0], [0, 0, 46],
+    ]))
+    walk = _Edgewalk(ambient)
+    vertex = walk.initial_vertex()
+    assert vertex is not None
+    roots, discarded = next(
+        (roots, discarded)
+        for roots, discarded in walk.edge_directions(vertex)
+        if len(roots) == 1 and roots[0] == 23 * ambient.module_generators()[0] - ambient.module_generators()[2]
+    )
+    alpha = -ambient.module_generators()[0] - ambient.module_generators()[1]
+    assert alpha.q() == 2
+    assert walk.vertex_from_root(vertex.generator, roots, discarded, alpha) is None

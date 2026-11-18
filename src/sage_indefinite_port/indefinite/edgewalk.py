@@ -1253,6 +1253,12 @@ class _Edgewalk:
         if kernel.nrows() != 1:
             raise ArithmeticError("an edge-root extension must determine a one-dimensional perpendicular space")
         generator = self.primitive(kernel.row(0))
+        # A Lorentzian chamber corner is a nonspacelike ray.  The root
+        # congruence and side-pairing tests alone do not imply this: a
+        # positive-norm intersection can satisfy both and is not a vertex
+        # of the hyperbolic polyhedron.
+        if self.norm(generator) > 0:
+            return None
         old_pairing = self.pairing(generator, k)
         if old_pairing > 0:
             generator = -generator
