@@ -1447,6 +1447,21 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     ambient.primitive_isotropic_subobject(*basis),
                     flag_dimensions=dimensions, flag_basis=basis,
                 )
+            elif (not ambient.is_nondegenerate() and len(dimensions) == 2
+                  and dimensions[0] == 1
+                  and not RECURSION.vector_lies_in_radical(basis[0])
+                  and dimensions[-1] + int(ambient.radical().rank())
+                  - int(ambient.subobject_on((*basis, *(
+                      ambient.radical().inclusion()(point)
+                      for point in ambient.radical().module_generators()
+                  ))).rank()) == dimensions[-1] - 1):
+                # The rank-one characteristic intersection is transverse
+                # to the marked first line; its rank coincides with the
+                # marked stage but the subobjects are not equal.
+                generators = INDUCTION.plane_automorphism_generators(
+                    ambient.primitive_isotropic_subobject(*basis),
+                    flag_dimensions=dimensions, flag_basis=basis,
+                )
             else:
                 generators = INDUCTION._stabilizer_generators(basis, images)
         case _:
