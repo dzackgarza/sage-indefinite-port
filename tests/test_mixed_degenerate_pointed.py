@@ -910,6 +910,21 @@ def test_nonprimitive_projection_proper_radical_flag_stabilizer():
         assert any(generator(z) == -z for generator in generators)
 
 
+def test_nonprimitive_projection_parabolic_contains_full_integral_shear_kernel():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(z, 5 * e + w)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert any(generator(e) == e + z for generator in generators)
+    assert any(generator(f) == f + z for generator in generators)
+    assert any(generator(f) == f + w for generator in generators)
+    assert any(generator(w) == w + z for generator in generators)
+    assert any(generator(z) == -z for generator in generators)
+
+
 def test_nonprimitive_projection_rank_three_radical_saturation_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
