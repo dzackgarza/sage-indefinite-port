@@ -865,6 +865,31 @@ def test_nonprimitive_projection_rank_two_radical_intersection_transporter():
                for point in (z, w, 3 * e + t))
 
 
+def test_nonprimitive_projection_rank_two_radical_intersection_flag_public_api():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        FLAGS, automorphism_group_generators, isometry, _flag_marking_from_basis,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    first = FLAGS(_flag_marking_from_basis(ambient, (z, w, 3 * e + t), (2, 3)))
+    second = FLAGS(_flag_marking_from_basis(ambient, (w, t, 3 * f + z), (2, 3)))
+    generators = tuple(automorphism_group_generators(FLAGS, first))
+    assert generators
+    radical = ambient.primitive_isotropic_subobject(z, w)
+    top = ambient.primitive_isotropic_subobject(z, w, 3 * e + t)
+    assert all(radical.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, w))
+    assert all(top.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, w, 3 * e + t))
+    witness = isometry(FLAGS, first, second)
+    assert witness is not None
+    target = ambient.primitive_isotropic_subobject(w, t, 3 * f + z)
+    assert all(target.inclusion().is_in_image(witness(point))
+               for point in (z, w, 3 * e + t))
+
+
 def test_nonprimitive_projection_proper_radical_flag_stabilizer():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, automorphism_group_generators, _flag_marking_from_basis
