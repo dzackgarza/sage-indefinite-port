@@ -118,6 +118,7 @@ def test_public_edgewalk_isometry_uses_integral_vertex_transporters():
 
 
 def test_public_edgewalk_isometry_of_isotropic_binary_lattices():
+    from sage.matrix.constructor import matrix
     from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
 
     first = HyperbolicLattices(ZZ)(Lattices(ZZ)("U"))
@@ -127,6 +128,16 @@ def test_public_edgewalk_isometry_of_isotropic_binary_lattices():
     assert witness is not None
     assert witness.domain() is first and witness.codomain() is second
     assert all(second.b(witness(x), witness(y)) == first.b(x, y)
+               for x in first.module_generators() for y in first.module_generators())
+
+    change = matrix([[1, 1], [0, 1]])
+    transformed = change * matrix([[0, 1], [1, 0]]) * change.transpose()
+    third = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [int(entry) for entry in row] for row in transformed.rows()
+    ]))
+    transformed_witness = first.edgewalk_isometry(third)
+    assert transformed_witness is not None
+    assert all(third.b(transformed_witness(x), transformed_witness(y)) == first.b(x, y)
                for x in first.module_generators() for y in first.module_generators())
 
 
