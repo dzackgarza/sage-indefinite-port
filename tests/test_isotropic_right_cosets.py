@@ -62,6 +62,7 @@ def test_split_maximal_null_flag_has_one_right_coset():
     marked = category(_flag_marking_from_basis(ambient, (e, u), (1, 2)))
     cosets = tuple(isotropic_stabilizer_right_cosets(category, marked))
     assert len(cosets) == 1
-    assert cosets[0].domain() is cosets[0].codomain()
-    assert all(ambient.b(cosets[0](point), cosets[0](other)) == ambient.b(point, other)
-               for point in (e, f, u, v) for other in (e, f, u, v))
+    rational = cosets[0].domain()
+    assert rational is cosets[0].codomain()
+    assert all(rational.b(cosets[0](point), cosets[0](other)) == rational.b(point, other)
+               for point in rational.module_generators() for other in rational.module_generators())
