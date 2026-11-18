@@ -1078,6 +1078,46 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     )
                     if witness is not None:
                         return witness
+            if len(source_dimensions) >= 2 and all(
+                not owner.is_nondegenerate()
+                and (t := source_dimensions[-1] + int(owner.radical().rank())
+                     - int(owner.subobject_on((*basis, *(
+                         owner.radical().inclusion()(point)
+                         for point in owner.radical().module_generators()
+                     ))).rank())) > 0
+                and t < source_dimensions[-1]
+                for owner, basis in ((ambient, source_basis), (target_ambient, target_basis))
+            ):
+                # Transport the characteristic intersection before testing
+                # stages transverse to it, including projected first lines.
+                radical_pairs = []
+                for owner, basis in ((ambient, source_basis), (target_ambient, target_basis)):
+                    t = (source_dimensions[-1] + int(owner.radical().rank())
+                         - int(owner.subobject_on((*basis, *(
+                             owner.radical().inclusion()(point)
+                             for point in owner.radical().module_generators()
+                         ))).rank()))
+                    ordered = tuple(sorted(basis, key=lambda point:
+                                           not RECURSION.vector_lies_in_radical(point)))
+                    if not all(RECURSION.vector_lies_in_radical(point) for point in ordered[:t]):
+                        break
+                    radical_pairs.append((t, ordered))
+                if len(radical_pairs) == 2 and radical_pairs[0][0] == radical_pairs[1][0]:
+                    t = radical_pairs[0][0]
+                    witness = INDUCTION.plane_isometry(
+                        ambient.primitive_isotropic_subobject(*radical_pairs[0][1]),
+                        target_ambient.primitive_isotropic_subobject(*radical_pairs[1][1]),
+                        flag_dimensions=(t, source_dimensions[-1]),
+                        source_flag_basis=radical_pairs[0][1],
+                        target_flag_basis=radical_pairs[1][1],
+                    )
+                    if witness is not None:
+                        target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_basis[:rank])
+                                             for rank in source_dimensions)
+                        if all(term.inclusion().is_in_image(witness(point))
+                               for rank, term in zip(source_dimensions, target_terms, strict=True)
+                               for point in source_basis[:rank]):
+                            return witness
             if all(
                 not owner.is_nondegenerate()
                 and source_dimensions[0] >= int(owner.radical().rank())
