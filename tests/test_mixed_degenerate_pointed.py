@@ -3590,6 +3590,25 @@ def test_nonhomothetic_based_isotropic_embedding_requires_integral_shear_congrue
     assert isometry(category, first, obstructed) is None
 
 
+def test_nonhomothetic_rank_two_based_isotropic_embedding_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 2 for _ in range(2)])
+    e, f, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first_basis = (2 * e + z, z)
+    target_basis = (2 * e + z + 2 * w, z)
+    first = category(source.hom(list(first_basis), codomain=ambient))
+    target = category(source.hom(list(target_basis), codomain=ambient))
+    witness = isometry(category, first, target)
+    assert witness is not None
+    assert all(witness(x) == y for x, y in zip(first_basis, target_basis, strict=True))
+    obstructed = category(source.hom([2 * e + z + w, z], codomain=ambient))
+    assert isometry(category, first, obstructed) is None
+
+
 def test_full_quotient_based_mixed_rank_four_gram_with_two_radical_generators():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry
