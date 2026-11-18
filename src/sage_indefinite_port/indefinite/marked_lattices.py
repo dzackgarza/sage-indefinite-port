@@ -1569,7 +1569,7 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     return finite_ordered_set(tuple(generators))
                 saturation = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
                 mixed_rank_one = False
-                if not arrow.codomain().is_nondegenerate() and int(arrow.domain().rank()) == 2:
+                if not arrow.codomain().is_nondegenerate() and int(arrow.domain().rank()) >= 2:
                     from sage.matrix.constructor import matrix
                     from sage.rings.integer_ring import ZZ as SageZZ
 

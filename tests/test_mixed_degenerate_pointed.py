@@ -3673,6 +3673,19 @@ def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabil
                for g in generators for x in ambient.module_generators()
                for y in ambient.module_generators())
 
+    higher = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 4 for _ in range(4)])
+    e, f, z, w, t, s = tuple(higher.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    basis = (2 * e + z, 3 * e + w, t)
+    marking = category(source.hom(list(basis), codomain=higher))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+    assert all(higher.b(g(x), g(y)) == higher.b(x, y)
+               for g in generators for x in higher.module_generators()
+               for y in higher.module_generators())
+
 
 def test_nonhomothetic_based_isotropic_transporter_in_nondegenerate_split_lattice():
     from sage_extensions.all import Lattices, ZZ
