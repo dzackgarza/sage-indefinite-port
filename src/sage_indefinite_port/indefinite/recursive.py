@@ -2847,6 +2847,8 @@ class EichlerRecursion:
                     yield from primitive
                     return
                 yield lattice.zero()
+                if not primitive:
+                    return
                 for content in count(1):
                     for representative in primitive:
                         yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
@@ -2893,6 +2895,8 @@ class EichlerRecursion:
                     yield from primitive
                     return
                 yield lattice.zero()
+                if not primitive:
+                    return
                 for content in count(1):
                     for representative in primitive:
                         yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
@@ -2910,14 +2914,15 @@ class EichlerRecursion:
                     )
             return
         if int(square) != 0 and not lattice.is_nondegenerate():
-            # For L=C (+) R with definite nondegenerate C and zero radical
+            # For L=C (+) R with nondegenerate C and zero radical
             # R, O(L) is the semidirect product of O(C) x GL(R) with
             # Hom(C,R).  A shear changes the radical component of (v,r)
             # by any multiple of content(v).  For rank(R)=1, residual
             # classes are r mod c up to sign; for rank(R)>=2, GL(R)
             # orbits of residual vectors are indexed by gcd(c,r), hence
             # by divisors of c.  This produces a *terminating* complete
-            # norm-fibre classification from the finite definite C orbits.
+            # norm-fibre classification whenever the quotient C admits
+            # the existing finite exact fixed-norm classification.
             reduction = indefinite_reduced_presentation(lattice)
             reduced = reduction.reduced
             reduced_gram = _gram_in_label_order(reduced)
@@ -2937,7 +2942,18 @@ class EichlerRecursion:
             complement = lattice.lattice_category()(
                 [[int(value) for value in row] for row in quotient_gram.rows()]
             )
-            if complement.is_definite():
+            complement_profile = AttackProfile.from_lattice(complement)
+            complement_supported = (
+                complement.is_definite()
+                or int(quotient_rank) == 2
+                or (int(complement.witt_index()) > 0 and (
+                    complement_profile.positive_index == 1
+                    and complement_profile.sign * int(square) >= 0
+                    or complement_profile.positive_index >= 2
+                    and int(complement.witt_index()) >= 2
+                ))
+            )
+            if complement_supported:
                 for representative in self.exact_vector_orbit_iterator(complement, square):
                     c = int(representative.content())
                     if not c:

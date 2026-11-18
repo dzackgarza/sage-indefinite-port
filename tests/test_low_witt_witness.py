@@ -426,6 +426,40 @@ def test_definite_quotient_degenerate_norm_orbits_under_basis_change():
     assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 25, primitive_only=True))) == 2
 
 
+def test_indefinite_quotient_degenerate_norm_orbits_are_finite_and_exact():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for gram in (
+        [[0, 1, 0], [1, 0, 0], [0, 0, 0]],
+        [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    ):
+        ambient = lattice(gram)
+        representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8))
+        assert representatives
+        assert all(int(point.q()) == 8 for point in representatives)
+        for i, first in enumerate(representatives):
+            for second in representatives[i + 1:]:
+                assert RECURSION.pointed_isometry(first, second) is None
+        primitive = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8, primitive_only=True))
+        assert primitive
+        assert all(int(point.content()) == 1 for point in primitive)
+        assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 1)) == ()
+    nonsplit = lattice([[2, 0, 0], [0, -6, 0], [0, 0, 0]])
+    classes = tuple(RECURSION.exact_vector_orbit_iterator(nonsplit, 8))
+    assert classes and all(int(point.q()) == 8 for point in classes)
+    assert tuple(RECURSION.exact_vector_orbit_iterator(nonsplit, 1)) == ()
+    for i, first in enumerate(classes):
+        for second in classes[i + 1:]:
+            assert RECURSION.pointed_isometry(first, second) is None
+    lorentzian = lattice([[0, 1, 0, 0], [1, 0, 0, 0],
+                         [0, 0, -2, 0], [0, 0, 0, 0]])
+    lorentzian_classes = tuple(RECURSION.exact_vector_orbit_iterator(lorentzian, 2))
+    assert lorentzian_classes and all(int(point.q()) == 2 for point in lorentzian_classes)
+    for i, first in enumerate(lorentzian_classes):
+        for second in lorentzian_classes[i + 1:]:
+            assert RECURSION.pointed_isometry(first, second) is None
+
+
 def test_definite_quotient_radical_residue_orbit_transporters():
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
 
