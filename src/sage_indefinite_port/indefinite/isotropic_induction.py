@@ -835,7 +835,6 @@ class IsotropicInduction:
                                 prefix = extended
                             radical_frames.append(prefix.stack(_source_subspace_completion_int(prefix, k)))
                         source_radical_frame, target_radical_frame = radical_frames
-                        radical_action = source_radical_frame.inverse().change_ring(SageZZ) * target_radical_frame
                         stabilizers = (_finite_index_sublattice_stabilizer_generators(projected[1])
                                        if modulus > 1 else ())
                         frontier = [complement.O().identity()]
@@ -856,8 +855,29 @@ class IsotropicInduction:
                             coefficients = x1.change_ring(SageQQ).transpose().solve_right(
                                 (x0 * action).change_ring(SageQQ).transpose()).transpose()
                             if all(entry.denominator() == 1 for entry in coefficients.list()):
+                                # The projected transporter may permute or
+                                # shear the adapted projected generators.
+                                # Match the radical graph directions using
+                                # that same integral change of generators;
+                                # an unrelated radical completion can fail
+                                # the congruence even for an exact isometry.
+                                aligned_graph = coefficients.change_ring(SageZZ) * frames[1][t:, n:]
+                                aligned_prefix = frames[1][:t, n:]
+                                for graph_row in aligned_graph.rows():
+                                    extended = aligned_prefix.stack(matrix(SageZZ, [list(graph_row)]))
+                                    if int(extended.rank()) != int(extended.nrows()):
+                                        continue
+                                    try:
+                                        _source_subspace_completion_int(extended, k)
+                                    except ValueError:
+                                        continue
+                                    aligned_prefix = extended
+                                aligned_target_frame = aligned_prefix.stack(
+                                    _source_subspace_completion_int(aligned_prefix, k))
+                                radical_action = (source_radical_frame.inverse().change_ring(SageZZ)
+                                                  * aligned_target_frame)
                                 discrepancy = coefficients * frames[1][t:, n:] - frames[0][t:, n:] * radical_action
-                                normalized = discrepancy * target_radical_frame.inverse()
+                                normalized = discrepancy * aligned_target_frame.inverse()
                                 smith, left, right = x0.smith_form()
                                 corrected = left * normalized[:, t:]
                                 if all(corrected[i, j] % smith[i, i] == 0
@@ -869,7 +889,7 @@ class IsotropicInduction:
                                     shear = right * solution
                                     full_shear = matrix(SageZZ, n, k, 0)
                                     full_shear[:, t:] = shear
-                                    full_shear *= target_radical_frame
+                                    full_shear *= aligned_target_frame
                                     block = identity_matrix(SageZZ, size)
                                     block[:n, :n] = action
                                     block[:n, n:] = full_shear
