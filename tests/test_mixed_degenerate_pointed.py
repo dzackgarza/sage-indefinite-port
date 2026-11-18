@@ -1106,6 +1106,18 @@ def test_nonprimitive_projection_nested_radical_flag_public_transporter():
     assert ambient.primitive_isotropic_subobject(z, w).inclusion().is_in_image(shear_witness(w))
     assert all(ambient.b(shear_witness(x), shear_witness(y)) == ambient.b(x, y)
                for x in ambient.module_generators() for y in ambient.module_generators())
+    # A change in the top adapted basis, without changing its integral
+    # sublattice or any intermediate term, must not introduce a false
+    # obstruction to transport.
+    top_basis_target = category(_flag_marking_from_basis(
+        ambient, (w, z, 2 * e + t + z, u + w), (1, 2, 4)))
+    top_basis_witness = isometry(category, source, top_basis_target)
+    assert top_basis_witness is not None
+    for rank in (1, 2, 4):
+        target_term = ambient.primitive_isotropic_subobject(
+            *(w, z, 2 * e + t + z, u + w)[:rank])
+        assert all(target_term.inclusion().is_in_image(top_basis_witness(point))
+                   for point in (z, w, 2 * e + t, u)[:rank])
 
 
 def test_mixed_three_stage_flag_action_data_uses_sage_integer_matrices():
