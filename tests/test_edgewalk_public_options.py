@@ -43,6 +43,22 @@ def test_public_edgewalk_rejects_unsupported_root_norm_selection():
         ambient.allcock_edgewalk(option_norms="unknown")
 
 
+def test_edgewalk_reflection_constraint_rejects_fractional_root_norm():
+    import pytest
+    from sage.all import QQ
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+    from sage_indefinite_port.indefinite.edgewalk import _Edgewalk
+
+    ambient = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [0, 1, 0], [1, 0, 0], [0, 0, 2],
+    ]))
+    walk = _Edgewalk(ambient)
+    with pytest.raises(ArithmeticError, match="not integral"):
+        walk.constraint(QQ(3) / 2)
+    with pytest.raises(ArithmeticError, match="not integral"):
+        walk.edge_plane((), ambient.module_generators()[2], ambient.module_generators()[0], QQ(3) / 2)
+
+
 def test_reduced_edgewalk_preserves_nonreflectivity_certificate(monkeypatch):
     from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
     from sage_indefinite_port.indefinite.edgewalk import _Edgewalk

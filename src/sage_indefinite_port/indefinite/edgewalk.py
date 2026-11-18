@@ -955,7 +955,7 @@ class _Edgewalk:
 
     def constraint(self, norm: Rational) -> Parent:
         r"""C = {v in L : 2 b(v, L) / norm in Z}, the vectors whose reflection of that norm is integral."""
-        integral_norm = int(norm)
+        integral_norm = _integer(norm)
         return self.constraint_for_divisor(integral_norm // 2 if integral_norm % 2 == 0 else integral_norm)
 
     @cached_method
@@ -963,7 +963,7 @@ class _Edgewalk:
         return self.lattice.divisible_sublattice(divisor)
 
     def edge_plane(self, roots: _Roots, discarded: _Vector, k: _Vector, norm: Rational) -> _EdgePlane:
-        integral_norm = int(norm)
+        integral_norm = _integer(norm)
         return self.edge_plane_for_divisor(
             roots,
             discarded,
