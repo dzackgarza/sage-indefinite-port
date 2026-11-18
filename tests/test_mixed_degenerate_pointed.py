@@ -418,6 +418,26 @@ def test_mixed_degenerate_full_radical_maximal_isotropic_stabilizer_generators()
                    for generator in public for point in (e, *radical))
 
 
+def test_public_full_radical_maximal_plane_stabilizer_contains_hom_kernel():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e + z, z)
+    marked = ARROWS.object(plane.inclusion())
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    assert generators
+    assert all(plane.inclusion().is_in_image(g(point))
+               for g in generators for point in (e + z, z))
+    assert any(g(z) == -z for g in generators)
+    # Hom(U,R) is part of the full parabolic. In particular a shear of
+    # the complementary hyperbolic coordinate is not lost by filtering
+    # ambient generators individually for membership in Stab(J).
+    assert any(g(f).to_vector()(tuple(ambient.module_generating_set())[-1]) != 0
+               for g in generators)
+
+
 def test_mixed_degenerate_full_radical_plane_transporter_lifts_quotient_isometry():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
