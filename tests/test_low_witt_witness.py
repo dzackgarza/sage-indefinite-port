@@ -287,6 +287,21 @@ def test_exact_vector_orbit_iterator_rank_one_quotient_higher_radical():
         assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 72, primitive_only=True))) == 1
 
 
+def test_rank_one_quotient_radical_orbit_representatives_are_pairwise_inequivalent():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 72))
+    assert len(representatives) == 4
+    for i, first in enumerate(representatives):
+        for second in representatives[i + 1:]:
+            assert RECURSION.pointed_isometry(first, second) is None
+    labels = tuple(ambient.module_generating_set())
+    point = ambient.linear_combination({labels[0]: 6, labels[1]: 4, labels[2]: 2})
+    assert any(RECURSION.pointed_isometry(point, representative) is not None
+               for representative in representatives)
+
+
 def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):
     from itertools import islice
     from sage_indefinite_port.indefinite import recursive
