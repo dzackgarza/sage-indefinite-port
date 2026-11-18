@@ -967,6 +967,29 @@ def test_three_u_cyclic_coordinate_flag_transporter_preserves_dual_pairs():
     assert action.det() == 1
 
 
+def test_three_u_signed_coordinate_flag_transport_preserves_hyperbolic_pairings():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j)
+                        for j in range(6)] for i in range(6)])
+    e, f, u, v, a, b = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (e, u, a), (1, 2, 3)))
+    second = category(_flag_marking_from_basis(ambient, (-u, a, -e), (1, 2, 3)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for rank in (1, 2, 3):
+        target_term = ambient.primitive_isotropic_subobject(*(-u, a, -e)[:rank]).inclusion()
+        assert all(target_term.is_in_image(witness(point)) for point in (e, u, a)[:rank])
+    assert witness(e) in (u, -u)
+    assert witness(u) in (a, -a)
+    assert witness(a) in (e, -e)
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_public_five_u_partial_flag_rank_jumps_one_three_five_classes():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory

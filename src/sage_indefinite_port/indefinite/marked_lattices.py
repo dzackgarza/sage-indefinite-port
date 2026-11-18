@@ -1182,26 +1182,38 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
 
                 generators = tuple(ambient.module_generators())
-                if all(point in generators for point in (*source_basis, *target_basis)):
-                    fixed = {generators.index(left): generators.index(right)
-                             for left, right in zip(source_basis, target_basis, strict=True)}
+                def signed_coordinate(point):
+                    for index, generator in enumerate(generators):
+                        if point == generator:
+                            return index, 1
+                        if point == -generator:
+                            return index, -1
+                    return None
+
+                coordinates = tuple(signed_coordinate(point) for point in (*source_basis, *target_basis))
+                if all(coordinate is not None for coordinate in coordinates):
+                    s = len(source_basis)
+                    fixed = {coordinates[i][0]: (coordinates[s + i][0],
+                              coordinates[i][1] * coordinates[s + i][1]) for i in range(s)}
                     gram = _gram_in_label_order(ambient)
                     # In a hyperbolic direct sum the Gram form determines
                     # each coordinate's unique dual. Extend the prescribed
                     # isotropic-coordinate action to these duals as well.
-                    for i, j in tuple(fixed.items()):
+                    for i, (j, sign) in tuple(fixed.items()):
                         source_duals = [p for p in range(len(generators)) if gram[i, p]]
                         target_duals = [p for p in range(len(generators)) if gram[j, p]]
                         if (len(source_duals) == len(target_duals) == 1
-                                and gram[i, source_duals[0]] == gram[j, target_duals[0]]):
-                            fixed.setdefault(source_duals[0], target_duals[0])
-                    if len(set(fixed.values())) != len(fixed):
+                                and abs(gram[i, source_duals[0]]) == abs(gram[j, target_duals[0]])):
+                            dual_sign = sign * int(gram[i, source_duals[0]] / gram[j, target_duals[0]])
+                            fixed.setdefault(source_duals[0], (target_duals[0], dual_sign))
+                    if len({entry[0] for entry in fixed.values()}) != len(fixed):
                         fixed = {}
                     unused_sources = [i for i in range(len(generators)) if i not in fixed]
-                    unused_targets = [i for i in range(len(generators)) if i not in fixed.values()]
-                    fixed.update(zip(unused_sources, unused_targets, strict=True))
+                    unused_targets = [i for i in range(len(generators)) if i not in
+                                      {entry[0] for entry in fixed.values()}]
+                    fixed.update((i, (j, 1)) for i, j in zip(unused_sources, unused_targets, strict=True))
                     permutation = matrix(SageZZ, len(generators), len(generators),
-                                         lambda i, j: int(fixed[i] == j))
+                                         lambda i, j: fixed[i][1] if fixed[i][0] == j else 0)
                     if permutation * gram * permutation.transpose() == gram:
                         witness = _isometry_from_row_matrix(ambient, ambient, permutation)
                         if all(witness(point) == target for point, target in zip(
