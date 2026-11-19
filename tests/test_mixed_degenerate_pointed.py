@@ -4339,6 +4339,56 @@ def test_full_quotient_based_mixed_gram_nonprimitive_radical_frame_obstruction()
     assert isometry(category, first, impossible) is None
 
 
+def test_nonprimitive_full_quotient_proper_radical_frame_uses_congruence_coset():
+    r"""Based rank-three Gram embeddings with a nonunimodular quotient and a proper radical line.
+
+    In U + 0^2, mark (2e+z, f, w) and (2e+z+w, f, w).
+    The integral radical action z -> z+w, w -> w carries the first
+    frame to the second. The naive completion D=1 cannot correct the
+    odd radical shift using a shear on 2e, so the exact algorithm must
+    search the *integral stabilizer of the marked radical line* modulo 2.
+    The negative specimen changes the z-coordinate from 1 to 2; no
+    unimodular D fixing w and no integral shear on 2e can accomplish it.
+    """
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 2, 0], [2, 0, 0], [0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first_basis = (2 * e + z, f, w)
+    target_basis = (2 * e + z + w, f, w)
+    first = category(source.hom(list(first_basis), codomain=ambient))
+    target = category(source.hom(list(target_basis), codomain=ambient))
+    transporter = isometry(category, first, target)
+    assert transporter is not None
+    assert all(transporter(x) == y for x, y in zip(first_basis, target_basis, strict=True))
+    assert all(ambient.b(transporter(x), transporter(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+    impossible = category(source.hom([2 * e + 2 * z, f, w], codomain=ambient))
+    assert isometry(category, first, impossible) is None
+
+    # A rank-two *nonprimitive* radical frame in rank-three radical. The
+    # exact row-stabilizer subgroup is smaller than GL_3(Z), but still has
+    # the needed shear z -> z+w; it is not enough to enumerate GL_3(F_2).
+    higher = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(higher.module_generators())
+    higher_source = Lattices(ZZ)([[0, 2, 0, 0], [2, 0, 0, 0],
+                                  [0, 0, 0, 0], [0, 0, 0, 0]])
+    higher_category = Lattices(ZZ).CosliceUnder(higher_source)
+    first_basis = (2 * e + z, f, 2 * w, t)
+    target_basis = (2 * e + z + w, f, 2 * w, t)
+    first = higher_category(higher_source.hom(list(first_basis), codomain=higher))
+    target = higher_category(higher_source.hom(list(target_basis), codomain=higher))
+    transporter = isometry(higher_category, first, target)
+    assert transporter is not None
+    assert all(transporter(x) == y for x, y in zip(first_basis, target_basis, strict=True))
+    impossible = higher_category(higher_source.hom([2 * e + 2 * z, f, 2 * w, t], codomain=higher))
+    assert isometry(higher_category, first, impossible) is None
+
+
 def test_full_rank_based_mixed_gram_nonprimitive_quotient_exact_shear_integrality():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry

@@ -608,16 +608,22 @@ def _degenerate_radical_based_isometry(source_arrow: Morphism, target_arrow: Mor
 
 
 def _degenerate_full_quotient_based_isometry(source_arrow: Morphism, target_arrow: Morphism):
-    r"""Exact based mixed-Gram transport for a full unimodular quotient frame.
+    r"""Exact based mixed-Gram transport for a full-rank rational quotient frame.
 
     Write L=C+R in the reduced integral chart.  Suppose the marked
-    nonradical rows project to a Z-basis of C and the marked radical rows
-    form a primitive free direct summand of R.  Their images determine the
-    quotient action A and an integral radical completion D; the unique
-    shear B is X^-1(Y_rad-X_rad D).  The block [[A,B],[0,D]] is integral
-    unimodular and preserves the form precisely when the marked Gram
-    tensors agree.  This gives an actual ambient isometry, not a finite
-    search or a rational extension.
+    nonradical rows have nonsingular quotient coordinate matrix X; the
+    radical rows have a full-rank submodule of R (possibly proper). Their
+    images determine the quotient action A and require an integral radical
+    completion D with L_rad D=R_rad. The required shear is uniquely
+    B=X^-1(Y_rad-X_rad D). If X is not unimodular, not every such D makes
+    B integral: with one completion D0, all others are D0 H for H in the
+    exact pointwise stabilizer of R_rad inside GL(R,Z). Since the denominator
+    of X^-1 divides |det X|, integrality of B depends **only** on H modulo
+    |det X|. Compute the *actual finite image* of that stabilizer and
+    enumerate it via GAP, lifting each element to a word in its complete
+    integral generators; this is a finite terminating decision including
+    every radical congruence-kernel coset. The accepted block [[A,B],[0,D]]
+    is checked against the full original form and all marked vectors.
     """
     from sage.matrix.constructor import identity_matrix, matrix
     from sage.rings.integer_ring import ZZ as SageZZ
@@ -661,8 +667,6 @@ def _degenerate_full_quotient_based_isometry(source_arrow: Morphism, target_arro
     x, y = left_non[:, :n], right_non[:, :n]
     if not x.det() or not y.det():
         raise ValueError("the nonradical marked vectors must span the rational nondegenerate quotient")
-    if (abs(int(x.det())) != 1 or abs(int(y.det())) != 1) and r != k:
-        raise ValueError("nonprimitive quotient with a proper radical frame requires constrained integral stabilizer action")
     a_rational = x.inverse() * y
     if abs(a_rational.det()) != 1 or any(value not in SageZZ for value in a_rational.list()):
         return None
@@ -691,7 +695,45 @@ def _degenerate_full_quotient_based_isometry(source_arrow: Morphism, target_arro
         raise ArithmeticError("the integral radical completion does not carry the marked frame")
     b_rational = x.inverse() * (right_non[:, n:] - left_non[:, n:] * d)
     if any(value not in SageZZ for value in b_rational.list()):
-        return None
+        if r == k:
+            # A full radical frame determines D uniquely; there are no
+            # remaining integral radical degrees of freedom to adjust B.
+            return None
+        from sage.groups.matrix_gps.finitely_generated import MatrixGroup
+        from sage.libs.gap.libgap import libgap
+        from sage.rings.finite_rings.integer_mod_ring import Zmod
+
+        modulus = abs(int(x.det()))
+        # Reuse the integral Smith-frame stabilizer rather than asking the
+        # provider's *properly degenerate* marked-group engine to operate on
+        # a purely zero-form lattice. Its complete generators include the
+        # full unipotent kernel and the remaining GL_(k-r)(Z) factor.
+        lifts = RECURSION._radical_stabilizer_of_frame(right_rad)
+        finite_ring = Zmod(modulus)
+        finite_generators = tuple(g.change_ring(finite_ring) for g in lifts)
+        finite_image = MatrixGroup(list(finite_generators) or [identity_matrix(finite_ring, k)])
+        epimorphism = libgap.EpimorphismFromFreeGroup(finite_image)
+
+        for residue in libgap.Elements(finite_image.gap()):
+            word = libgap.PreImagesRepresentative(epimorphism, residue)
+            if word == libgap.fail:
+                raise ArithmeticError("a finite stabilizer-image element has no free-group lift")
+            syllables = [int(entry) for entry in libgap.ExtRepOfObj(word)]
+            h = identity_matrix(SageZZ, k)
+            for index, exponent in zip(syllables[0::2], syllables[1::2], strict=True):
+                h *= lifts[index - 1] ** exponent
+            if right_rad * h != right_rad or abs(int(h.det())) != 1:
+                raise ArithmeticError("the lifted radical word is not in the exact frame stabilizer")
+            candidate_d = d * h
+            candidate_b = x.inverse() * (right_non[:, n:] - left_non[:, n:] * candidate_d)
+            if all(value in SageZZ for value in candidate_b.list()):
+                d, b_rational = candidate_d, candidate_b
+                break
+        else:
+            # Every residue of the actual integral stabilizer was checked.
+            # Since X^-1 has denominator dividing |det X|, no unvisited
+            # congruence-kernel element can change the obstruction.
+            return None
     b = b_rational.change_ring(SageZZ)
     block = identity_matrix(SageZZ, n + k)
     for i in range(n):

@@ -2712,6 +2712,50 @@ class EichlerRecursion:
         inverse = change.inverse().change_ring(SageZZ)
         return tuple(change * block * inverse for block in stabilizer_of_first)
 
+    def _radical_stabilizer_of_frame(self, frame) -> tuple[Matrix_integer_dense, ...]:
+        r"""Complete generators of ``{D in GL_k(Z) : frame*D=frame}`` for a full-row-rank frame.
+
+        If ``U*frame*V = [diag(d_1,...,d_r),0]`` is Smith normal form,
+        then ``frame*D=frame`` is equivalent to
+        ``[I_r,0] (V^-1*D*V) = [I_r,0]``: all ``d_i`` are nonzero and Z has
+        no torsion. Thus the entire stabilizer consists exactly of
+        ``V * [[I_r,0],[B,E]] * V^-1`` where ``B`` is an arbitrary integral
+        ``(k-r) x r`` matrix and ``E in GL_(k-r)(Z)``. Elementary shears
+        generate ``B`` additively; the provider's complete owned generators
+        for ``GL_(k-r)(Z)`` supply ``E``. This remains exact for a nonprimitive
+        frame, with no finite-index saturation assumption or finite cutoff.
+        """
+        frame = matrix(SageZZ, frame)
+        rows, rank = frame.nrows(), frame.ncols()
+        if not 1 <= rows <= rank or frame.rank() != rows:
+            raise ValueError("the integral radical frame must have full row rank")
+        if rows == 1:
+            return self._radical_stabilizer_of_row(tuple(int(x) for x in frame.row(0)))
+        identity = identity_matrix(SageZZ, rank)
+        if rows == rank:
+            return (identity,)
+        _, _, change = frame.smith_form()
+        inverse = change.inverse().change_ring(SageZZ)
+        complement = rank - rows
+        blocks = []
+        for i in range(rows, rank):
+            for j in range(rows):
+                shear = identity_matrix(SageZZ, rank)
+                shear[i, j] = 1
+                blocks.append(shear)
+        larger = OwnedGroups().GL(complement, ZZ)
+        for generator in larger.group_generators():
+            block = identity_matrix(SageZZ, rank)
+            action = larger._to_engine(generator).matrix()
+            for i in range(complement):
+                for j in range(complement):
+                    block[rows + i, rows + j] = SageZZ(action[i, j])
+            blocks.append(block)
+        result = tuple(change * block * inverse for block in blocks)
+        if any(abs(int(g.det())) != 1 or frame * g != frame for g in result):
+            raise ArithmeticError("Smith-frame stabilizer generators do not fix the integral radical frame")
+        return result
+
     def _radical_blocks(self, lattice: Lattices.ParentMethods, vector: Lattices.ElementMethods) -> tuple[Matrix_integer_dense, ...]:
         r"""Row-matrix blocks of `Aut((L, v))` for `v = (0, r)` in a *reduced*, radical-last presentation.
 
