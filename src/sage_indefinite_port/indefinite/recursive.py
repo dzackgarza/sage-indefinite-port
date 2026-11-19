@@ -1155,6 +1155,50 @@ class EichlerRecursion:
         )
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def multilevel_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, constraints):
+        r"""Exact simultaneous stabilizer of residue constraints at several levels.
+
+        ``constraints`` consists of pairs ``(modulus, keyword_data)``, where
+        keyword data describes vectors, submodules, flags or colour classes.
+        Pull all conditions back to their least-common-multiple level and
+        construct a single Schreier preimage in the actual reduction image.
+        """
+        from math import lcm
+        from collections import deque
+
+        constraints = tuple(constraints)
+        if not constraints:
+            raise ValueError("at least one congruence level is required")
+        modulus = 1
+        for level, _ in constraints:
+            if int(level) < 2:
+                raise ValueError("each congruence level must be at least two")
+            modulus = lcm(modulus, int(level))
+        image = self.congruence_image(lattice, modulus)
+        allowed = set(image.image_keys())
+        for level, data in constraints:
+            target, projection = image.project_to_level(int(level))
+            index, generators = target.simultaneous_residue_stabilizer(**data)
+            # The images of the integral Schreier generators generate the
+            # selected finite subgroup; enumerate it inside the actual image.
+            subgroup = {target._key(target.image_one)}
+            queue = deque(subgroup)
+            generator_images = tuple(target.reduce(g) for g in generators)
+            while queue:
+                key = queue.popleft()
+                current = target.reduce(target._lifts[key])
+                for g in generator_images:
+                    moved = target._key(current * g)
+                    if moved not in subgroup:
+                        subgroup.add(moved)
+                        queue.append(moved)
+            if len(subgroup) * index != len(target.image_keys()):
+                raise ArithmeticError("finite stabilizer image has incorrect index")
+            allowed = {key for key in allowed
+                       if target._key(projection(image.reduce(image._lifts[key]))) in subgroup}
+        index, matrices = image.preimage_generators(image.reduce(image._lifts[key]) for key in allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
         r"""Integral isometries preserving the specified finite-index sublattice.
 

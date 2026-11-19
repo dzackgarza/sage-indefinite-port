@@ -876,3 +876,21 @@ def test_composite_level_projection_is_actual_surjective_image_map():
                 assert project(image.reduce(a * b)) == project(image.reduce(a)) * project(image.reduce(b))
     with raises(ValueError, match="divisor"):
         image.project_to_level(5)
+
+
+def test_public_multilevel_residue_stabilizer_intersects_actual_images():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    constraints = ((2, {"vectors": ((1, 0),)}),
+                   (3, {"vectors": ((1, 0),)}))
+    index, generators = engine.multilevel_congruence_stabilizer_generators(ambient, constraints)
+    single_index, _ = engine.simultaneous_congruence_stabilizer_generators(
+        ambient, 6, vectors=((1, 0),)
+    )
+    assert index == single_index
+    for g in generators:
+        coordinates = g(ambient.module_generators()[0]).to_vector()
+        assert tuple(int(x) % 6 for x in coordinates) == (1, 0)
