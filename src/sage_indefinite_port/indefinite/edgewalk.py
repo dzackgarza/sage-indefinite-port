@@ -152,6 +152,7 @@ def edgewalk_isometry(
     goal = second.vertex_configuration(second_vertex)
     seen = []
     frontier = [first_vertex]
+    incomplete_vertex_graph = False
     while frontier:
         vertex = frontier.pop(0)
         configuration = first.vertex_configuration(vertex)
@@ -166,12 +167,21 @@ def edgewalk_isometry(
         for roots, discarded in first.edge_orbits(vertex, local_generators):
             neighbour = first.edge_step(vertex, roots, discarded)
             if neighbour is None:
+                # A nonreflective edge has no next chamber vertex. The
+                # vertex-orbit graph is then not a complete isometry
+                # obstruction: use the complete perfect-cell equivalence
+                # algorithm rather than returning a false negative.
+                incomplete_vertex_graph = True
                 continue
             next_configuration = first.vertex_configuration(neighbour)
             if any(source.O().transporter(previous, next_configuration) is not None
                    for previous in (*seen, *(first.vertex_configuration(item) for item in frontier))):
                 continue
             frontier.append(neighbour)
+    if incomplete_vertex_graph:
+        from sage_indefinite_port.indefinite.lorentzian_cells import lorentzian_isometry
+
+        return lorentzian_isometry(source, target)
     return None
 
 
@@ -1075,7 +1085,7 @@ class _Edgewalk:
     @staticmethod
     def divisor(norm: Rational) -> int:
         r"""The divisor d with C_N = {v in L : b(v, L) in d Z}: N/2 for even N, N for odd N."""
-        integral_norm = int(norm)
+        integral_norm = _integer(norm)
         return integral_norm // 2 if integral_norm % 2 == 0 else integral_norm
 
     @cached_method

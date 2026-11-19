@@ -3,6 +3,108 @@ import pytest
 from tests.acceptance.consumer import lattice
 
 
+@pytest.mark.parametrize("radical_rank,dimensions", (
+    (1, (1, 2)), (2, (2, 3)), (2, (1, 2, 3)),
+    (3, (1, 3, 4)), (3, (1, 2, 3, 4)),
+))
+def test_mixed_maximal_null_flag_finite_classifier_refuses_infinite_orbits(radical_rank, dimensions):
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * radical_rank for _ in range(radical_rank)])
+    e, f, *radical = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(len(dimensions) + 1), Lattices(ZZ))
+    shape = category(_flag_marking_from_basis(ambient, (*radical, e), dimensions))
+    # The source specifies abstract zero-form ranks, not the condition
+    # that its penultimate term equal rad(L). In U + <0>, the flags
+    # <z + m e> < <z,e> have pairwise different projection content m
+    # in L/rad(L), for every m >= 1. The finite classifier cannot
+    # replace all of them with the radical-first representative.
+    with pytest.raises(ValueError, match="may be infinite"):
+        tuple(primitive_marking_classes(category, shape, ambient))
+
+
+def test_primitive_null_flag_stream_yields_integral_saturated_diagrams():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        _flag_arrows, isometry, iter_primitive_isotropic_flag_classes,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    flags = tuple(islice(iter_primitive_isotropic_flag_classes(ambient, (1, 2)), 2))
+    assert len(flags) == 2
+    for flag in flags:
+        first, second = _flag_arrows(flag)
+        assert first.is_primitive() and second.is_primitive()
+        assert isometry(flag.parent(), flag, flag) is not None
+    assert isometry(flags[0].parent(), flags[0], flags[1]) is None
+
+
+def test_primitive_null_flag_stream_terminates_above_degenerate_witt_bound():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_flag_classes
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 2, 0], [0, 0, 2]])
+    assert tuple(iter_primitive_isotropic_flag_classes(ambient, (1, 2))) == ()
+    assert tuple(iter_primitive_isotropic_flag_classes(ambient, (4,))) == ()
+
+
+def test_odd_rank_special_orthogonal_null_flag_stream_has_same_orbits():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, iter_primitive_isotropic_flag_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    full = tuple(islice(iter_primitive_isotropic_flag_classes(ambient, (1, 2)), 2))
+    special = tuple(islice(iter_primitive_isotropic_flag_classes(
+        ambient, (1, 2), acting_group=ambient.SO()
+    ), 2))
+    assert len(full) == len(special) == 2
+    assert all(isometry(full[0].parent(), left, right) is not None
+               for left, right in zip(full, special, strict=True))
+
+
+def test_zero_form_primitive_flag_stream_exhausts_its_single_full_orbit():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_flag_classes
+
+    ambient = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    assert len(tuple(iter_primitive_isotropic_flag_classes(ambient, (1, 2, 3)))) == 1
+
+
+def test_anisotropic_quotient_primitive_flag_stream_exhausts_radical_flags():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        _flag_arrows, iter_primitive_isotropic_flag_classes,
+    )
+
+    ambient = Lattices(ZZ)([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    flags = tuple(iter_primitive_isotropic_flag_classes(ambient, (1, 2)))
+    assert len(flags) == 1
+    assert all(arrow.is_primitive() for arrow in _flag_arrows(flags[0]))
+
+
+def test_nondegenerate_primitive_flag_stream_terminates_after_source_classes():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_flag_classes
+
+    ambient = Lattices(ZZ)("U")
+    flags = tuple(iter_primitive_isotropic_flag_classes(ambient, (1,)))
+    assert len(flags) == 1
+    assert flags[0].arrow().is_primitive()
+
+
+def test_one_term_degenerate_flag_stream_returns_arrow_objects():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_flag_classes
+
+    for ambient in (Lattices(ZZ)([[0]]), Lattices(ZZ)([[2, 0], [0, 0]])):
+        flags = tuple(iter_primitive_isotropic_flag_classes(ambient, (1,)))
+        assert len(flags) == 1 and flags[0].arrow().is_primitive()
+
+
 def test_mixed_radical_shear_positive_and_negative_transporters():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

@@ -47,6 +47,7 @@ from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.special import diagonal_matrix
 from sage.rings.finite_rings.integer_mod_ring import Zmod
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.structure.parent import Parent
 
@@ -529,14 +530,198 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
     r"""Fair, nontruncated enumeration of all integral isometries of a finite-rank lattice.
 
     The output is a stream of owned O(L)-elements, not a finite generating
-    family.  Every GL_n(Z) element occurs once in the matrix stream, so
-    every integral isometry eventually occurs.  For an infinite orthogonal
-    group this stream is infinite; for a finite group it may never halt.
+    family.  Explicit arithmetic parametrizations and breadth-first
+    enumeration of complete group generators cover the specialized cases;
+    otherwise the generic GL_n(ZZ) matrix stream is exhaustive.  Infinite
+    orthogonal groups produce infinite streams, while the finite definite
+    and split binary branches terminate after their last element.
     """
     gram = _gram_in_label_order(lattice)
+    if int(gram.nrows()) == 0:
+        yield lattice.O().identity()
+        return
+    if int(gram.nrows()) == 1:
+        # GL_1(ZZ)={+1,-1}; both preserve every integral rank-one
+        # quadratic form, including the degenerate zero form.
+        yield _isometry_from_row_matrix(lattice, lattice, identity_matrix(SageZZ, 1))
+        yield _isometry_from_row_matrix(lattice, lattice, -identity_matrix(SageZZ, 1))
+        return
+    if not gram:
+        # For the zero form, O(L)=GL(L).  Use the maintained integral
+        # general-linear generating family, with inverses, instead of
+        # constructing the exponentially branching GL_n word search.
+        # This is a genuine group enumeration: all words and their
+        # inverses occur at finite breadth-first distance.
+        from collections import deque
+
+        linear = OwnedGroups().GL(int(lattice.rank()), lattice.base_ring())
+        forward = tuple(linear._to_engine(g).matrix().change_ring(SageZZ)
+                        for g in linear.group_generators())
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_row_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
+    if not lattice.is_nondegenerate() and int(lattice.rank()) >= 3:
+        # Reduce the radical to the final coordinates and extend the
+        # nondegenerate complement group by all integral radical shears
+        # and GL(R) actions.  This is the exact degenerate extension
+        # algorithm, not an ambient GL_n enumeration.  Its generators
+        # are complete whenever the complement group generators are.
+        from collections import deque
+
+        recursion = EichlerRecursion()
+        forward = tuple(_column_matrix(g) for g in recursion.orthogonal_group_generators(lattice))
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
+    if int(gram.nrows()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
+        # Every rational isometry of a split binary plane permutes its two
+        # rational null lines, scaling them by mutually inverse factors.
+        # For an integral unimodular isometry each primitive integral ray
+        # maps to a signed primitive ray; hence there are at most eight
+        # possibilities.  The pinned binary algorithm tests all eight.
+        from sage_indefinite_port.indefinite.lorentzian_cells import _binary_split_automorphisms
+
+        yield from _binary_split_automorphisms(lattice)
+        return
+    signature = tuple(map(int, lattice.signature_pair()))
+    if lattice.is_nondegenerate() and not lattice.is_definite() and (
+        int(lattice.rank()) == 2
+        or (int(lattice.witt_index()) > 0 and (min(signature) == 1 or int(lattice.witt_index()) >= 2))
+    ):
+        # The pinned indefinite generation step supplies the full integral
+        # orthogonal group in every supported signature: Lorentzian leaves
+        # use the perfect-domain algorithm; higher Witt index uses the
+        # approximate-model covering plus exact pointed stabilizer.  In
+        # either case enumerate the resulting Cayley graph, not GL_n(ZZ).
+        # The signed-view convention is undone on every generator below.
+        from collections import deque
+
+        # A group generating family is not generally a *monoid*
+        # generating family.  In particular an infinite-order Pell period
+        # and its negative powers must both occur in the enumeration.
+        # Include inverse matrices explicitly before traversing words.
+        if int(lattice.rank()) == 2:
+            # The rank-two arithmetic edgewalk is the exact provider for
+            # both split and anisotropic indefinite binary forms; the
+            # higher-rank Eichler generation step requires a rational
+            # isotropic vector and is not applicable to anisotropic planes.
+            forward = tuple(_column_matrix(g) for g in lorentzian_orthogonal_group_generators(lattice))
+        else:
+            forward = tuple(_column_matrix(g)
+                            for g in EichlerRecursion().orthogonal_group_generators(lattice))
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
+    if int(gram.nrows()) == 2 and gram.rank() == 1:
+        # A rank-one radical in a binary lattice is primitive.  Choose a
+        # unimodular basis with the radical last; every isometry in that
+        # basis is [[epsilon, b], [0, delta]] (row convention), where
+        # epsilon,delta=+/-1 and b ranges over ZZ.  Unlike a generic
+        # GL_2 word search this gives every isometry once, by an explicit
+        # arithmetic parametrization, and reaches every shear fairly.
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        reduced_gram = _gram_in_label_order(reduced)
+        if reduced_gram[0, 1] or reduced_gram[1, 0] or reduced_gram[1, 1]:
+            raise ArithmeticError("binary radical reduction did not put the radical last")
+        from itertools import count
+
+        transport = _column_matrix(reduction.isometry)
+        inverse_transport = transport.inverse().change_ring(SageZZ)
+        for height in count(0):
+            shears = (0,) if height == 0 else (-height, height)
+            for shear in shears:
+                for first_sign in (-1, 1):
+                    for radical_sign in (-1, 1):
+                        rows = matrix(SageZZ, [[first_sign, shear], [0, radical_sign]])
+                        reduced_map = _isometry_from_row_matrix(reduced, reduced, rows)
+                        yield _isometry_from_column_matrix(
+                            lattice, lattice,
+                            transport * _column_matrix(reduced_map) * inverse_transport,
+                        )
+        return
+    if lattice.is_definite():
+        # Closure of the exact definite O(L) generators is finite.  Matrix
+        # multiplication takes place in the same labelled integral basis
+        # as the owned isometry constructor; no heuristic cutoff is used.
+        from collections import deque
+
+        generators = tuple(_column_matrix(g) for g in lattice.O().group_generators())
+        identity = identity_matrix(SageZZ, int(gram.nrows()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
     for candidate in _fair_unimodular_matrices(int(gram.nrows())):
         if candidate * gram * candidate.transpose() == gram:
             yield _isometry_from_row_matrix(lattice, lattice, candidate)
+
+
+def _norm_fibre_has_local_obstruction(gram, square: int, *, primitive: bool) -> bool:
+    r"""Certify norm-fibre emptiness by integral-value and local congruences.
+
+    For primitive vectors the residue must remain nonzero modulo the
+    underlying prime.  Exhaustive tests are bounded to 10000 tuples.
+    """
+    rank = int(gram.nrows())
+    value_ideal = 0
+    for i in range(rank):
+        value_ideal = gcd(value_ideal, _integer(gram[i, i]))
+        for j in range(i + 1, rank):
+            value_ideal = gcd(value_ideal, 2 * _integer(gram[i, j]))
+    if value_ideal and int(square) % value_ideal:
+        return True
+    for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3), (5, 5), (7, 7), (25, 5)):
+        if modulus ** rank > 10000:
+            continue
+        if not any(
+            sum(int(gram[i, j]) * x[i] * x[j] for i in range(rank) for j in range(rank)) % modulus == int(square) % modulus
+            for x in itertools.product(range(modulus), repeat=rank)
+            if not primitive or any(value % prime for value in x)
+        ):
+            return True
+    return False
 
 
 def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
@@ -1527,28 +1712,25 @@ class EichlerRecursion:
         # Unlike the rational coordinate complement, the pairing L -> J^*
         # determines the invariant index a in D=2d^2e^2a intrinsically.
         isotropic_inclusion = reduction.isotropic_embedding()
-        # The pairing L -> I^* is i^* composed with the metric map,
-        # where i: I -> L. Dualization is represented on the opposite
-        # category, so its input is the reversed arrow op(L) -> op(I).
-        dualization = Modules(lattice.base_ring()).dualization()
-        opposite = dualization.domain()
-        opposite_inclusion = opposite.Mor(opposite.object(lattice), opposite.object(isotropic_inclusion.domain()))(isotropic_inclusion)
-        pairing = dualization(opposite_inclusion) * lattice.metric_map()
+        # The pairing L -> I^* has matrix (b(e_i, i(f_j))) in integral
+        # generator bases. Construct this matrix directly: the opposite
+        # module category need not accept a lattice embedding as one of its
+        # own arrows, whereas these pairings are intrinsic to the lattice.
+        isotropic_basis = tuple(isotropic_inclusion(point)
+                               for point in isotropic_inclusion.domain().module_generators())
+        ambient_basis = tuple(lattice.module_generators())
+        pairing_matrix = matrix(SageZZ, [
+            [_integer(lattice.b(point, isotropic)) for isotropic in isotropic_basis]
+            for point in ambient_basis
+        ])
         # Here pairing is a map between finite free ZZ-modules L -> J*. Its
         # cokernel is finite, and its order is the product of the nonzero Smith
         # entries of its coordinate matrix. Compute that exact index from these
         # presentations: the generic provider's index() currently delegates to
         # cardinality() on a represented torsion module whose construction does
         # not yet supply a decided finite cardinality.
-        pairing_domain_labels = tuple(pairing.domain().module_generating_set())
-        pairing_codomain_labels = tuple(pairing.codomain().module_generating_set())
-        pairing_rows = tuple(
-            tuple(pairing(pairing.domain().module_generator(label)).to_vector()(target_label) for target_label in pairing_codomain_labels)
-            for label in pairing_domain_labels
-        )
-        pairing_matrix = matrix(SageZZ, pairing_rows)
         pairing_rank = int(pairing_matrix.rank())
-        if pairing_rank != len(pairing_codomain_labels):
+        if pairing_rank != len(isotropic_basis):
             raise ArithmeticError("the isotropic pairing L -> J* must have finite cokernel")
         smith = pairing_matrix.smith_form()[0]
         pairing_index = SageZZ.one()
@@ -2639,6 +2821,417 @@ class EichlerRecursion:
         """
         from itertools import count
 
+        # These are decidably empty or singleton fibres.  In particular,
+        # do not scan infinitely many nonzero vectors of an anisotropic
+        # lattice when the prescribed norm is zero.
+        if int(lattice.rank()) == 0:
+            if int(square) == 0 and not primitive_only:
+                yield lattice.zero()
+            return
+        if int(lattice.rank()) >= 3 and _gram_in_label_order(lattice).rank() == 1:
+            # For a rank-one nondegenerate quotient and radical rank >= 2,
+            # the reduced form is diag(a,0,...,0).  The full group is
+            # {+/-1} x GL(R) extended by every shear Hom(Z,R).
+            # For fixed |x|>0, the radical coordinates modulo |x| form
+            # GL(R)-orbits indexed exactly by gcd(|x|,y_1,...,y_k),
+            # i.e. the positive divisors of |x|.  When x=0 the radical
+            # content is the complete orbit invariant.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            coefficient = int(reduced_gram[0, 0])
+            if coefficient == 0 or any(reduced_gram[i, j] for i in range(int(lattice.rank()))
+                                         for j in range(int(lattice.rank())) if (i, j) != (0, 0)):
+                raise ArithmeticError("rank-one quotient reduction did not isolate the radical")
+            radical_zeros = (0,) * (int(lattice.rank()) - 2)
+            if int(square) == 0:
+                if primitive_only:
+                    yield reduction.isometry(_from_column(reduced, (0, 1, *radical_zeros)))
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield reduction.isometry(_from_column(reduced, (0, content, *radical_zeros)))
+                return
+            quotient = int(square) // coefficient if int(square) % coefficient == 0 else 0
+            if quotient <= 0 or isqrt(quotient) ** 2 != quotient:
+                return
+            x = isqrt(quotient)
+            # Divisor enumeration is output-sensitive: scanning 1..x is
+            # prohibitively expensive for a large represented square with
+            # only a few divisor classes (e.g. x a large prime).
+            for divisor in SageZZ(x).divisors():
+                if primitive_only and divisor != 1:
+                    continue
+                yield reduction.isometry(_from_column(reduced, (x, divisor, *radical_zeros)))
+            return
+        if int(lattice.rank()) == 2 and _gram_in_label_order(lattice).rank() == 1:
+            # In a reduced basis the form is diag(a,0), a != 0.  Its
+            # integral orthogonal group consists exactly of
+            # (x,y) -> (eps*x, b*x + delta*y), eps,delta=+/-1, b in ZZ.
+            # For x != 0, orbits are |x| together with y mod |x| up to
+            # sign; for x=0 they are |y|.  This gives a complete finite
+            # nonzero-norm classification and an ordered null-content stream.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            coefficient = int(reduced_gram[0, 0])
+            if coefficient == 0 or any(reduced_gram[i, j] for i in range(2) for j in range(2) if (i, j) != (0, 0)):
+                raise ArithmeticError("binary radical reduction did not produce diag(a,0)")
+
+            def original_point(x: int, y: int):
+                return reduction.isometry(_from_column(reduced, (x, y)))
+
+            if int(square) == 0:
+                if primitive_only:
+                    yield original_point(0, 1)
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield original_point(0, content)
+                return
+            quotient = int(square) // coefficient if int(square) % coefficient == 0 else 0
+            if quotient <= 0 or isqrt(quotient) ** 2 != quotient:
+                return
+            x = isqrt(quotient)
+            for residue in range(x // 2 + 1):
+                y = min(residue, (-residue) % x)
+                if primitive_only and gcd(x, y) != 1:
+                    continue
+                yield original_point(x, y)
+            return
+        if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
+            # The pinned binary factorization algorithm gives the complete
+            # finite primitive orbit set, including the two null rays.
+            # For nonprimitive vectors of nonzero square, content c obeys
+            # c^2 | square; each primitive class at square/c^2 scales to
+            # precisely one class of content c.  Null-vector contents are
+            # unbounded and are enumerated in increasing order.
+            from sage_indefinite_port.indefinite.lorentzian_cells import binary_split_primitive_vector_classes
+
+            if primitive_only:
+                yield from binary_split_primitive_vector_classes(lattice, int(square))
+                return
+            if int(square) == 0:
+                yield lattice.zero()
+                for content in count(1):
+                    for representative in binary_split_primitive_vector_classes(lattice, 0):
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                for representative in binary_split_primitive_vector_classes(lattice, int(square) // (content * content)):
+                    yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+            return
+        if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
+            # The maintained binary quadratic-form orbit set computes a
+            # *finite complete* transversal even for nonsplit indefinite
+            # binary forms (Pell arithmetic), including imprimitive
+            # vectors.  Unlike the generic coordinate walk, this branch
+            # terminates after its last orbit representative.  The null
+            # case was already decided by rational anisotropy above.
+            orbit_set = lattice.binary_fixed_norm_representatives(int(square))
+            section = orbit_set.section()
+            for orbit in orbit_set:
+                representative = section(orbit)
+                if not primitive_only or int(representative.content()) == 1:
+                    yield representative
+            return
+        profile = AttackProfile.from_lattice(lattice)
+        if (lattice.is_nondegenerate() and profile.positive_index == 1
+                and int(lattice.rank()) >= 3 and int(lattice.witt_index()) > 0
+                and profile.sign * int(square) >= 0):
+            # In the Lorentzian positive cone the perfect-cell algorithm
+            # returns the complete finite primitive norm-orbit set.  The
+            # null fibre is the induction algorithm's finite primitive
+            # line-class set.  Recover all nonprimitive classes by content:
+            # c^2 divides the norm, and scaling preserves orbit bijectively.
+            if int(square) == 0:
+                from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+                primitive = IsotropicInduction(self).isotropic_vector_classes(lattice)
+                if primitive_only:
+                    yield from primitive
+                    return
+                yield lattice.zero()
+                if not primitive:
+                    return
+                for content in count(1):
+                    for representative in primitive:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            from sage_indefinite_port.indefinite.lorentzian_cells import (
+                NONNEGATIVE_SQUARES,
+                MarkedCellOrbitAlgorithm,
+                perfect_complex,
+            )
+
+            reduction = indefinite_reduced_presentation(profile.signed_view)
+            signed_norm = profile.sign * int(square)
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                if primitive_only and content != 1:
+                    continue
+                primitive_norm = signed_norm // (content * content)
+                orbits = MarkedCellOrbitAlgorithm(
+                    perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES), primitive_norm
+                ).global_orbits()
+                for orbit in orbits:
+                    reduced_vector = orbit[0]
+                    transported = reduction.isometry(reduced_vector)
+                    coordinates = tuple(int(transported.to_vector()(label))
+                                         for label in lattice.module_generating_set())
+                    representative = _from_column(lattice, coordinates)
+                    if not primitive_only or int(representative.content()) == 1:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+            return
+        if (lattice.is_nondegenerate() and profile.positive_index >= 2
+                and int(lattice.witt_index()) >= 2):
+            # The higher-Witt Eichler covering model computes a complete
+            # finite transversal of primitive vector orbits at every
+            # represented norm.  Lift it to all vectors by the exact
+            # content decomposition: c^2 divides a nonzero norm, while
+            # isotropic contents are unbounded and are streamed in order.
+            if int(square) == 0:
+                primitive = tuple(
+                    vector_class.representative
+                    for vector_class in self.primitive_vector_classes(lattice, 0)
+                )
+                if primitive_only:
+                    yield from primitive
+                    return
+                yield lattice.zero()
+                if not primitive:
+                    return
+                for content in count(1):
+                    for representative in primitive:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                if primitive_only and content != 1:
+                    continue
+                for vector_class in self.primitive_vector_classes(
+                    lattice, int(square) // (content * content)
+                ):
+                    yield lattice.scalar_multiple(
+                        lattice.base_ring()(content), vector_class.representative
+                    )
+            return
+        if int(square) != 0 and not lattice.is_nondegenerate():
+            # For L=C (+) R with nondegenerate C and zero radical
+            # R, O(L) is the semidirect product of O(C) x GL(R) with
+            # Hom(C,R).  A shear changes the radical component of (v,r)
+            # by any multiple of content(v).  For rank(R)=1, residual
+            # classes are r mod c up to sign; for rank(R)>=2, GL(R)
+            # orbits of residual vectors are indexed by gcd(c,r), hence
+            # by divisors of c.  This produces a *terminating* complete
+            # norm-fibre classification whenever the quotient C admits
+            # the existing finite exact fixed-norm classification.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            quotient_rank = int(reduced_gram.rank())
+            radical_rank = int(lattice.rank()) - quotient_rank
+            if quotient_rank == 0:
+                # A zero bilinear form represents no nonzero square;
+                # constructing its rank-zero complement from [] would
+                # also violate the owned lattice-constructor contract.
+                return
+            if any(reduced_gram[i, j] for i in range(quotient_rank, int(lattice.rank()))
+                   for j in range(int(lattice.rank()))):
+                raise ArithmeticError("degenerate reduction did not isolate the radical")
+            quotient_gram = reduced_gram.matrix_from_rows_and_columns(
+                range(quotient_rank), range(quotient_rank)
+            )
+            complement = lattice.lattice_category()(
+                [[int(value) for value in row] for row in quotient_gram.rows()]
+            )
+            complement_profile = AttackProfile.from_lattice(complement)
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                quotient_square = int(square) // (content * content)
+                if complement.is_definite():
+                    quotient_classes = tuple(
+                        point for point in self.exact_vector_orbit_iterator(complement, quotient_square)
+                        if int(point.content()) == 1
+                    )
+                elif int(complement.witt_index()) == 0:
+                    # A real-indefinite but rationally anisotropic quotient
+                    # has no Eichler envelope.  Its primitive vector orbits
+                    # are primitive rank-one embeddings; use the exact
+                    # genus/gluing embedding classifier rather than the
+                    # approximate-model search or an unbounded coordinate
+                    # walk.
+                    source = lattice.lattice_category()([[quotient_square]])
+                    embeddings = source.Emb(complement).primitive_embedding_class_representatives(
+                        classification="emb"
+                    )
+                    source_generator = next(iter(source.module_generators()))
+                    quotient_classes = tuple(embedding(source_generator) for embedding in embeddings)
+                else:
+                    # The public lattice operation owns the full primitive
+                    # vector-class algorithm in every indefinite signature,
+                    # including rationally anisotropic higher-rank quotients.
+                    quotient_classes = tuple(
+                        complement.O().vector_orbit_representatives(quotient_square, content=1)
+                    )
+                for quotient_point in quotient_classes:
+                    coordinates = tuple(content * int(quotient_point.to_vector()(label))
+                                         for label in complement.module_generating_set())
+                    if radical_rank == 1:
+                        residues = range(content // 2 + 1)
+                    else:
+                        residues = SageZZ(content).divisors()
+                    for residue in residues:
+                        if primitive_only and gcd(content, int(residue)) != 1:
+                            continue
+                        yield reduction.isometry(_from_column(
+                            reduced, coordinates + (int(residue),) + (0,) * (radical_rank - 1)
+                        ))
+            return
+        # On a zero-form lattice every vector has norm zero, and GL_n(ZZ)
+        # acts transitively on primitive vectors: Bezout completion extends
+        # each primitive column to an integral unimodular basis.  Thus the
+        # primitive null fibre has exactly one orbit.  For arbitrary
+        # vectors, content c>=0 is a complete GL_n(ZZ)-orbit invariant:
+        # Bezout completion sends each vector to c times the first basis
+        # vector.  Enumerate those classes directly rather than repeatedly
+        # invoking the pointed transporter on an infinite coordinate walk.
+        if all(
+            lattice.b(x, y) == 0
+            for x in lattice.module_generators()
+            for y in lattice.module_generators()
+        ):
+            if int(square) != 0:
+                return
+            if primitive_only:
+                yield lattice.module_generator(next(iter(lattice.module_generating_set())))
+                return
+            basis_vector = lattice.module_generator(next(iter(lattice.module_generating_set())))
+            yield lattice.zero()
+            for content in count(1):
+                yield lattice.scalar_multiple(lattice.base_ring()(content), basis_vector)
+            return
+        if int(square) == 0 and not lattice.is_nondegenerate():
+            # If the nondegenerate quotient C is rationally anisotropic,
+            # every null vector lies in the radical R.  The exact
+            # degenerate group contains GL(R), which is transitive on
+            # vectors of each positive content, and fixes content.
+            # Thus the entire null orbit space is {0} union {c*r:c>=1}
+            # for one primitive radical generator r.  No infinite
+            # coordinate search or pointed equivalence test is needed.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            gram_reduced = _gram_in_label_order(reduced)
+            quotient_rank = int(gram_reduced.rank())
+            quotient_gram = gram_reduced.matrix_from_rows_and_columns(
+                range(quotient_rank), range(quotient_rank)
+            )
+            if any(gram_reduced[i, j] for i in range(quotient_rank, int(lattice.rank()))
+                   for j in range(int(lattice.rank()))):
+                raise ArithmeticError("degenerate reduction did not isolate the radical")
+            complement = lattice.lattice_category()(
+                [[int(value) for value in row] for row in quotient_gram.rows()]
+            )
+            if complement.is_definite() or not complement.is_isotropic():
+                radical_point = reduction.isometry(_from_column(
+                    reduced, (0,) * quotient_rank + (1,) + (0,) * (int(lattice.rank()) - quotient_rank - 1)
+                ))
+                if primitive_only:
+                    yield radical_point
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield lattice.scalar_multiple(lattice.base_ring()(content), radical_point)
+                return
+            # For L=C (+) R and q(v,r)=0, the quotient vector v has
+            # an invariant content c.  For c>0 the shears Hom(C,R)
+            # reduce r modulo cR, and GL(R) gives residue classes
+            # modulo sign when rank R=1, or gcd(c,r) when rank R>=2.
+            # For c=0, only the radical content survives.  Both c
+            # and the radical-only content are unbounded; interleave
+            # their finite strata to obtain a fair complete stream.
+            quotient_classes = tuple(
+                complement.O().vector_orbit_representatives(0, content=1)
+            )
+            radical_rank = int(lattice.rank()) - quotient_rank
+            radical_zeros = (0,) * (radical_rank - 1)
+            radical_point = reduction.isometry(_from_column(
+                reduced, (0,) * quotient_rank + (1,) + radical_zeros
+            ))
+            if not primitive_only:
+                yield lattice.zero()
+            for content in count(1):
+                if not primitive_only or content == 1:
+                    yield lattice.scalar_multiple(lattice.base_ring()(content), radical_point)
+                for quotient_point in quotient_classes:
+                    quotient_coordinates = tuple(int(quotient_point.to_vector()(label))
+                                                 for label in complement.module_generating_set())
+                    if radical_rank == 1:
+                        residues = range(content // 2 + 1)
+                    else:
+                        residues = SageZZ(content).divisors()
+                    for residue in residues:
+                        if primitive_only and gcd(content, int(residue)) != 1:
+                            continue
+                        yield reduction.isometry(_from_column(
+                            reduced,
+                            tuple(content * value for value in quotient_coordinates)
+                            + (int(residue),) + radical_zeros,
+                        ))
+            return
+        if int(square) == 0 and lattice.is_nondegenerate() and not lattice.is_isotropic():
+            if not primitive_only:
+                yield lattice.zero()
+            return
+        # For an integral symmetric Gram matrix G, the integer values of
+        # q(x)=xGx generate the ideal (G_ii, 2G_ij : i<j).  A requested
+        # square outside that ideal has no integral representatives, even
+        # when the real quadratic space is indefinite and isotropic.
+        gram = _gram_in_label_order(lattice)
+        if _norm_fibre_has_local_obstruction(gram, square, primitive=primitive_only):
+            return
+        # A definite quadratic form has a finite norm fibre.  Cauchy--
+        # Schwarz for the positive definite form H=+/-G gives
+        # x_i^2 <= |square|*(H^-1)_ii.  This provides an exact finite
+        # search bound, rather than an iterator which hangs after its last
+        # representative.  The bound is computed in QQ, without floats.
+        if lattice.is_definite():
+            sign = 1 if int(gram[0, 0]) > 0 else -1
+            if sign * int(square) < 0:
+                return
+            inverse = (sign * gram).inverse()
+            bounds = tuple(isqrt(int((abs(int(square)) * inverse[i, i]).floor()))
+                           for i in range(int(lattice.rank())))
+            # The finite group O(L) acts on the finite norm fibre.  Mark
+            # whole orbits using its exact generators instead of invoking
+            # a separate pointed-isometry decision for every pair of
+            # candidates (quadratically many expensive group problems).
+            from collections import deque
+
+            generators = tuple(_column_matrix(g) for g in lattice.O().group_generators())
+            seen: set[tuple[int, ...]] = set()
+            for coordinates in itertools.product(*(range(-b, b + 1) for b in bounds)):
+                if coordinates in seen:
+                    continue
+                point = _from_column(lattice, coordinates)
+                if int(point.q()) != int(square) or (primitive_only and int(point.content()) != 1):
+                    continue
+                seen.add(coordinates)
+                frontier = deque((coordinates,))
+                while frontier:
+                    current = frontier.popleft()
+                    for generator in generators:
+                        image = tuple(int(value) for value in generator * vector(SageZZ, current))
+                        if image not in seen:
+                            seen.add(image)
+                            frontier.append(image)
+                yield point
+            return
         seen = []
         for height in count(0):
             for coordinates in _coordinate_box(lattice, height):
@@ -2663,6 +3256,14 @@ class EichlerRecursion:
         # rational hyperbolic pairs of the Eichler envelope.
         if square == 0 and not lattice.is_isotropic():
             return ()
+        # Reject impossible integral norms before requesting an Eichler
+        # envelope.  In particular a rationally anisotropic rank-four
+        # lattice may have no two hyperbolic planes at all, yet its odd
+        # norm fibres can be certified empty by the integral value ideal.
+        gram = _gram_in_label_order(lattice)
+        if _norm_fibre_has_local_obstruction(gram, square, primitive=True):
+            return ()
+
         # Rational Witt index one has no second hyperbolic pair for the
         # Eichler envelope (#40). A recognized rank-four Hilbert model decides
         # its classes, isotropic ones included, by the cusps of SL_2(O); every
