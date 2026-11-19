@@ -598,3 +598,52 @@ def test_joint_preimage_subgroup_retains_proper_generated_ambient_group():
     selected = tuple(subgroup.group_generators())
     assert selected and all(g in subgroup for g in selected)
     assert ambient.O().subgroup(selected).cardinality() == 2
+
+
+def test_number_field_base_changed_spinor_is_an_actual_finite_image_preimage():
+    """The nontrivial image of sn_{Q(sqrt 5)} on O(<6>) has order two."""
+    from sage_extensions.all import QuadraticField, QQ as OwnedQQ
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    field = QuadraticField(5, "a")
+    embedding = OwnedQQ.Mor(field)(lambda x: field(x))
+    ambient = lattice([[6]])
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, field_spinor=True, field_map=embedding,
+    )
+    minus = matrix(ZZ, [[-1]])
+    assert len(image.image_keys()) == 2
+    assert image.image(minus)[-1] == field.square_class_group()(field(-3))
+    subgroup = engine.joint_discriminant_character_preimage_subgroup(
+        ambient, (image.identity,), field_spinor=True, field_map=embedding,
+    )
+    assert int(subgroup.preimage_morphism().codomain().cardinality()) == 2
+    assert int(subgroup.index()) == 2
+    assert ambient.O().one() in subgroup
+    assert ambient.O()((-ambient.module_generators()[0],)) not in subgroup
+
+
+def test_owned_preimage_index_is_relative_to_proper_generated_ambient():
+    """G=<swap> in O(U), det G=C2; its det kernel is trivial, with [G:1]=2."""
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    swap = ambient.O()((f, e))
+    minus = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, determinant=True, ambient_generators=(swap,),
+    )
+    assert len(image.image_keys()) == 2
+    subgroup = engine.joint_discriminant_character_preimage_subgroup(
+        ambient, (image.identity,), determinant=True, ambient_generators=(swap,),
+    )
+    assert int(subgroup.preimage_morphism().codomain().cardinality()) == 2
+    assert int(subgroup.index()) == 2
+    assert int(subgroup.cardinality()) == 1
+    assert ambient.O().one() in subgroup
+    assert swap not in subgroup and minus not in subgroup
