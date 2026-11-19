@@ -927,3 +927,17 @@ def test_relative_level_kernel_index_and_integral_generators():
         index, generators = image.relative_level_kernel(divisor)
         assert index == len(quotient.image_keys())
         assert all(projection(image.reduce(g)) == quotient.image_one for g in generators)
+
+
+def test_public_relative_congruence_kernel_returns_owned_isometries():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    index, generators = engine.relative_congruence_kernel_generators(ambient, 12, 3)
+    target = engine.congruence_image(ambient, 3)
+    assert index == len(target.image_keys())
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
+    assert all(tuple(int(x) % 3 for x in g(v).to_vector()) == tuple(int(x) % 3 for x in v.to_vector())
+               for g in generators for v in ambient.module_generators())
