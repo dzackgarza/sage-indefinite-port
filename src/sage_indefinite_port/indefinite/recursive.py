@@ -1341,12 +1341,17 @@ class EichlerRecursion:
                       else tuple(ambient_generators))
         if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
             raise ValueError("ambient subgroup generators must be integral automorphisms of the supplied lattice")
+        # An element with the prescribed finite character can still lie
+        # outside a supplied proper subgroup G. Use the provider's owned
+        # subgroup membership; only the full O(L) uses the ambient predicate.
+        ambient_group = lattice.O() if ambient_generators is None else lattice.O().subgroup(generators)
         return JointDiscriminantCharacterImage(
             tuple(_column_matrix(g) for g in generators),
             lambda g: rho(as_isometry(g)),
             tuple((lambda g, chi=chi: chi(as_isometry(g))) for chi in signs),
             identities, level_modulus=level_modulus,
             rank=len(tuple(lattice.module_generating_set())),
+            ambient_contains=lambda g: as_isometry(g) in ambient_group,
         )
 
     def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):

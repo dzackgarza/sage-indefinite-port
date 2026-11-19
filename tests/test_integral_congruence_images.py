@@ -539,3 +539,19 @@ def test_joint_discriminant_level_determinant_and_field_spinor_preimage():
     assert index == 2
     assert all(g.domain() is ambient and g.codomain() is ambient for g in kernel)
     assert all(image.image(matrix(ZZ, [list(g(x).to_vector()) for x in ambient.module_generators()]).transpose()) == image.identity for g in kernel)
+
+
+def test_preimage_membership_rejects_elements_outside_generated_ambient_subgroup():
+    """The trivial discriminant action of O(U) must not erase G=<minus I>."""
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    minus = ambient.O()((-e, -f))
+    image = EichlerRecursion().joint_discriminant_character_image(
+        ambient, ambient_generators=(minus,)
+    )
+    assert image.image_keys() == frozenset((image.identity,))  # A_U = 0.
+    assert image.preimage_membership(matrix(ZZ, [[-1, 0], [0, -1]]), (image.identity,))
+    assert not image.preimage_membership(matrix(ZZ, [[0, 1], [1, 0]]), (image.identity,))

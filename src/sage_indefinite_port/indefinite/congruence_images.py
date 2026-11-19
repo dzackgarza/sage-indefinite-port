@@ -593,7 +593,7 @@ class JointDiscriminantCharacterImage:
     The target is their *generated joint image*, not the direct product.
     """
 
-    def __init__(self, generators, discriminant, characters, identity, *, level_modulus=None, rank=None):
+    def __init__(self, generators, discriminant, characters, identity, *, level_modulus=None, rank=None, ambient_contains=None):
         self.generators = tuple(matrix(ZZ, g) for g in generators)
         if rank is None:
             rank = self.generators[0].nrows() if self.generators else None
@@ -604,6 +604,10 @@ class JointDiscriminantCharacterImage:
             raise ValueError("ambient generators must be unimodular square matrices")
         self.discriminant = discriminant
         self.characters = tuple(characters)
+        # The finite quotient alone never decides membership in a *proper*
+        # generated ambient subgroup: its kernel can contain elements outside
+        # that subgroup. The owned group must supply the exact decision.
+        self.ambient_contains = ambient_contains
         self.identity = tuple(identity)
         self.level_modulus = ZZ(level_modulus) if level_modulus is not None else None
         if self.level_modulus is not None:
@@ -687,6 +691,12 @@ class JointDiscriminantCharacterImage:
         subgroup = set(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():
             raise ValueError("allowed must be contained in the actual joint image")
+        if any(self._multiply(a, b) not in subgroup for a in subgroup for b in subgroup):
+            raise ValueError("allowed is not a subgroup")
+        if self.ambient_contains is None:
+            raise ValueError("exact ambient subgroup membership must be supplied to decide preimage membership")
+        if not self.ambient_contains(matrix_value):
+            return False
         return self.image(matrix_value) in subgroup
 
     def image_witness(self, key):
