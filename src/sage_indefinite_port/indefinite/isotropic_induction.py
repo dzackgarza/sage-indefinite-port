@@ -188,11 +188,14 @@ class IsotropicInduction:
                 # reads the other facets' Schreier words; those belong to the
                 # richer public perfect-domain traversal. The group owner
                 # already uses this complete non-retaining quotient route.
-                orbits = MarkedCellOrbitAlgorithm(
+                engine = MarkedCellOrbitAlgorithm(
                     perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES, retain_facet_orbits=False),
                     0,
-                ).global_orbits()
-                representatives = tuple(reduction.isometry(orbit[0]) for orbit in orbits)
+                )
+                certified = engine._catalogue_certified_null_representatives()
+                if certified is None:
+                    certified = tuple(orbit[0] for orbit in engine.global_orbits())
+                representatives = tuple(reduction.isometry(vector_) for vector_ in certified)
                 if profile.sign == 1:
                     return representatives
                 return tuple(

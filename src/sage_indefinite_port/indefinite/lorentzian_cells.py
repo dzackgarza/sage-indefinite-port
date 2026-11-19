@@ -3966,6 +3966,164 @@ class MarkedCellOrbitAlgorithm:
             raise ArithmeticError("a facet mark has no unique mark in the target representative")
         return tuple(transported)
 
+    def _catalogue_certified_null_representatives(self) -> tuple[Lattices.ElementMethods, ...] | None:
+        r"""Stop a null-vector orbit search only after a proved class-number certificate.
+
+        The definite integral quotient K_v=v^perp/Zv is an
+        O(L)-invariant of a primitive isotropic vector v. For square-free
+        determinant d=1 or 3 its primitive divisibility is one: writing
+        v as the first vector in an integral basis, the first row and
+        column of its Gram matrix are divisible by div(v), and the
+        determinant is therefore divisible by div(v)^2. Since d is
+        square-free, div(v)=1 and K_v has determinant d.
+
+        In the two catalogue signatures below, the rank r=n-2 of K_v
+        is odd and its determinant is odd. An even integral form of odd
+        rank has even determinant (its reduction modulo two is an
+        alternating matrix), so K_v is odd. Choose f with (v,f)=1,
+        and an element x in v^perp of odd square; adding x to f if
+        necessary makes f^2 even. Then f-(f^2/2)v is null and pairs
+        once with v. The resulting unimodular plane U splits off
+        orthogonally, identifying L with U + K_v. Any isometry of K_v
+        extends across U to an isometry carrying the corresponding
+        primitive null vectors. Thus distinct O(L)-orbits inject into
+        the isometry classes of definite rank-r determinant-d lattices.
+
+        There are two *independent*, mathematically exact termination
+        certificates, selected only when their full hypotheses hold.
+
+        At rank 17/determinant 1, Conway--Sloane's classification of
+        positive definite unimodular rank-15 lattices has five classes
+        ("The Unimodular Lattices of Dimension up to 23", Eur. J. Comb. 3
+        (1982); OEIS A005134). Five different norm-one vector counts
+        therefore certify five different classes, and exhaust all
+        possible primitive isotropic orbits of the indefinite lattice.
+
+        At rank 13/determinant 3, the positive definite rank-11 forms
+        occupy exactly two genera (Conway--Sloane, SPLAG ch. 15;
+        OEIS A005139). Generate both exact genus symbols and compare
+        the genus of U+(-K) with the *actual* indefinite lattice. For
+        the frozen genus of diag(3,-1^12), only the genus represented by
+        Z^9 + A2 occurs; the other, represented by Z^10 + <3>, cannot
+        occur. The Smith--Minkowski--Siegel mass of that surviving
+        genus is computed exactly by Sage's Conway mass formula.
+        Each new positive-definite quotient contributes the exact
+        reciprocal order of its full automorphism group, computed by
+        PARI qfauto. Once the sum equals the genus mass, positivity of
+        every omitted term proves that the class list is exhaustive.
+
+        The theta-vector counts qfminim(1) or qfminim(1,2,3) separate
+        *found* classes: distinct counts imply nonisometric quotients.
+        No negative conclusion is drawn from a bounded search. If
+        neither certificate is attained, the caller runs the complete
+        rank-general quotient-cell orbit algorithm.
+        """
+        if self._norm != 0:
+            return None
+        complex_ = self.complex()
+        lattice = complex_.lattice()
+        rank = int(lattice.module_rank())
+        determinant = abs(int(_gram_matrix(lattice).det()))
+        catalogues = {(17, 1): (5, (1,)), (13, 3): (None, (1, 2, 3))}
+        catalogue = catalogues.get((rank, determinant))
+        if catalogue is None:
+            return None
+        signature = tuple(int(value) for value in lattice.signature_pair())
+        if not lattice.is_nondegenerate() or signature != (1, rank - 1) or lattice.is_even():
+            return None
+
+        from sage.libs.pari import pari
+
+        class_bound, norm_bounds = catalogue
+        allowed_genus = None
+        genus_mass = None
+        mass_seen = SageQQ(0)
+        if class_bound is None:
+            from sage.quadratic_forms.genera.genus import Genus, genera
+            from sage.quadratic_forms.quadratic_form import QuadraticForm
+
+            # The two explicit representatives have different complete
+            # genus symbols. Check that they exhaust Sage's exact
+            # rank-11/determinant-3 positive-definite genus enumeration.
+            first = diagonal_matrix(SageZZ, [1] * 9 + [2, 2])
+            first[9, 10] = first[10, 9] = 1
+            second = diagonal_matrix(SageZZ, [1] * 10 + [3])
+            candidates = (first, second)
+            possible = tuple(genera([11, 0], 3))
+            if len(possible) != 2 or not all(
+                any(Genus(candidate) == genus for genus in possible)
+                for candidate in candidates
+            ):
+                return None
+
+            hyperbolic = matrix(SageZZ, [[0, 1], [1, 0]])
+            ambient_genus = Genus(_gram_matrix(lattice))
+
+            def split_with_negative(positive):
+                return matrix(
+                    SageZZ, 13, 13,
+                    lambda i, j: (
+                        hyperbolic[i, j] if i < 2 and j < 2
+                        else -positive[i - 2, j - 2] if i >= 2 and j >= 2
+                        else 0
+                    ),
+                )
+
+            allowed = tuple(
+                candidate for candidate in candidates
+                if Genus(split_with_negative(candidate)) == ambient_genus
+            )
+            if len(allowed) != 1:
+                return None
+            allowed_genus = Genus(allowed[0])
+            genus_mass = QuadraticForm(SageZZ, 2 * allowed[0]).conway_mass()
+
+        witnesses: dict[tuple[int, ...], Lattices.ElementMethods] = {}
+        complex_._ensure_traversal_started()
+        next_unseen = 0
+        while True:
+            cells = complex_._traversal_representatives
+            if cells is None:
+                raise ArithmeticError("a started Lorentzian complex has no representative cells")
+            while next_unseen < len(cells):
+                cell = cells[next_unseen]
+                next_unseen += 1
+                for orbit in self.local_stabilizer_orbits(cell):
+                    vector_ = orbit[0]
+                    if vector_.content() != 1 or vector_.q() != 0:
+                        raise ArithmeticError("a proposed primitive null orbit representative is not primitive and null")
+                    quotient = vector_.isotropic_reduction().quotient_lattice()
+                    gram = _gram_matrix(quotient)
+                    if gram.nrows() != rank - 2 or abs(int(gram.det())) != determinant:
+                        raise ArithmeticError("an isotropic quotient violates its unimodular-plane determinant")
+                    quotient_signature = tuple(int(value) for value in quotient.signature_pair())
+                    if quotient_signature != (0, rank - 2):
+                        raise ArithmeticError("the quotient of a positive-sheet Lorentzian null line must be negative definite")
+                    positive_gram = -gram
+                    theta_signature = tuple(
+                        int(pari(positive_gram).qfminim(bound)[0])
+                        for bound in norm_bounds
+                    )
+                    if theta_signature not in witnesses:
+                        if allowed_genus is not None:
+                            if Genus(positive_gram) != allowed_genus:
+                                raise ArithmeticError("an isotropic quotient contradicts the complete local-genus certificate")
+                            order = int(pari(positive_gram).qfauto()[0])
+                            if order <= 0:
+                                raise ArithmeticError("a definite quotient has an invalid automorphism-group order")
+                            mass_seen += SageQQ(1) / order
+                            if genus_mass is None or mass_seen > genus_mass:
+                                raise ArithmeticError("distinct definite quotient classes exceed their exact genus mass")
+                        witnesses[theta_signature] = vector_
+                    if (
+                        (class_bound is not None and len(witnesses) == class_bound)
+                        or (genus_mass is not None and mass_seen == genus_mass)
+                    ):
+                        return tuple(witnesses.values())
+            if len(complex_._traversal_processed) == len(cells):
+                return None
+            complex_._expand_traversal_once()
+
     def global_orbits(self) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         r"""The orbits, each as a tuple of marks whose first entry is its representative.
 
