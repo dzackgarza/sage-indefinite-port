@@ -187,3 +187,33 @@ def test_public_finite_index_sublattice_stabilizer():
     for g in generators:
         coordinates = tuple(int(x) for x in g(ambient.module_generators()[0]).to_vector())
         assert coordinates[1] == 0
+
+
+def test_joint_sign_is_distinct_from_determinant_at_level_two():
+    from sage_indefinite_port.indefinite.congruence_images import JointSignCongruenceImage
+
+    a = -identity_matrix(ZZ, 3)
+    determinant = JointSignCongruenceImage((a,), 2, lambda g: int(g.det()))
+    trivial = JointSignCongruenceImage((a,), 2, lambda g: 1)
+    assert len(determinant.image_keys()) == 2
+    assert len(trivial.image_keys()) == 1
+    assert determinant.preimage_generators((determinant.identity,))[0] == 2
+    with pytest.raises(ValueError):
+        JointSignCongruenceImage((a,), 2, lambda g: -1)
+
+
+def test_public_real_spinor_joint_level_uses_normalized_character():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_real_spinor_congruence_image(ambient, 2)
+    character = ambient.O_plus().preimage_morphism()
+    assert all(image.image(g)[1] == (1 if character(ambient.O()(tuple(
+        ambient.linear_combination({label: int(x) for label, x in zip(ambient.module_generating_set(), column, strict=True)})
+        for column in matrix(ZZ, g).columns()))).is_one() else -1)
+        for g in image.generators)
+    index, generators = engine.joint_real_spinor_congruence_preimage_generators(ambient, 2, (image.identity,))
+    assert index == len(image.image_keys())
+    assert all(g.domain() is ambient for g in generators)

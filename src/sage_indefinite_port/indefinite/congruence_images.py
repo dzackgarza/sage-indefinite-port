@@ -262,3 +262,32 @@ class JointDeterminantCongruenceImage:
         assert len(transversal) * len(subgroup) == len(self._lifts)
         assert all(self.image(g) in subgroup for g in result)
         return len(transversal), tuple(result)
+
+
+class JointSignCongruenceImage(JointDeterminantCongruenceImage):
+    r"""Joint reduction image with an explicitly supplied sign homomorphism.
+
+    ``sign`` must evaluate on integral matrices and return ``+1`` or ``-1``.
+    This covers the normalized real-spinor sign without conflating it with
+    determinant or the positive-cone component character.
+    """
+
+    def __init__(self, generators, modulus, sign, rank=None):
+        self.sign = sign
+        super().__init__(generators, modulus, rank=rank)
+        if self.image(self.one) != self.identity:
+            raise ValueError("sign must send identity to +1")
+        # Check the character law on every edge of the finite image graph.
+        for lift in self._lifts.values():
+            for generator in self.generators:
+                if self.image(lift * generator) != self._multiply(self.image(lift), self.image(generator)):
+                    raise ValueError("sign is not multiplicative on the generated image")
+
+    def image(self, g):
+        g = matrix(ZZ, g)
+        if g.det() not in (1, -1):
+            raise ValueError("image requires an integral unimodular matrix")
+        value = self.sign(g)
+        if value not in (1, -1):
+            raise ValueError("sign must take values in {+1,-1}")
+        return (self.reduction._key(self.reduction.reduce(g)), int(value))

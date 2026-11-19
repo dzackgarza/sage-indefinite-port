@@ -1156,6 +1156,33 @@ class EichlerRecursion:
         index, matrices = image.finite_index_sublattice_stabilizer(basis)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def joint_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+        r"""Actual joint image of level reduction and normalized real spinor sign.
+
+        Uses the provider's ``O_plus`` character with the Gritsenko--Hulek--
+        Sankaran ``-b/2`` reflection normalization, not determinant or
+        positive-cone component preservation.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import JointSignCongruenceImage
+
+        character = lattice.O_plus().preimage_morphism()
+
+        def sign(columns):
+            isometry = _isometry_from_column_matrix(lattice, lattice, columns)
+            return 1 if character(isometry).is_one() else -1
+
+        generators = self.orthogonal_group_generators(lattice)
+        return JointSignCongruenceImage(
+            tuple(_column_matrix(g) for g in generators),
+            modulus, sign, rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_real_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+        r"""Integral generators of a joint level/real-spinor inverse image."""
+        image = self.joint_real_spinor_congruence_image(lattice, modulus)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 
