@@ -51,6 +51,21 @@ def test_primitive_null_flag_stream_terminates_above_degenerate_witt_bound():
     assert tuple(iter_primitive_isotropic_flag_classes(ambient, (4,))) == ()
 
 
+def test_odd_rank_special_orthogonal_null_flag_stream_has_same_orbits():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, iter_primitive_isotropic_flag_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    full = tuple(islice(iter_primitive_isotropic_flag_classes(ambient, (1, 2)), 2))
+    special = tuple(islice(iter_primitive_isotropic_flag_classes(
+        ambient, (1, 2), acting_group=ambient.SO()
+    ), 2))
+    assert len(full) == len(special) == 2
+    assert all(isometry(full[0].parent(), left, right) is not None
+               for left, right in zip(full, special, strict=True))
+
+
 def test_mixed_radical_shear_positive_and_negative_transporters():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
