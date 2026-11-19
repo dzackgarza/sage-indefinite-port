@@ -960,3 +960,24 @@ def test_multilevel_constraints_on_proper_ambient_subgroup():
     assert all(g(e) == e and g(f) == f for g in generators)
     assert len(engine.congruence_image(ambient, 6, ambient_generators=(negative,)).image_keys()) == 2
     assert len(engine.congruence_image(ambient, 6, ambient_generators=()).image_keys()) == 1
+
+
+def test_relative_congruence_kernel_in_proper_generated_ambient_group():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    negative = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    index, generators = engine.relative_congruence_kernel_generators(
+        ambient, 4, 2, ambient_generators=(negative,)
+    )
+    assert index == 1
+    assert any(g(e) == -e and g(f) == -f for g in generators)
+    assert all(g(e) in (e, -e) and g(f) in (f, -f) for g in generators)
+    index, generators = engine.relative_congruence_kernel_generators(
+        ambient, 4, 4, ambient_generators=(negative,)
+    )
+    assert index == 2
+    assert all(g(e) == e and g(f) == f for g in generators)

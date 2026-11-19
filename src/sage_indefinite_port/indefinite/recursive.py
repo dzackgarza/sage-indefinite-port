@@ -1186,14 +1186,14 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(image.reduce(image._lifts[key]) for key in allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def relative_congruence_kernel_generators(self, lattice: Lattices.ParentMethods, source_modulus: int, target_modulus: int):
+    def relative_congruence_kernel_generators(self, lattice: Lattices.ParentMethods, source_modulus: int, target_modulus: int, *, ambient_generators=None):
         r"""Owned generators for the kernel of reduction to a divisor level.
 
         The ambient group is the generated integral O(L). Its actual image
         at the source level is used to lift the complete kernel of the
         projection onto the target-level image.
         """
-        image = self.congruence_image(lattice, source_modulus)
+        image = self.congruence_image(lattice, source_modulus, ambient_generators=ambient_generators)
         index, matrices = image.relative_level_kernel(target_modulus)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
