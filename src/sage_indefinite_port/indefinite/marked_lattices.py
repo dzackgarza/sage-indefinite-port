@@ -3991,13 +3991,30 @@ def _flag_marking(line: Lattices.ElementMethods, plane: Parent) -> tuple[Morphis
 
 
 def isotropic_stabilizer_right_cosets(category: Category, marked: Parent) -> Parent:
-    r"""A transversal of ``G/H`` for a primitive isotropic sublattice or flag.
+    r"""A transversal of ``G/H`` for a primitive isotropic marking.
 
     CombinedAlgorithms.h:1565-1609 INDEF_FORM_RightCosets_IsotropicKstuff_Reduced,
     specialized at :2461-2471. ``G`` is the rational group extending the
     source's stabilizer of ``I^perp`` and ``H = G`` meets ``GL(L)``.
     """
     match category:
+        case CosliceCategory():
+            # Based markings use the pointwise rational stabilizer:
+            # its permitted GL(I) image is the identity, not the
+            # setwise GL(I) stabilizer of an unbased sublattice. This
+            # is the trivial-Gamma case of the pinned isotropic
+            # stabilizer construction (IndefiniteForms.g:1710-1723).
+            arrow = marked.arrow()
+            ambient = arrow.codomain()
+            if not arrow.is_primitive():
+                raise ValueError("based isotropic right cosets require a primitive integral marking")
+            if int(arrow.domain().rank()) == 0:
+                return finite_ordered_set((ambient.O().identity(),))
+            basis = tuple(arrow(point) for point in arrow.domain().module_generators())
+            if any(ambient.b(first, second) != ambient.base_ring().zero()
+                   for first in basis for second in basis):
+                raise ValueError("a based isotropic right-coset marking must have zero Gram form")
+            images = ()
         case _ if category is ARROWS:
             sublattice = _isotropic_sublattice(marked.arrow())
             if int(sublattice.inclusion().domain().rank()) == 0:
@@ -4011,7 +4028,7 @@ def isotropic_stabilizer_right_cosets(category: Category, marked: Parent) -> Par
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             _dimensions, basis, images = _flag_action(marked)
         case _:
-            raise ValueError(f"{category} is not Ar(Lattices) or Fun([t], Lattices): the source defines these cosets for k-planes and k-flags")
+            raise ValueError(f"{category} is not a based isotropic embedding, Ar(Lattices), or Fun([t], Lattices)")
     cosets = RECURSION.isotropic_stabilizer_action(basis, images).right_cosets()
     representative = cosets.representative_map()
     # The selected orbit is G/G_L, with G_L acting on the RIGHT.
