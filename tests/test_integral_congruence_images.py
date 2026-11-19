@@ -1072,3 +1072,28 @@ def test_multilevel_joint_character_preimage_is_owned_subgroup():
         ambient_generators=(negative,),
     )
     assert negative in whole
+
+
+def test_joint_preimage_factorization_returns_kernel_section_and_word():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    image = EichlerRecursion().joint_discriminant_character_image(
+        ambient, determinant=True, level_modulus=4
+    )
+    allowed = image.subgroup_from_membership(lambda key: key[-1] == 1)
+    for key in image.image_keys():
+        lift = image.section(key)
+        result = image.preimage_factorization(lift, allowed)
+        if key not in allowed:
+            assert result is None
+            continue
+        kernel, section, word = result
+        assert kernel * section == lift
+        assert image.image(kernel) == image.identity
+        assert image.image(section) == key
+        product = image.one
+        for position in word:
+            product *= image.generators[position]
+        assert product == section

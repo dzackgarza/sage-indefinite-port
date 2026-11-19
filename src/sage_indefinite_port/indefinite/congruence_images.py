@@ -973,6 +973,33 @@ class JointDiscriminantCharacterImage:
                     queue.append(moved)
         return None
 
+    def preimage_factorization(self, matrix_value, allowed):
+        r"""Certified factorization of a subgroup member as kernel times section.
+
+        For ``g in rho^-1(H)`` return ``(k,s,word)`` with ``g=k*s``,
+        ``rho(k)=1``, ``rho(s)=rho(g) in H``, and ``word`` the exact
+        ambient-generator word of the chosen section. Return ``None``
+        when ``g`` belongs to the ambient group but not the preimage.
+        """
+        subgroup = frozenset(allowed)
+        if self.identity not in subgroup or not subgroup <= self.image_keys():
+            raise ValueError("allowed must lie in the actual joint image")
+        if any(self._multiply(a, b) not in subgroup for a in subgroup for b in subgroup):
+            raise ValueError("allowed is not a subgroup")
+        g = matrix(ZZ, matrix_value)
+        if self.ambient_contains is not None and not self.ambient_contains(g):
+            raise ValueError("matrix is outside the specified ambient subgroup")
+        key = self.image(g)
+        if key not in self._lifts:
+            raise ValueError("matrix image is outside the generated ambient image")
+        if key not in subgroup:
+            return None
+        section = self.section(key)
+        kernel = matrix(ZZ, g * section.inverse())
+        assert self.image(kernel) == self.identity
+        assert kernel * section == g
+        return kernel, section, self.section_word(key)
+
     def preimage_generators(self, allowed):
         subgroup = set(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():
