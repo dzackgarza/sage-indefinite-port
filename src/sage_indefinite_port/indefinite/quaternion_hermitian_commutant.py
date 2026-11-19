@@ -328,12 +328,17 @@ class QuaternionMatrixCommutant:
     def _units(self, order):
         r"""Return generators of `R^\times` and the norm-value search of :func:`_reduced_norm_point` for the order ``order``."""
         rows = matrix(QQ, [list(d) for d in order])
-        if self.a < 0 < self.b:
-            voronoi = QuaternionVoronoi(int(self.a), int(self.b), rows)
-            return voronoi.unit_generators(), lambda elements, value: _reduced_norm_point(voronoi, elements, value)
-        assert self.a < 0 and self.b < 0
-        units = tuple(d for d in _definite_points(order, 1))
-        return units, lambda elements, value: next(iter(_definite_points(elements, value)), None)
+        key = tuple(tuple(row) for row in rows.rows())
+        cache = self.__dict__.setdefault("_order_units_cache", {})
+        if key not in cache:
+            if self.a < 0 < self.b:
+                voronoi = QuaternionVoronoi(int(self.a), int(self.b), rows)
+                cache[key] = (voronoi.unit_generators(), lambda elements, value: _reduced_norm_point(voronoi, elements, value))
+            else:
+                assert self.a < 0 and self.b < 0
+                units = tuple(d for d in _definite_points(order, 1))
+                cache[key] = (units, lambda elements, value: next(iter(_definite_points(elements, value)), None))
+        return cache[key]
 
     def _ideal_generator(self, elements, order, search):
         r"""Return `j` with `j R =` the right ideal spanned by ``elements``, or ``None`` when it is not principal over `R`."""
