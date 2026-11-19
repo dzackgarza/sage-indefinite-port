@@ -250,6 +250,8 @@ class QuaternionOrderVoronoi:
 
     def unit_generators(self):
         r"""Return generators of `O^\times`: stabilizers of the perfect representatives and the transports of their neighbours."""
+        if hasattr(self, "_unit_generators"):
+            return self._unit_generators
         forms = self.perfect_forms()
         _forms, transports = self._perfect
         result = [self.algebra(-1)]
@@ -257,7 +259,8 @@ class QuaternionOrderVoronoi:
             result.extend(self.stabilizer(s))
         result.extend(transports)
         assert all(self.is_unit(u) for u in result)
-        return tuple(result)
+        self._unit_generators = tuple(result)
+        return self._unit_generators
 
     def norm_generator(self, elements, target):
         r"""Return `x` in the `Z`-span of ``elements`` (a lattice of the algebra) with `\mathrm{nrd}(x) O_Z =` ``target``, by enumeration in the
