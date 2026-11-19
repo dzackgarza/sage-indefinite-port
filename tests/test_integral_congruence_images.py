@@ -512,3 +512,30 @@ def test_trivial_generated_ambient_subgroup_has_exact_identity_image():
         level_modulus=4, ambient_generators=(),
     )
     assert index == 1 and generators == ()
+
+
+def test_joint_discriminant_level_determinant_and_field_spinor_preimage():
+    """For <6>, all nontrivial characters come from the same -1 coset."""
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[6]])
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, determinant=True, field_spinor=True, level_modulus=2
+    )
+    minus = matrix(ZZ, [[-1]])
+    assert len(image.image_keys()) == 2  # O(<6>) = {+1, -1}, not a product of characters.
+    assert image.image(minus)[0] == image.identity[0]  # -1 is trivial mod 2.
+    assert image.image(minus)[1] != image.identity[1]  # Nontrivial on Z/6Z.
+    assert image.image(minus)[2] == -1
+    assert image.image(minus)[3] != image.identity[3]  # Nontrivial rational spinor class.
+    assert image.image(image.section(image.image(minus))) == image.image(minus)
+    allowed = image.subgroup_from_membership(lambda key: key[3] == image.identity[3])
+    assert allowed == frozenset((image.identity,))
+    index, kernel = engine.joint_discriminant_character_preimage_generators(
+        ambient, allowed, determinant=True, field_spinor=True, level_modulus=2
+    )
+    assert index == 2
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in kernel)
+    assert all(image.image(matrix(ZZ, [list(g(x).to_vector()) for x in ambient.module_generators()]).transpose()) == image.identity for g in kernel)

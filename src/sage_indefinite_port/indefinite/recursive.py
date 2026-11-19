@@ -1304,15 +1304,21 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, level_modulus=None, ambient_generators=None):
-        r"""Actual joint discriminant/determinant/real-spinor image of O(L).
+    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Actual joint discriminant/determinant/real- and field-spinor image.
 
         Uses the original discriminant-form action (quadratic if L is even,
         bilinear otherwise) supplied by the provider. The real-spinor
-        character has the provider's normalized ``-b/2`` convention.
+        character has the provider's normalized ``-b/2`` convention. The
+        field-spinor factor uses the provider's selected base change and
+        form multiplier; only its *generated* square-class image is finite,
+        not necessarily its full square-class target. All factors are
+        enumerated jointly, preserving correlations in the actual image.
         """
         from sage_indefinite_port.indefinite.congruence_images import JointDiscriminantCharacterImage
 
+        if not field_spinor and (field_map is not None or form_multiplier is not None):
+            raise ValueError("field_map/form_multiplier require field_spinor=True")
         rho = lattice.discriminant_representation()
         signs = []
         identities = [rho.codomain().one()]
@@ -1323,6 +1329,10 @@ class EichlerRecursion:
             spinor = lattice.O_plus().preimage_morphism()
             signs.append(lambda g: 1 if spinor(g).is_one() else -1)
             identities.append(1)
+        if field_spinor:
+            spinor_field = lattice.spinor_norm(field_map, form_multiplier)
+            signs.append(lambda g: spinor_field(g))
+            identities.append(spinor_field.codomain().one())
 
         def as_isometry(columns):
             return _isometry_from_column_matrix(lattice, lattice, columns)
@@ -1339,9 +1349,9 @@ class EichlerRecursion:
             rank=len(tuple(lattice.module_generating_set())),
         )
 
-    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, level_modulus=None, ambient_generators=None):
+    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Integral preimage generators for an actual joint discriminant subgroup."""
-        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, level_modulus=level_modulus, ambient_generators=ambient_generators)
+        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, field_spinor=field_spinor, field_map=field_map, form_multiplier=form_multiplier, level_modulus=level_modulus, ambient_generators=ambient_generators)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
