@@ -81,3 +81,12 @@ def test_public_group_generators_of_the_anisotropic_lattice():
     frame = tuple(L.module_generators())
     for g in generators:
         assert all(L.b(g(v), g(w)) == L.b(v, w) for v in frame for w in frame)
+
+
+def test_perfect_form_enumeration_is_reused_by_both_public_accessors():
+    model = QuaternionVoronoi(int(-1), int(3))
+    forms = model.perfect_forms()
+    assert forms
+    model._perfect = lambda _: (_ for _ in ()).throw(AssertionError("enumerated twice"))
+    assert model.unit_generators()
+    assert model.perfect_forms() == forms

@@ -47,6 +47,7 @@ class QuaternionVoronoi:
         self._basis = tuple(sum(c * q for c, q in zip(row, standard, strict=True)) for row in self._order.rows())
         self._matrices = tuple(sum(c * m for c, m in zip(row, standard_matrices, strict=True)) for row in self._order.rows())
         self._to_order = self._order.inverse()
+        self._enumeration_cache = None
 
     def order_coordinates(self, element):
         r"""Return the coordinates of a quaternion in the basis of the order."""
@@ -178,6 +179,8 @@ class QuaternionVoronoi:
         return self._enumerate()[1]
 
     def _enumerate(self):
+        if self._enumeration_cache is not None:
+            return self._enumeration_cache
         representatives = [self._perfect(matrix.identity(self._field, 2))]
         generators = [-self._algebra.one()]
         position = 0
@@ -200,7 +203,8 @@ class QuaternionVoronoi:
         for unit in generators:
             if unit != 1 and unit not in reduced:
                 reduced.append(unit)
-        return tuple(representatives), tuple(reduced)
+        self._enumeration_cache = (tuple(representatives), tuple(reduced))
+        return self._enumeration_cache
 
     def reduce_unit(self, unit, generators):
         r"""Return a word in ``generators`` and inverses ending in an element fixing ``phi_S``, by descent."""
