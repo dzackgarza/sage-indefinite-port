@@ -859,3 +859,20 @@ def test_congruence_image_inclusion_requires_same_finite_module():
         small.inclusion(IntegralCongruenceImage((identity_matrix(ZZ, 3),), 4))
     with raises(TypeError):
         small.inclusion(object())
+
+
+def test_composite_level_projection_is_actual_surjective_image_map():
+    from pytest import raises
+
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    negative = -identity_matrix(ZZ, 2)
+    image = IntegralCongruenceImage((swap, negative), 12)
+    for divisor in (2, 3, 4, 6):
+        quotient, project = image.project_to_level(divisor)
+        assert quotient.modulus == divisor
+        assert {quotient._key(project(image.reduce(lift))) for lift in image._lifts.values()} == quotient.image_keys()
+        for a in image._lifts.values():
+            for b in image._lifts.values():
+                assert project(image.reduce(a * b)) == project(image.reduce(a)) * project(image.reduce(b))
+    with raises(ValueError, match="divisor"):
+        image.project_to_level(5)

@@ -93,6 +93,29 @@ class IntegralCongruenceImage:
             raise ValueError("finite-image inclusion requires identical modulus and rank")
         return all(other.contains(g) for g in self.image_generators)
 
+    def project_to_level(self, divisor):
+        r"""Actual image at a quotient level, with its exact reduction map.
+
+        For ``d | m`` the canonical reduction ``Z/m -> Z/d`` induces a
+        surjection from the generated image at level m to its image at
+        level d. Return that image and a function on level-m image matrices.
+        """
+        divisor = ZZ(divisor)
+        if divisor < 2 or self.modulus % divisor:
+            raise ValueError("target level must be a divisor >= 2 of the source level")
+        target = IntegralCongruenceImage(self.generators, divisor, rank=self.rank)
+
+        def projection(g):
+            if not self.contains(g):
+                raise ValueError("matrix is outside the actual source image")
+            reduced = matrix(target.ring, g)
+            if not target.contains(reduced):
+                raise ArithmeticError("image reduction failed to land in the actual quotient")
+            return reduced
+
+        assert {target._key(projection(self.reduce(lift))) for lift in self._lifts.values()} == target.image_keys()
+        return target, projection
+
     def residue_vector_stabilizer(self, coordinates):
         r"""Exact preimage of the stabilizer of a residue column vector.
 
