@@ -1363,12 +1363,21 @@ class EichlerRecursion:
     def joint_discriminant_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Return an *owned group* realizing the exact joint finite-image inverse image.
 
-        The defining condition retains literal membership in the supplied
-        generated ambient group; the complete Schreier generating epimorphism
-        is selected by that group's owned free-cover construction.  Unlike a
-        bare tuple of matrices, the result is a subgroup on which marked
-        orbit, stabilizer and transporter consumers can evaluate membership.
+        The actual finite joint image is represented faithfully by its left
+        regular action, using the provider's finite G-set and group morphism
+        owners. The target is the *actual image subgroup* of that permutation
+        group, not the whole symmetric group: double cosets must exclude
+        permutations which never arise from an integral isometry. A supplied
+        proper ambient group G remains the source of this finite morphism.
+
+        The provider's ``preimage_subgroup`` retains both the exact subgroup
+        predicate and the finite quotient needed by marked orbit/transport
+        consumers. Its complete Schreier generating epimorphism is selected
+        from the computed preimage words, not merely a membership filter.
         """
+        from sage_extensions.categories.group.g_sets import FiniteGSets
+        from sage_extensions.categories.sets.finite_ordered_sets import finite_ordered_set
+
         allowed = frozenset(allowed)
         ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
         image = self.joint_discriminant_character_image(
@@ -1381,9 +1390,25 @@ class EichlerRecursion:
         ambient = (lattice.O() if ambient_generators is None
                    else lattice.O().subgroup(ambient_generators))
         generators = tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
-        return ambient.predicate_subgroup(
-            lambda g: image.preimage_membership(_column_matrix(g), allowed),
-            lambda: "preimage of the selected subgroup under the actual joint discriminant and character image",
+        points = finite_ordered_set(tuple(image._lifts))
+        action = FiniteGSets(ambient)(
+            points,
+            lambda g, key: image._multiply(image.image(_column_matrix(g)), key),
+        )
+        permutation = action.permutation_representation()
+        finite_image = permutation.codomain().subgroup(tuple(
+            permutation(_isometry_from_column_matrix(lattice, lattice, g)) for g in image.generators
+        ))
+        representation = ambient.Mor(finite_image).elementwise(
+            lambda g: finite_image(permutation(g))
+        )
+        target = finite_image.subgroup(tuple(
+            representation(_isometry_from_column_matrix(lattice, lattice, image.section(key)))
+            for key in image.image_keys() if key in allowed
+        ))
+        return representation.preimage_subgroup(
+            target,
+            stated_clause=lambda: "preimage of the selected subgroup under the actual joint discriminant and character image",
             generating_morphism=ambient.free_cover(generators),
         )
 

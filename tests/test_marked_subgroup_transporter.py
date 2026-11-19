@@ -26,6 +26,52 @@ def test_fixed_null_vector_transporter_respects_special_orthogonal_subgroup():
     assert apex(e) == e and apex.determinant() == 1
 
 
+def test_joint_character_owned_preimage_splits_based_null_orbit():
+    """The new finite-character inverse-image group acts on the actual marked category."""
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, _ = ambient.module_generators()
+    source = lattice([[0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    marked = category(source.hom([e], codomain=ambient))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(ambient, determinant=True)
+    subgroup = engine.joint_discriminant_character_preimage_subgroup(
+        ambient, (image.identity,), determinant=True,
+    )
+    representatives = tuple(ambient.O().split_orbit(marked, subgroup))
+    assert len(representatives) == 2
+    assert all(representative in category for representative in representatives)
+    assert category.Core().Mor(representatives[0], representatives[1]).an_element_in(subgroup) is None
+
+
+def test_joint_character_nonnormal_preimage_uses_actual_finite_double_cosets():
+    """A nonnormal C2 in the eight-element O(I2) must not split in the full S8."""
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[1, 0], [0, 1]])
+    e, f = ambient.module_generators()
+    source = lattice([[1]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    marked = category(source.hom([e], codomain=ambient))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(ambient, level_modulus=3)
+    assert len(image.image_keys()) == 8
+    allowed = image.subgroup_from_generators((image.image(matrix(SageZZ, [[0, 1], [1, 0]])),))
+    subgroup = engine.joint_discriminant_character_preimage_subgroup(
+        ambient, allowed, level_modulus=3,
+    )
+    assert int(subgroup.preimage_morphism().codomain().cardinality()) == 8
+    assert int(subgroup.index()) == 4
+    representatives = tuple(ambient.O().split_orbit(marked, subgroup))
+    assert len(representatives) == 2
+    assert all(category.Core().Mor(representatives[0], rep).an_element_in(subgroup) is None
+               for rep in representatives[1:])
+
+
 def test_composite_level_six_preimage_uses_actual_integral_image():
     """O(U) has four elements; -I is in Gamma(2) but not Gamma(3) or Gamma(6)."""
     ambient = lattice([[0, 1], [1, 0]])
