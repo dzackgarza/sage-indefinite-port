@@ -667,3 +667,20 @@ def test_joint_discriminant_right_coset_action_respects_multiplication():
             for h in lifts:
                 assert act(act(i, g), h) == act(i, g * h)
     assert all(act(0, g) == 0 for g in image.preimage_generators(subgroup)[1])
+
+
+def test_joint_discriminant_right_coset_transporter_has_verified_integral_witness():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    image = EichlerRecursion().joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True, level_modulus=4
+    )
+    subgroup = image.subgroup_from_membership(lambda key: key[2] == 1)
+    cosets, act = image.right_coset_action(subgroup)
+    for i in range(len(cosets)):
+        for j in range(len(cosets)):
+            witness = image.right_coset_transporter(subgroup, i, j)
+            assert abs(witness.det()) == 1
+            assert act(i, witness) == j

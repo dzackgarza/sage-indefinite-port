@@ -739,6 +739,22 @@ class JointDiscriminantCharacterImage:
 
         return cosets, act
 
+    def right_coset_transporter(self, allowed, source_index, target_index):
+        r"""An integral ambient witness carrying one right coset to another.
+
+        For left cosets ``H*a`` and ``H*b``, the element ``a^-1*b`` acts
+        on the right and carries the former to the latter. The returned
+        witness is verified using the exact finite action.
+        """
+        cosets, act = self.right_coset_action(allowed)
+        if not 0 <= source_index < len(cosets) or not 0 <= target_index < len(cosets):
+            raise IndexError("coset index out of range")
+        source = self.section(cosets[source_index])
+        target = self.section(cosets[target_index])
+        witness = source.inverse() * target
+        assert act(source_index, witness) == target_index
+        return matrix(ZZ, witness)
+
     def preimage_generators(self, allowed):
         subgroup = set(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():
