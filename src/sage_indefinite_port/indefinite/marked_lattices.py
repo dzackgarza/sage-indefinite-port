@@ -3551,6 +3551,18 @@ def iter_primitive_isotropic_flag_classes(lattice: Parent, dimensions: tuple[int
         # Central -id preserves every unoriented flag in odd rank.
         acting_group = None
     category = Cat().Mor(FiniteOrdinalCategory(len(dimensions) + 1), LATTICES)
+    if all(lattice.b(x, y) == lattice.base_ring().zero()
+           for x in lattice.module_generators() for y in lattice.module_generators()):
+        # Every primitive flag in a zero-form lattice is a primitive
+        # module flag, and GL(L) is transitive on flags of fixed ranks.
+        # The complete full-group quotient is finite, so terminate it.
+        basis = tuple(lattice.module_generators())[:top]
+        marked = category(_flag_marking_from_basis(lattice, basis, dimensions))
+        if acting_group is None:
+            yield marked
+        else:
+            yield from lattice.O().split_orbit(marked, acting_group)
+        return
     seen = []
     zero = lattice.base_ring().zero()
     for height in count(1):

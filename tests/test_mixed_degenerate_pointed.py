@@ -66,6 +66,14 @@ def test_odd_rank_special_orthogonal_null_flag_stream_has_same_orbits():
                for left, right in zip(full, special, strict=True))
 
 
+def test_zero_form_primitive_flag_stream_exhausts_its_single_full_orbit():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_flag_classes
+
+    ambient = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    assert len(tuple(iter_primitive_isotropic_flag_classes(ambient, (1, 2, 3)))) == 1
+
+
 def test_mixed_radical_shear_positive_and_negative_transporters():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
