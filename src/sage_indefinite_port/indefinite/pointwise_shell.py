@@ -1,4 +1,4 @@
-r"""Exact `Gamma`-equivalence on the primitive isotropic shell of `L = U + U`, `Gamma = Stab(e1)` pointwise.
+r"""Exact `Gamma`-equivalence on every norm shell of `L = U + U`, `Gamma = Stab(e1)` pointwise.
 
 Issues #53 and #62. This is the port-owned half: the actual indefinite `Gamma`-action, the exact equivalence
 decision where it holds, and the constructive witnesses. The generic quotient/enumerator framework is research's
@@ -36,24 +36,28 @@ and imposing the three conditions `b(g e1, g f1) = 1`, `b(g e2, g f1) = b(e2, f1
 `O(U) = {I, -I, swap, -swap}` (from `M [[0,1],[1,0]] M^T = [[0,1],[1,0]]` for integral `M`), and `sigma`, `tau`
 realize `-I` and `swap`, so `Theta -> O(Q)` is onto. ∎
 
-The orbit of a **primitive** isotropic `v` (`q(v) = 0`, content one, so `a m + c d = 0`) is therefore:
+The orbit of a **primitive** `v=(a,m,c,d)` of any norm `q(v)=2n`, where `n=am+cd`, is therefore:
 
-* `m != 0`: `a = -cd/m`, and the orbit is the class of `(c, d)` in `(Z/m)^2` under `m Z^2` together with the four
-  symmetries `(c,d), (-c,-d), (d,c), (-d,-c)`;
-* `m = 0`: `c d = 0`, and `a` can be moved by `rho c + gam d`, i.e. by the ideal `gcd(c, d) Z`; the orbit is the
+* `m != 0`: `a = (n-cd)/m` is uniquely determined by `n,m,c,d`. At fixed `n,m`, the orbit is the class of
+  `(c,d)` in `(Z/m)^2` under `m Z^2` and the four symmetries `(c,d), (-c,-d), (d,c), (-d,-c)`;
+* `m = 0`: `cd=n`, and `a` can be moved by `rho c + gam d`, i.e. by the ideal `gcd(c, d) Z`; the orbit is the
   class of `(c,d)` under the same four symmetries together with `a mod gcd(c, d)` (and for `c = d = 0`, `a`
   itself -- `e1` and `-e1` are different orbits).
 
-**Content.** Every nonzero isotropic `v` is `t w` with `w` primitive isotropic and `t = content(v) >= 1`. An
+These invariants are complete: for `m != 0`, choose the symmetry matching the residue pair and then solve
+`c'=c-m*gam`, `d'=d-m*rho`; the common `n=am+cd` forces equality of the resulting `a`. For `m=0`, after
+the symmetry matches `(c,d)`, the equation `a'-a = rho*c+gam*d` has an integer solution exactly when
+`gcd(c,d)` divides the difference. These equations construct an isometry witness for every matching key.
+
+**Content.** Every nonzero `v` is `t w` with `w` primitive and `t = content(v) >= 1`. An
 isometry of `L` is a unimodular change of the basis, so it preserves `content`; it is also `Z`-linear, so
 `g(t w) = t g(w)`. Hence `t w` and `t' w'` are `Gamma`-equivalent exactly when `t = t'` and `w, w'` are, and the
-`Gamma`-orbits on the **whole isotropic cone** are `{(t, [w]) : t >= 1, [w] a primitive Gamma-orbit}`. The class
+`Gamma`-orbits on **all of L** are `{(t, [w]) : t >= 1, [w] a primitive Gamma-orbit}` plus zero. The class
 key therefore carries `t`, and a witness for a scaled pair is the primitive witness -- certified against the actual
 endpoints, so the scaled statement is checked rather than inferred.
 
-This module decides that relation exactly on the whole isotropic cone and returns an explicit element of `Gamma`.
-Non-isotropic vectors are outside it and are refused: `q` is the only invariant supplied there and it does not
-classify.
+This module decides that relation exactly on every norm shell and returns an explicit element of `Gamma`.
+Norm alone does not classify non-isotropic vectors; the signed `m` and residue data are also necessary.
 """
 
 from __future__ import annotations
@@ -64,12 +68,12 @@ from sage.matrix.constructor import matrix
 from sage.rings.integer_ring import ZZ
 from sage.modules.free_module_element import vector
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
 
 __all__ = [
     "U_PLUS_U_GRAM",
     "gamma_action",
+    "gamma_canonical_representative",
     "gamma_class",
     "gamma_decompose",
     "gamma_element",
@@ -94,12 +98,10 @@ _SYMMETRIES = (
 
 
 def shell_coordinates(lattice, vector) -> tuple[int, int, int, int]:
-    r"""`(a, m, c, d)` of an isotropic vector in the distinguished basis, with the presentation checked.
+    r"""`(a, m, c, d)` of any vector in the distinguished basis, with the presentation checked.
 
-    The isotropic condition `q(v) = 0` is checked here because the classification below uses `a m + c d = 0`, which
-    is not meaningful for a non-isotropic vector. Content is **not** restricted: imprimitive isotropic vectors are
-    classified by splitting off content (see :func:`gamma_class` and the module docstring), so the only refusal here
-    is the genuine boundary of the decision.
+    The exact Gram presentation certifies `q(v) = 2(am+cd)` for all vectors.
+    The action normal form and its orbit classification hold on every shell.
     """
     labels = tuple(lattice.module_generating_set())
     if len(labels) != 4:
@@ -109,20 +111,16 @@ def shell_coordinates(lattice, vector) -> tuple[int, int, int, int]:
     raw = vector.to_vector()
     coordinates = tuple(int(raw(label)) for label in labels)
     a, m, c, d = coordinates
-    if int(vector.q()) != 0:
-        raise UnfinishedCapability(
-            f"{coordinates} is not isotropic; this decision covers the isotropic cone only, and `q` alone does not "
-            "classify the non-isotropic vectors"
-        )
-    if a * m + c * d != 0:
-        raise ArithmeticError(f"an isotropic vector in this basis must satisfy a*m + c*d = 0, got {coordinates}")
+    if int(vector.q()) != 2 * (a * m + c * d):
+        raise ArithmeticError(f"the norm in the distinguished basis must be 2(am+cd), got {coordinates}")
     return coordinates
 
 
 def isotropic_content(coordinates) -> int:
     r"""`content` of `(a, m, c, d)` -- the gcd of its entries, which is `0` only for the zero vector.
 
-    This is the `t` of the module's content corollary. It is a `Gamma`-invariant: an isometry of `L` is a
+    The historical function name predates the all-norm extension: the same
+    content formula applies to every integral vector. It is a `Gamma`-invariant: an isometry of `L` is a
     unimodular change of the basis, so it cannot change the gcd of a vector's coordinates.
     """
     a, m, c, d = coordinates
@@ -259,22 +257,21 @@ def gamma_decompose(lattice, isometry):
     return None
 
 
-def pointwise_shell_action(lattice):
-    r"""The `Gamma`-set on the whole isotropic cone `L[0]`, through the provider's own action constructor.
+def pointwise_shell_action(lattice, *, square=0):
+    r"""The `Gamma`-set on `L[square]`, or all `L` when `square=None`, via the provider's action.
 
     This is the maintained machinery, not a second framework: `GObjects(Gamma, Sets()).on_set(points, action,
     orbit_relation)` is what :meth:`EichlerRecursion.marked_orbit_action` uses for `O(L)`, and here the group is the
-    pointwise stabilizer and the relation is :func:`gamma_equivalent`, which is exact on the whole cone -- imprimitive
+    pointwise stabilizer and the relation is :func:`gamma_equivalent`, which is exact on every norm shell -- imprimitive
     vectors included, by the content corollary. The point set is a predicate cut, so no point is ever materialised;
     `orbits()` keeps returning the provider's lazy orbit set, and its `is_finite()` stays a proposition because the
-    quotient here is infinite.
+    quotient here can be infinite, including on an individual nonzero-norm shell.
 
-    The zero vector is a member and a fixed point; it has its own class, so including it costs nothing and the point
-    set is then exactly the cone `q = 0` rather than the cone minus a point.
+    Zero is a fixed point, admitted precisely when `square=0` or `square=None`.
     """
     from sage_extensions.all import GObjects, Sets
 
-    cone = Sets().condition_set(lattice, lambda vector: int(vector.q()) == 0)
+    cone = Sets().condition_set(lattice, lambda vector: square is None or int(vector.q()) == square)
     return GObjects(pointwise_shell_group(lattice), Sets()).on_set(
         cone,
         lambda isometry, point: isometry(point),
@@ -282,18 +279,18 @@ def pointwise_shell_action(lattice):
     )
 
 
-def pointwise_shell_quotient(lattice):
-    r"""`L[0] / Gamma` as the provider's orbit set, built on :func:`pointwise_shell_action`."""
-    return pointwise_shell_action(lattice).orbits()
+def pointwise_shell_quotient(lattice, *, square=0):
+    r"""`L[square] / Gamma` as the provider's orbit set, built on :func:`pointwise_shell_action`."""
+    return pointwise_shell_action(lattice, square=square).orbits()
 
 
 def gamma_class(lattice, vector) -> tuple:
-    r"""The `Gamma`-orbit class of an isotropic `vector`, as a hashable key -- imprimitive vectors included.
+    r"""The `Gamma`-orbit class of any integral `vector`, as a hashable key.
 
-    Two isotropic vectors are `Gamma`-equivalent exactly when their keys agree. For content `t > 1` the key is
+    Two integral vectors are `Gamma`-equivalent exactly when their keys agree. For content `t > 1` the key is
     `("content", t, primitive_key)`, by the module's content corollary: an isometry is a unimodular change of basis
     and is `Z`-linear, so it preserves `content` and sends `t w` to `t g(w)`. For a primitive vector the key is the
-    class of `(c, d)` described in the module docstring. The zero vector has content `0`, gets the unique key
+    class of `(c, d)` and its norm described in the module docstring. The zero vector has content `0`, gets the unique key
     `("linear", (0, 0), 0)`, and is its own orbit -- every isometry fixes it.
     """
     coordinates = shell_coordinates(lattice, vector)
@@ -305,7 +302,7 @@ def gamma_class(lattice, vector) -> tuple:
 
 
 def _primitive_class(a, m, c, d) -> tuple:
-    r"""The class key of a **primitive** isotropic `(a, m, c, d)`."""
+    r"""The class key of a **primitive** `(a, m, c, d)` of arbitrary norm."""
     if m != 0:
         # SIGNED m is the key. `b(e1, .)` is invariant under every pointwise stabilizer element, so `m` and `-m`
         # are different classes; keying on `abs(m)` merged `f1` with `-f1`, which the invariant separates and no
@@ -313,14 +310,16 @@ def _primitive_class(a, m, c, d) -> tuple:
         # `m Z^2` and `m Z^2 = |m| Z^2`.
         residue = abs(m)
         candidates = [tuple(value % residue for value in symmetry(c, d)) for symmetry in _SYMMETRIES]
-        return ("affine", m, min(candidates))
+        half_norm = a * m + c * d
+        # Preserve the historical isotropic key representation exactly.
+        return ("affine", m, min(candidates)) if half_norm == 0 else ("affine", m, half_norm, min(candidates))
     g = gcd(abs(c), abs(d))
     candidates = [tuple(symmetry(c, d)) for symmetry in _SYMMETRIES]
     return ("linear", min(candidates), a % g if g else a)
 
 
 def gamma_witness(lattice, source, target):
-    r"""An explicit element of `Gamma` carrying `source` onto `target`, or `None` if there is none.
+    r"""An explicit element of `Gamma` carrying any `source` onto `target`, or `None` if none.
 
     `None` is a **decision**, not a failure: it means the two classes differ, which the module's theorem proves
     is the same as being in different `Gamma`-orbits. The witness is constructed -- a symmetry followed by a
@@ -338,6 +337,53 @@ def gamma_witness(lattice, source, target):
         target_coordinates = tuple(value // t for value in target_coordinates)
     symmetry, rho, gam = _primitive_witness_parameters(source_coordinates, target_coordinates)
     return _certified(lattice, source, target, symmetry, rho, gam)
+
+
+def gamma_canonical_representative(lattice, vector):
+    r"""Canonical integral vector for its pointwise `Gamma`-orbit, with a certified transport.
+
+    For `m != 0`, choose the lexicographically least pair of residues in
+    `[0, |m|)^2` under the four `O(U)` symmetries. The norm `2n` determines
+    the unique remaining coordinate `a=(n-cd)/m`, integral because the
+    chosen residues were obtained by an integral `Gamma`-action. For `m=0`
+    choose the least symmetry of `(c,d)` and reduce `a` modulo `gcd(c,d)`;
+    when both vanish leave `a` unchanged. The content is factored off before
+    choosing a primitive representative and restored afterwards.
+
+    These choices depend only on :func:`gamma_class`, hence they are equal
+    precisely for equivalent inputs. The second return value is an *actual*
+    integral isometry carrying the input vector to the chosen representative.
+    """
+    a, m, c, d = shell_coordinates(lattice, vector)
+    content = isotropic_content((a, m, c, d))
+    if content == 0:
+        coordinates = (0, 0, 0, 0)
+    else:
+        a, m, c, d = (a // content, m // content, c // content, d // content)
+        if m:
+            modulus = abs(m)
+            cr, dr = min((x % modulus, y % modulus) for x, y in
+                         (symmetry(c, d) for symmetry in _SYMMETRIES))
+            half_norm = a * m + c * d
+            if (half_norm - cr * dr) % m:
+                raise ArithmeticError("canonical residues do not preserve the prescribed norm modulo m")
+            coordinates = ((half_norm - cr * dr) // m, m, cr, dr)
+        else:
+            cr, dr = min(symmetry(c, d) for symmetry in _SYMMETRIES)
+            divisor = gcd(abs(cr), abs(dr))
+            coordinates = (a % divisor if divisor else a, 0, cr, dr)
+        coordinates = tuple(content * x for x in coordinates)
+
+    frame = tuple(lattice.module_generators())
+    representative = sum(
+        (lattice.scalar_multiple(lattice.base_ring()(coefficient), basis)
+         for coefficient, basis in zip(coordinates, frame, strict=True) if coefficient),
+        lattice.zero(),
+    )
+    transporter = gamma_witness(lattice, vector, representative)
+    if transporter is None or transporter(vector) != representative:
+        raise ArithmeticError("the canonical orbit representative has no certified Gamma transporter")
+    return representative, transporter
 
 
 def _primitive_witness_parameters(source_coordinates, target_coordinates):
@@ -374,7 +420,7 @@ def _primitive_witness_parameters(source_coordinates, target_coordinates):
 
 
 def gamma_equivalent(lattice, source, target) -> bool:
-    r"""Whether two isotropic vectors lie in one `Gamma`-orbit, exactly."""
+    r"""Whether two integral vectors lie in one `Gamma`-orbit, exactly."""
     return gamma_class(lattice, source) == gamma_class(lattice, target)
 
 

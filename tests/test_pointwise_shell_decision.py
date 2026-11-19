@@ -13,11 +13,11 @@ direction is checked as a law against the proved separating invariant.
 """
 from itertools import product
 
-import pytest
 
 from sage_indefinite_port.indefinite.pointwise_shell import (
     U_PLUS_U_GRAM,
     gamma_action,
+    gamma_canonical_representative,
     gamma_class,
     gamma_decompose,
     gamma_element,
@@ -30,7 +30,6 @@ from sage_indefinite_port.indefinite.pointwise_shell import (
     shell_coordinates,
 )
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import element, lattice
 
 _RECURSION = EichlerRecursion()
@@ -78,16 +77,11 @@ def _shell_sample():
     return sample
 
 
-def test_the_cone_hypotheses_are_checked_not_assumed() -> None:
-    """A non-isotropic vector is refused, an imprimitive one is not, and `a m + c d = 0` holds for every cone vector.
-
-    Content is deliberately *not* a hypothesis: imprimitive isotropic vectors are classified by splitting content
-    off, so refusing them here would hide a decision the module makes.
-    """
+def test_the_lattice_presentation_and_norm_formula_are_checked() -> None:
+    """Every integral vector has coordinates; the checked formula is q=2(am+cd)."""
     L = _L()
     assert shell_coordinates(L, _v(-6, 1, 2, 3)) == (-6, 1, 2, 3)
-    with pytest.raises(UnfinishedCapability):
-        shell_coordinates(L, element(L, (1, 0, 0, 0)) + element(L, (0, 1, 0, 0)))  # q = 2
+    assert shell_coordinates(L, element(L, (1, 0, 0, 0)) + element(L, (0, 1, 0, 0))) == (1, 1, 0, 0)
     assert shell_coordinates(L, _v(0, 2, 2, 0)) == (0, 2, 2, 0), "content must not be a refusal"
     assert shell_coordinates(L, _v(0, 0, 0, 0)) == (0, 0, 0, 0)
     for vector in _cone_box(2):
@@ -201,19 +195,16 @@ def test_every_witness_is_a_genuine_gamma_element_of_the_retained_generators_gro
                 )
 
 
-def test_the_classification_covers_the_whole_cone_and_only_the_cone() -> None:
-    r"""Every isotropic vector gets a class -- imprimitive and zero included -- and a non-isotropic one is refused.
-
-    The refusal is the honest boundary of the decision: `q` alone does not classify the non-isotropic vectors, so
-    none of them is given a class it has no business having.
-    """
+def test_the_classification_covers_the_whole_cone_and_nonzero_norms() -> None:
+    r"""Every vector gets a class; isotropic historical keys are unchanged."""
     L = _L()
     for vector in _cone_box(2):
         assert gamma_class(L, vector) is not None
     assert gamma_class(L, _v(0, 0, 0, 0)) == ("linear", (0, 0), 0), "the zero vector is its own class"
     assert gamma_class(L, _v(0, 2, 2, 0)) == ("content", 2, gamma_class(L, _v(0, 1, 1, 0)))
-    with pytest.raises(UnfinishedCapability):
-        gamma_class(L, element(L, (1, 0, 0, 0)) + element(L, (0, 1, 0, 0)))  # q = 2, not isotropic
+    nonisotropic = element(L, (1, 0, 0, 0)) + element(L, (0, 1, 0, 0))
+    assert gamma_class(L, nonisotropic) is not None
+    assert gamma_class(L, nonisotropic) != gamma_class(L, _v(0, 1, 0, 0))
 
 
 def test_content_splits_the_cone_into_scaled_primitive_orbits() -> None:
@@ -553,3 +544,54 @@ def test_decompose_is_total_exactly_on_the_isometries_fixing_e1() -> None:
         candidate = gamma_element(L, index, 1, -2)
         assert candidate(_e1()) == _e1()
         assert gamma_decompose(L, candidate) is not None
+
+
+def test_all_norm_pointwise_orbits_have_complete_keys_and_witnesses() -> None:
+    r"""The N ⋊ O(U) normal form classifies nonisotropic vectors, not just L[0].
+
+    In particular, the affine residue key must retain the *norm*: the
+    residue pair alone is not an equivalence invariant of fixed norm if
+    callers are permitted to compare vectors on different shells.
+    """
+    L = _L()
+    source = _v(1, 2, 1, 0)  # q=4
+    target = _v(0, 2, -1, -2)  # q=4, u(1,1) applied to source
+    assert gamma_equivalent(L, source, target)
+    witness = gamma_witness(L, source, target)
+    assert witness is not None and witness(source) == target and witness(_e1()) == _e1()
+
+    # Same m and same residue pair, but q differs; no isometry exists.
+    assert not gamma_equivalent(L, _v(0, 1, 1, 0), _v(1, 1, 1, 0))
+    assert gamma_witness(L, _v(0, 1, 1, 0), _v(1, 1, 1, 0)) is None
+
+    # Equal m=3 and square 12, both primitive, yet residues (0,1)
+    # and (0,0) are inequivalent under the four O(U) symmetries.
+    first, second = _v(2, 3, 0, 1), _v(2, 3, 3, 0)
+    assert first.q() == second.q() == 12
+    assert first.content() == second.content() == 1
+    assert not gamma_equivalent(L, first, second)
+    assert gamma_witness(L, first, second) is None
+
+    # When m=0, (c,d) is preserved up to sign and swap and a is
+    # determined modulo gcd(c,d), also at nonzero norm.
+    assert gamma_equivalent(L, _v(1, 0, 2, 4), _v(3, 0, 2, 4))
+    assert not gamma_equivalent(L, _v(1, 0, 2, 4), _v(2, 0, 2, 4))
+    zero_pair_witness = gamma_witness(L, _v(1, 0, 2, 4), _v(3, 0, 2, 4))
+    assert zero_pair_witness is not None and zero_pair_witness(_v(1, 0, 2, 4)) == _v(3, 0, 2, 4)
+
+    # A fixed nonzero-norm shell stays lazy and carries the exact relation.
+    action = pointwise_shell_action(L, square=4)
+    assert action.in_same_orbit(source, target)
+    assert _v(0, 1, 1, 0) not in action  # A different norm is not a point of this G-set.
+    assert not action.in_same_orbit(_v(1, 2, 0, 0), source)  # Same q=4, different residue class.
+
+    # A canonical *vector*, not just an abstract key, with a proved transporter.
+    candidates = (source, target, first, second, _v(1, 0, 2, 4), _v(3, 0, 2, 4),
+                  _v(0, 0, 0, 0), _v(2, 4, 2, 0))
+    for point in candidates:
+        canonical, certificate = gamma_canonical_representative(L, point)
+        assert canonical.q() == point.q() and canonical.content() == point.content()
+        assert gamma_class(L, canonical) == gamma_class(L, point)
+        assert certificate(point) == canonical and certificate(_e1()) == _e1()
+    assert gamma_canonical_representative(L, source)[0] == gamma_canonical_representative(L, target)[0]
+    assert gamma_canonical_representative(L, first)[0] != gamma_canonical_representative(L, second)[0]
