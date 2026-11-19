@@ -294,6 +294,15 @@ def _local_maximal(lattices, order, p, expected):
     return order
 
 
+def _projective_plane_representatives(field):
+    r"""Enumerate each line of ``field^3`` exactly once, normalized at its first nonzero entry."""
+    elements = tuple(field)
+    one, zero = field.one(), field.zero()
+    yield from ((one, b, c) for b in elements for c in elements)
+    yield from ((zero, one, c) for c in elements)
+    yield zero, zero, one
+
+
 def _neighbours(lattices, maximal, prime):
     r"""Return the `N(P) + 1` maximal orders adjacent to ``maximal`` at the split prime ``prime`` in the Bruhat-Tits tree.
 
@@ -311,15 +320,8 @@ def _neighbours(lattices, maximal, prime):
         # homogeneous over the residue field. Every nonzero residue line has
         # exactly one representative in these three affine projective charts.
         # This replaces q^3 trials by q^2 + q + 1 without omitting a line.
-        residue_elements = tuple(residue)
-
-        def projective():
-            yield from ((residue.one(), b, c) for b in residue_elements for c in residue_elements)
-            yield from ((residue.zero(), residue.one(), c) for c in residue_elements)
-            yield residue.zero(), residue.zero(), residue.one()
-
         for x, x2 in combinations(maximal, 2):
-            for a, b, c in projective():
+            for a, b, c in _projective_plane_representatives(residue):
                 z = algebra(residue.lift(a)) + algebra(residue.lift(b)) * x + algebra(residue.lift(c)) * x2
                 # nrd(z) is integral for z in the order; it lies in P exactly when its residue is 0.
                 if residue(z.reduced_norm()) == 0 and not lattices.contains(reduced, [z]):
