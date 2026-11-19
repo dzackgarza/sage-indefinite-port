@@ -1146,6 +1146,16 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
+        r"""Integral isometries preserving the specified finite-index sublattice.
+
+        ``basis`` consists of coordinate rows, with ``modulus L`` contained
+        in their span. The exact congruence image supplies the stabilizer.
+        """
+        image = self.congruence_image(lattice, modulus)
+        index, matrices = image.finite_index_sublattice_stabilizer(basis)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 

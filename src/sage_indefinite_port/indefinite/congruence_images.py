@@ -105,6 +105,19 @@ class IntegralCongruenceImage:
                 allowed.append(image)
         return self.preimage_generators(allowed)
 
+    def finite_index_sublattice_stabilizer(self, basis):
+        r"""Preimage stabilizing a full-rank sublattice ``M`` of ``Z^rank``.
+
+        Requires ``modulus * Z^rank <= M``; then ``M`` is precisely the
+        inverse image of ``M / modulus * Z^rank``. The return is exact.
+        """
+        rows = matrix(ZZ, basis)
+        if rows.dimensions() != (self.rank, self.rank) or rows.det() == 0:
+            raise ValueError("sublattice basis must be square and full rank")
+        if any(x not in ZZ for x in (self.modulus * rows.inverse()).list()):
+            raise ValueError("modulus times the ambient lattice must lie in the sublattice")
+        return self.residue_submodule_stabilizer(rows.rows())
+
     def residue_flag_stabilizer(self, stages):
         r"""Exact inverse image of the stabilizer of a nested residue-module flag.
 

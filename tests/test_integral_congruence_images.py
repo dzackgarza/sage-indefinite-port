@@ -161,3 +161,29 @@ def test_public_joint_level_and_determinant_on_odd_rank():
     assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
     assert all(image.image(matrix(ZZ, [list(g(x).to_vector()) for x in ambient.module_generators()]).transpose()) == image.identity
                for g in generators)
+
+
+def test_finite_index_sublattice_stabilizer_via_exact_residue_preimage():
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    image = IntegralCongruenceImage((swap, -identity_matrix(ZZ, 2)), 4)
+    index, generators = image.finite_index_sublattice_stabilizer(matrix(ZZ, [[2, 0], [0, 1]]))
+    assert index == 2
+    basis = matrix(ZZ, [[2, 0], [0, 1]])
+    for g in generators:
+        assert all(x in ZZ for x in (basis * g.transpose() * basis.inverse()).list())
+    with pytest.raises(ValueError):
+        image.finite_index_sublattice_stabilizer(matrix(ZZ, [[3, 0], [0, 1]]))
+
+
+def test_public_finite_index_sublattice_stabilizer():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    index, generators = EichlerRecursion().finite_index_sublattice_stabilizer_generators(
+        ambient, 4, ((2, 0), (0, 1))
+    )
+    assert index == 2
+    for g in generators:
+        coordinates = tuple(int(x) for x in g(ambient.module_generators()[0]).to_vector())
+        assert coordinates[1] == 0
