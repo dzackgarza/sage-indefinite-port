@@ -352,3 +352,16 @@ def test_joint_determinant_field_spinor_image_keeps_both_characters():
     index, generators = image.preimage_generators((image.identity,))
     assert index == 2
     assert all(image.image(g) == image.identity for g in generators)
+
+
+def test_finite_image_section_words_membership_and_inclusion():
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    negative = -identity_matrix(ZZ, 2)
+    image = IntegralCongruenceImage((swap, negative), 4)
+    element = image.reduce(swap * negative)
+    word = image.section_word(element)
+    lift = image.section(element)
+    assert lift == swap * negative
+    assert tuple((0, 1)[i] for i in word) == (0, 1)
+    assert image.contains(element)
+    assert image.inclusion(IntegralCongruenceImage((swap, negative, swap * negative), 4))

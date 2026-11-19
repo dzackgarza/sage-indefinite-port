@@ -36,16 +36,22 @@ class IntegralCongruenceImage:
         self.ring = Integers(modulus)
         self.image_one = identity_matrix(self.ring, rank)
         self.image_generators = tuple(g.change_ring(self.ring) for g in self.generators)
-        self._lifts = {self._key(self.image_one): self.one}
+        identity_key = self._key(self.image_one)
+        self._lifts = {identity_key: self.one}
+        self._words = {identity_key: ()}
         queue = deque([self.image_one])
         while queue:
             current = queue.popleft()
-            lift = self._lifts[self._key(current)]
-            for g, image in zip(self.generators, self.image_generators):
+            current_key = self._key(current)
+            lift = self._lifts[current_key]
+            word = self._words[current_key]
+            for position, (g, image) in enumerate(zip(self.generators, self.image_generators)):
+
                 moved = current * image
                 key = self._key(moved)
                 if key not in self._lifts:
                     self._lifts[key] = lift * g
+                    self._words[key] = word + (position,)
                     queue.append(moved)
 
     @staticmethod
@@ -60,6 +66,22 @@ class IntegralCongruenceImage:
 
     def lift(self, image):
         return self._lifts[self._key(image)]
+
+    def contains(self, image):
+        """Whether ``image`` belongs to the actual finite reduction image."""
+        return self._key(image) in self._lifts
+
+    def section_word(self, image):
+        """Generator-index word lifting an element of the actual image."""
+        return self._words[self._key(image)]
+
+    def section(self, image):
+        """A chosen integral lift of an element of the actual image."""
+        return self.lift(image)
+
+    def inclusion(self, other):
+        """Whether this generated finite image is contained in ``other``."""
+        return all(other.contains(self.reduce(lift)) for lift in self._lifts.values())
 
     def residue_vector_stabilizer(self, coordinates):
         r"""Exact preimage of the stabilizer of a residue column vector.
