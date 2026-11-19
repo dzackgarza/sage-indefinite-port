@@ -916,3 +916,14 @@ def test_multilevel_intersection_with_different_residue_constraints():
     assert all(image._key(image.reduce(matrix(ZZ, [[int(x) for x in g(v).to_vector()]
                                                     for v in ambient.module_generators()]).transpose())) in allowed
                for g in generators)
+
+
+def test_relative_level_kernel_index_and_integral_generators():
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    negative = -identity_matrix(ZZ, 2)
+    image = IntegralCongruenceImage((swap, negative), 12)
+    for divisor in (2, 3, 4, 6):
+        quotient, projection = image.project_to_level(divisor)
+        index, generators = image.relative_level_kernel(divisor)
+        assert index == len(quotient.image_keys())
+        assert all(projection(image.reduce(g)) == quotient.image_one for g in generators)

@@ -116,6 +116,23 @@ class IntegralCongruenceImage:
         assert {target._key(projection(self.reduce(lift))) for lift in self._lifts.values()} == target.image_keys()
         return target, projection
 
+    def relative_level_kernel(self, divisor):
+        r"""Generators of ``ker(G -> GL(L/dL))`` using the level-m image.
+
+        The source group G is specified by this image's integral generators
+        at level m, with d dividing m. The returned subgroup is an actual
+        preimage of the kernel of the canonical level-m to level-d map,
+        rather than a nominal full matrix congruence subgroup.
+        """
+        target, projection = self.project_to_level(divisor)
+        identity = target._key(target.image_one)
+        allowed = (self.reduce(lift) for lift in self._lifts.values()
+                   if target._key(projection(self.reduce(lift))) == identity)
+        index, generators = self.preimage_generators(allowed)
+        if index != len(target.image_keys()):
+            raise ArithmeticError("relative congruence kernel has incorrect index")
+        return index, generators
+
     def residue_vector_stabilizer(self, coordinates):
         r"""Exact preimage of the stabilizer of a residue column vector.
 
