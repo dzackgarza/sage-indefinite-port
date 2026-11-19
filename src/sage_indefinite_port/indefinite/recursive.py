@@ -1466,6 +1466,16 @@ class EichlerRecursion:
             form_multiplier=form_multiplier, ambient_generators=ambient_generators,
         )
 
+    def determinant_kernel_subgroup(self, lattice: Lattices.ParentMethods, *, ambient_generators=None):
+        r"""Owned determinant-one subgroup inside the specified integral group."""
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=True, ambient_generators=ambient_generators,
+        )
+        allowed = image.subgroup_from_membership(lambda key: key[-1] == 1)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, determinant=True, ambient_generators=ambient_generators,
+        )
+
     def principal_congruence_subgroup_generators(self, lattice: Lattices.ParentMethods, modulus: int):
         r"""Generators of ``ker(O(L) -> Aut(L/modulus*L))`` (principal congruence subgroup)."""
         image = self.congruence_image(lattice, modulus)

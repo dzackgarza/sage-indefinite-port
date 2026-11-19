@@ -1258,3 +1258,21 @@ def test_owned_positive_cone_congruence_subgroup():
         ambient, 2, allowed,
     )
     assert all(g in subgroup for g in generators)
+
+
+def test_owned_determinant_kernel_distinguishes_reflection_from_negative_identity():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    engine = EichlerRecursion()
+    subgroup = engine.determinant_kernel_subgroup(ambient)
+    assert ambient.O().identity() in subgroup
+    assert ambient.O()((-e, -f)) in subgroup
+    assert ambient.O()((f, e)) not in subgroup
+    image = engine.joint_discriminant_character_image(ambient, determinant=True)
+    assert all(engine.joint_discriminant_character_preimage_factorization(
+        ambient, g, image.subgroup_from_membership(lambda key: key[-1] == 1),
+        determinant=True,
+    ) is not None for g in (ambient.O().identity(), ambient.O()((-e, -f))))
