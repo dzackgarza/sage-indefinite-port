@@ -365,3 +365,30 @@ def test_finite_image_section_words_membership_and_inclusion():
     assert tuple((0, 1)[i] for i in word) == (0, 1)
     assert image.contains(element)
     assert image.inclusion(IntegralCongruenceImage((swap, negative, swap * negative), 4))
+
+
+def test_simultaneous_residue_constraints_are_intersected_in_one_actual_image():
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    negative = -identity_matrix(ZZ, 2)
+    image = IntegralCongruenceImage((swap, negative), 4)
+    index, generators = image.simultaneous_residue_stabilizer(
+        vectors=((1, 0),), submodules=(((2, 0),),),
+        flags=((((2, 0),), ((1, 0),)),),
+        colour_classes={"axis": ((1, 0), (3, 0))},
+    )
+    assert index == 4
+    for g in generators:
+        assert g.change_ring(image.ring) * vector(image.ring, (1, 0)) == vector(image.ring, (1, 0))
+
+
+def test_public_simultaneous_residue_constraints():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    index, generators = EichlerRecursion().simultaneous_congruence_stabilizer_generators(
+        ambient, 4, vectors=((1, 0),), submodules=(((2, 0),),),
+        colour_classes={"axis": ((1, 0), (3, 0))},
+    )
+    assert index == 4
+    assert all(g.domain() is ambient for g in generators)

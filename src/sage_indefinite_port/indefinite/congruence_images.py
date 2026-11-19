@@ -150,6 +150,61 @@ class IntegralCongruenceImage:
                 allowed.append(image)
         return self.preimage_generators(allowed)
 
+    def simultaneous_residue_stabilizer(self, *, vectors=(), submodules=(), flags=(), colour_classes=None):
+        r"""Preimage of the intersection of any finite family of residue stabilizers.
+
+        All constraints are tested against each element of the same actual
+        reduction image before a single Schreier preimage is constructed.
+        """
+        from sage.modules.free_module_element import vector
+
+        fixed_vectors = tuple(vector(self.ring, x) for x in vectors)
+        if any(len(x) != self.rank for x in fixed_vectors):
+            raise ValueError("residue vector has the wrong rank")
+
+        def generated(rows):
+            rows = tuple(vector(self.ring, x) for x in rows)
+            if any(len(x) != self.rank for x in rows):
+                raise ValueError("residue submodule generator has the wrong rank")
+            zero = vector(self.ring, [0] * self.rank)
+            members = {tuple(zero)}
+            queue = deque([zero])
+            while queue:
+                x = queue.popleft()
+                for y in rows:
+                    z = x + y
+                    if tuple(z) not in members:
+                        members.add(tuple(z))
+                        queue.append(z)
+            return rows, members
+
+        modules = tuple(generated(rows) for rows in submodules)
+        flag_data = tuple(tuple(generated(stage) for stage in stages) for stages in flags)
+        for flag in flag_data:
+            if any(not left[1] <= right[1] for left, right in zip(flag, flag[1:])):
+                raise ValueError("residue flag stages must be nested")
+        colours = []
+        for points in (colour_classes or {}).values():
+            values = frozenset(tuple(vector(self.ring, x)) for x in points)
+            if any(len(x) != self.rank for x in values):
+                raise ValueError("coloured residue vector has the wrong rank")
+            colours.append(values)
+
+        allowed = []
+        for lift in self._lifts.values():
+            image = self.reduce(lift)
+            if not all(image * x == x for x in fixed_vectors):
+                continue
+            if not all(all(tuple(image * x) in members for x in rows) for rows, members in modules):
+                continue
+            if not all(all(all(tuple(image * x) in members for x in rows) for rows, members in flag)
+                       for flag in flag_data):
+                continue
+            if not all({tuple(image * vector(self.ring, x)) for x in points} == points for points in colours):
+                continue
+            allowed.append(image)
+        return self.preimage_generators(allowed)
+
     def finite_index_sublattice_stabilizer(self, basis):
         r"""Preimage stabilizing a full-rank sublattice ``M`` of ``Z^rank``.
 

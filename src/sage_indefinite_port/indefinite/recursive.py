@@ -1146,6 +1146,14 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def simultaneous_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, *, vectors=(), submodules=(), flags=(), colour_classes=None):
+        r"""Integral stabilizer of simultaneous finite-level residue constraints."""
+        image = self.congruence_image(lattice, modulus)
+        index, matrices = image.simultaneous_residue_stabilizer(
+            vectors=vectors, submodules=submodules, flags=flags, colour_classes=colour_classes
+        )
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
         r"""Integral isometries preserving the specified finite-index sublattice.
 
