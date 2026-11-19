@@ -1197,6 +1197,53 @@ class EichlerRecursion:
         index, matrices = image.relative_level_kernel(target_modulus)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Exact joint preimage of multilevel residues and finite characters.
+
+        ``allowed_characters`` is a subgroup of the actual joint character
+        image (without a congruence factor). All level constraints are
+        imposed in the *same* actual joint image at their lcm level, so
+        correlations between characters and congruence conditions survive.
+        """
+        from math import lcm
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+        constraints = tuple(constraints)
+        modulus = 1
+        for level, _ in constraints:
+            if int(level) < 2:
+                raise ValueError("each congruence level must be at least two")
+            modulus = lcm(modulus, int(level))
+        joint = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, field_map=field_map,
+            form_multiplier=form_multiplier,
+            level_modulus=modulus if constraints else None,
+            ambient_generators=ambient_generators,
+        )
+        allowed_characters = frozenset(allowed_characters)
+        character_image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, field_map=field_map,
+            form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators,
+        )
+        if allowed_characters != character_image.subgroup_from_generators(allowed_characters):
+            raise ValueError("allowed characters must be an actual subgroup")
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank) if constraints else None
+        conditions = []
+        for level, data in constraints:
+            target, projection = residue.project_to_level(int(level))
+            conditions.append((target, projection, target.simultaneous_residue_stabilizer_keys(**data)))
+        allowed = []
+        for key, witness in joint._lifts.items():
+            if (key[1:] if constraints else key) not in allowed_characters:
+                continue
+            if all(target._key(projection(residue.reduce(witness))) in keys
+                   for target, projection, keys in conditions):
+                allowed.append(key)
+        index, matrices = joint.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
         r"""Integral isometries preserving the specified finite-index sublattice.
 

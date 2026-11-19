@@ -1002,3 +1002,21 @@ def test_restricted_transporter_rejects_stabilizer_outside_proper_ambient_group(
         image.restricted_transporter((image.identity,), image.one,
                                      (matrix(ZZ, [[0, 1], [1, 0]]),))
     assert image.restricted_transporter((image.identity,), image.one, ()) == image.one
+
+
+def test_multilevel_joint_determinant_preimage_preserves_correlations():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    characters = engine.joint_discriminant_character_image(ambient, determinant=True)
+    positive = characters.subgroup_from_membership(lambda key: key[-1] == 1)
+    conditions = ((2, {"vectors": ((1, 0),)}), (3, {"vectors": ((1, 0),)}))
+    index, generators = engine.multilevel_joint_character_preimage_generators(
+        ambient, conditions, positive, determinant=True
+    )
+    assert index >= 1
+    for g in generators:
+        assert g.determinant() == 1
+        assert tuple(int(x) % 6 for x in g(ambient.module_generators()[0]).to_vector()) == (1, 0)
