@@ -1020,3 +1020,30 @@ def test_multilevel_joint_determinant_preimage_preserves_correlations():
     for g in generators:
         assert g.determinant() == 1
         assert tuple(int(x) % 6 for x in g(ambient.module_generators()[0]).to_vector()) == (1, 0)
+
+
+def test_multilevel_joint_character_preimage_in_proper_ambient_group():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    negative = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    character = engine.joint_discriminant_character_image(
+        ambient, determinant=True, ambient_generators=(negative,)
+    )
+    all_characters = character.image_keys()
+    constraints = ((2, {"vectors": ((1, 0),)}), (3, {"vectors": ((1, 0),)}))
+    index, generators = engine.multilevel_joint_character_preimage_generators(
+        ambient, constraints, all_characters, determinant=True,
+        ambient_generators=(negative,),
+    )
+    assert index == 2
+    assert all(g(e) == e and g(f) == f for g in generators)
+    index, generators = engine.multilevel_joint_character_preimage_generators(
+        ambient, (), all_characters, determinant=True,
+        ambient_generators=(negative,),
+    )
+    assert index == 1
+    assert any(g(e) == -e and g(f) == -f for g in generators)
