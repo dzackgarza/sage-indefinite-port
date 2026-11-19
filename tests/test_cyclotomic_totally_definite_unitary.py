@@ -62,3 +62,35 @@ def test_mixed_archimedean_signs_have_the_complete_finite_unitary_centralizer():
         [int(g(v).to_vector()(label)) for v in lattice.module_generators()] for label in labels
     ]) for g in generators]
     assert MatrixGroup([M.change_ring(GF(3)) for M in matrices]).order() == 200
+
+
+def test_indefinite_eisenstein_binary_unitary_has_complete_public_generators():
+    r"""The order-three centralizer on A2+A2(-1) is the full infinite U(1,1;O_E).
+
+    The arithmetic commutant model gives seven integral generators,
+    including a nonidentity unipotent of infinite order. Their actual
+    mod-3 image is a group of order 108. The public O(L)-centralizer must
+    expose the complete integer generators, not the finite mod-3 image
+    or an unconditional refusal of an indefinite Hermitian component.
+    """
+    lattice = Lattices(ZZ)([[2, -1], [-1, 2]]) + Lattices(ZZ)([[-2, 1], [1, -2]])
+    labels = tuple(lattice.module_generating_set())
+    a1, a2, b1, b2 = lattice.module_generators()
+    rotation = lattice.O()({
+        labels[0]: a2, labels[1]: -a1 - a2,
+        labels[2]: b2, labels[3]: -b1 - b2,
+    })
+    generators = tuple(lattice.O().centralizer(rotation).group_generators())
+    assert generators
+    assert all(g.domain() is lattice and g.codomain() is lattice for g in generators)
+    assert all(g * rotation == rotation * g for g in generators)
+
+    matrices = [matrix(SageZZ, [
+        [int(g(v).to_vector()(label)) for v in lattice.module_generators()]
+        for label in labels
+    ]) for g in generators]
+    assert MatrixGroup([M.change_ring(GF(3)) for M in matrices]).order() == 108
+    one = identity_matrix(SageZZ, 4)
+    # A nontrivial unipotent element has infinite order over ZZ:
+    # (1+N)^k = 1 + kN for N^2=0 and k != 0.
+    assert any(M != one and (M - one)**2 == 0 for M in matrices)
