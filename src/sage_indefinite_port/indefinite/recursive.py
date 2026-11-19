@@ -1096,6 +1096,27 @@ class EichlerRecursion:
         self._models: dict[Lattices.ParentMethods, OrbitCoverModel] = {}
         self._isotropic_actions: dict[_IsotropicActionKey, IntegralStructureAction] = {}
 
+    def congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+        r"""Actual finite image of ``O(lattice)`` on ``L / modulus L`` (#42).
+
+        Uses the complete constructive integral orthogonal generators and the
+        lattice's coordinate-label order. Composite moduli are supported.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        generators = self.orthogonal_group_generators(lattice)
+        return IntegralCongruenceImage(
+            tuple(_column_matrix(g) for g in generators),
+            modulus,
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, residue):
+        r"""Integral isometries fixing a coordinate residue modulo ``modulus``."""
+        image = self.congruence_image(lattice, modulus)
+        index, matrices = image.residue_vector_stabilizer(residue)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 
