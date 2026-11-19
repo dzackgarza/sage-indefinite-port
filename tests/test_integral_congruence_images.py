@@ -55,3 +55,18 @@ def test_residue_vector_stabilizer_uses_actual_image():
     index_zero, whole = image.residue_vector_stabilizer((0, 0))
     assert index_zero == 1
     assert whole
+
+
+def test_lattice_consumer_returns_integral_isometries_at_composite_level():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    image = engine.congruence_image(ambient, 4)
+    assert len(image.image_keys()) == 4
+    index, stabilizer = engine.congruence_stabilizer_generators(ambient, 4, (1, 0))
+    assert index == 4
+    for g in stabilizer:
+        assert g.domain() is ambient and g.codomain() is ambient
+        assert tuple(int(x) % 4 for x in g(ambient.module_generators()[0]).to_vector()) == (1, 0)
