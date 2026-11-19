@@ -217,3 +217,31 @@ def test_public_real_spinor_joint_level_uses_normalized_character():
     index, generators = engine.joint_real_spinor_congruence_preimage_generators(ambient, 2, (image.identity,))
     assert index == len(image.image_keys())
     assert all(g.domain() is ambient for g in generators)
+
+
+def test_joint_two_signs_are_correlated_in_actual_image():
+    from sage_indefinite_port.indefinite.congruence_images import JointTwoSignsCongruenceImage
+
+    minus = -identity_matrix(ZZ, 3)
+    image = JointTwoSignsCongruenceImage((minus,), 2, lambda g: int(g.det()), lambda g: int(g.det()))
+    assert len(image.image_keys()) == 2
+    assert image.image(minus) == (image.identity[0], -1, -1)
+    assert (image.identity[0], -1, 1) not in image.image_keys()
+    index, generators = image.preimage_generators((image.identity,))
+    assert index == 2
+    assert all(image.image(g) == image.identity for g in generators)
+
+
+def test_public_joint_level_determinant_and_real_spinor():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_determinant_real_spinor_congruence_image(ambient, 2)
+    assert all(len(key) == 3 for key in image.image_keys())
+    index, generators = engine.joint_determinant_real_spinor_congruence_preimage_generators(
+        ambient, 2, (image.identity,)
+    )
+    assert index == len(image.image_keys())
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)

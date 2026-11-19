@@ -291,3 +291,39 @@ class JointSignCongruenceImage(JointDeterminantCongruenceImage):
         if value not in (1, -1):
             raise ValueError("sign must take values in {+1,-1}")
         return (self.reduction._key(self.reduction.reduce(g)), int(value))
+
+
+class JointTwoSignsCongruenceImage(JointSignCongruenceImage):
+    r"""Actual joint image of level reduction and two independent sign characters.
+
+    The image lies in ``GL_n(Z/m) x C2 x C2`` but is *not* assumed to
+    equal the product of the separate images.
+    """
+
+    def __init__(self, generators, modulus, first_sign, second_sign, rank=None):
+        self.second_sign = second_sign
+        super().__init__(generators, modulus, first_sign, rank=rank)
+
+    @property
+    def identity(self):
+        return (self.reduction._key(self.reduction.image_one), 1, 1)
+
+    @identity.setter
+    def identity(self, value):
+        # The parent initializes its two-factor identity; the third sign is
+        # supplied by this subclass's read-only three-factor identity.
+        if value != self.identity[:2]:
+            raise ValueError("invalid identity in joint sign image")
+
+    def image(self, g):
+        reduced, first = super().image(g)
+        second = self.second_sign(matrix(ZZ, g))
+        if second not in (1, -1):
+            raise ValueError("second sign must take values in {+1,-1}")
+        return (reduced, first, int(second))
+
+    def _multiply(self, left, right):
+        ring, rank = self.reduction.ring, self.reduction.rank
+        a = matrix(ring, rank, rank, left[0])
+        b = matrix(ring, rank, rank, right[0])
+        return (self.reduction._key(a * b), left[1] * right[1], left[2] * right[2])

@@ -1183,6 +1183,29 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def joint_determinant_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+        r"""Actual image of level, determinant and normalized real-spinor signs."""
+        from sage_indefinite_port.indefinite.congruence_images import JointTwoSignsCongruenceImage
+
+        character = lattice.O_plus().preimage_morphism()
+
+        def spinor(columns):
+            isometry = _isometry_from_column_matrix(lattice, lattice, columns)
+            return 1 if character(isometry).is_one() else -1
+
+        generators = self.orthogonal_group_generators(lattice)
+        return JointTwoSignsCongruenceImage(
+            tuple(_column_matrix(g) for g in generators), modulus,
+            lambda g: int(g.det()), spinor,
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_determinant_real_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+        r"""Integral preimage generators for a subgroup of the actual triple image."""
+        image = self.joint_determinant_real_spinor_congruence_image(lattice, modulus)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 
