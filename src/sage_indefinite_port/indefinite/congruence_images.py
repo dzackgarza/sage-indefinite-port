@@ -105,6 +105,39 @@ class IntegralCongruenceImage:
                 allowed.append(image)
         return self.preimage_generators(allowed)
 
+    def residue_flag_stabilizer(self, stages):
+        r"""Exact inverse image of the stabilizer of a nested residue-module flag.
+
+        Each stage is an iterable of generators. No freeness or direct-summand
+        assumption is made, including at composite level.
+        """
+        from sage.modules.free_module_element import vector
+
+        flags = []
+        for stage in stages:
+            rows = tuple(vector(self.ring, x) for x in stage)
+            if any(len(x) != self.rank for x in rows):
+                raise ValueError("residue flag generator has the wrong rank")
+            zero = vector(self.ring, [0] * self.rank)
+            members = {tuple(zero)}
+            queue = deque([zero])
+            while queue:
+                x = queue.popleft()
+                for y in rows:
+                    z = x + y
+                    if tuple(z) not in members:
+                        members.add(tuple(z))
+                        queue.append(z)
+            flags.append((rows, members))
+        if any(not left <= right for (_, left), (_, right) in zip(flags, flags[1:])):
+            raise ValueError("residue flag stages must be nested")
+        allowed = []
+        for lift in self._lifts.values():
+            image = self.reduce(lift)
+            if all(all(tuple(image * x) in members for x in rows) for rows, members in flags):
+                allowed.append(image)
+        return self.preimage_generators(allowed)
+
     def preimage_generators(self, allowed):
         r"""Generators of the inverse image of a subgroup of the actual image.
 

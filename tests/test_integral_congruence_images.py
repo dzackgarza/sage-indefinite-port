@@ -96,3 +96,26 @@ def test_public_lattice_composite_residue_submodule_stabilizer():
     for g in generators:
         point = tuple(int(x) % 4 for x in g(2 * ambient.module_generators()[0]).to_vector())
         assert point in ((0, 0), (2, 0))
+
+
+def test_composite_residue_flag_and_nesting_rejection():
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    image = IntegralCongruenceImage((swap, -identity_matrix(ZZ, 2)), 4)
+    index, generators = image.residue_flag_stabilizer((((2, 0),), ((1, 0),)))
+    assert index == 2
+    assert all(tuple(g.change_ring(image.ring) * vector(image.ring, (2, 0))) == (2, 0) for g in generators)
+    with pytest.raises(ValueError):
+        image.residue_flag_stabilizer((((1, 0),), ((0, 1),)))
+
+
+def test_public_composite_residue_flag_stabilizer():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    index, generators = EichlerRecursion().congruence_flag_stabilizer_generators(
+        ambient, 4, (((2, 0),), ((1, 0),))
+    )
+    assert index == 2
+    assert all(tuple(int(x) % 4 for x in g(2 * ambient.module_generators()[0]).to_vector()) == (2, 0)
+               for g in generators)
