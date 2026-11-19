@@ -786,3 +786,20 @@ def test_actual_marked_stabilizer_excludes_ambient_kernel():
     assert all(image.image(g) == image.identity for g in stabilizer)
     # This is a subgroup of P, not the full congruence kernel of O(L).
     assert all(g in (identity_matrix(ZZ, 2), swap) for g in stabilizer)
+
+
+def test_public_actual_marked_stabilizer_uses_supplied_stabilizer_group():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    e, f = ambient.module_generators()
+    swap = ambient.O()((f, e))
+    image = engine.joint_discriminant_character_image(ambient, level_modulus=4)
+    index, generators = engine.joint_discriminant_marked_stabilizer_generators(
+        ambient, (image.identity,), (swap,), image.identity, level_modulus=4
+    )
+    assert index == 2
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
+    assert all(g(e) in (e, f) and g(f) in (e, f) for g in generators)

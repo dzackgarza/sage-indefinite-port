@@ -1453,6 +1453,27 @@ class EichlerRecursion:
             ))
         return tuple(result)
 
+    def joint_discriminant_marked_stabilizer_generators(self, lattice: Lattices.ParentMethods, left_subgroup, stabilizer_generators, representative, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Generators of the *actual* marked stabilizer ``Gamma intersect gPg^-1``.
+
+        The supplied ``stabilizer_generators`` must generate the ambient
+        stabilizer P of the marking. Schreier is performed in P, so the
+        kernel of the finite character is not incorrectly presumed to
+        stabilize the marking. ``representative`` is an actual-image key.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in stabilizer_generators):
+            raise ValueError("stabilizer generators must be automorphisms of the supplied lattice")
+        index, matrices = image.conjugate_stabilizer_generators(
+            left_subgroup, tuple(_column_matrix(g) for g in stabilizer_generators), representative
+        )
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def stable_orthogonal_generators(self, lattice: Lattices.ParentMethods):
         r"""Constructive generators of the discriminant kernel ``O~(L)``."""
         image = self.joint_discriminant_character_image(lattice)
