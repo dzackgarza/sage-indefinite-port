@@ -1227,6 +1227,52 @@ class LorentzianPerfectLocalBackend:
         If ``square`` is specified, filter in integer coordinates before
         constructing owned lattice elements.
         """
+        if square == 0:
+            # Every generator of a certified perfect cell has nonnegative
+            # Lorentzian square. Verify that they also lie on a *single*
+            # future/past component, rather than assuming it of arbitrary
+            # user-constructed cells. A timelike sum S whose signed pairings
+            # with every generator are positive certifies that component.
+            #
+            # The future causal cone is strictly convex at each null ray:
+            # if null v = x+y with causal future x,y, the reverse
+            # Cauchy-Schwarz inequality gives q(x),q(y),b(x,y)>=0; from
+            # q(v)=0 all three vanish and x,y lie on the same null ray.
+            # Consequently EVERY null generator of this finitely generated
+            # cone is extreme, and every null extreme ray occurs among its
+            # generators. This proves exact completeness by one linear scan,
+            # without any polyhedral V/H conversion or facet enumeration.
+            gram = _gram_matrix(cell.lattice)
+            positive, negative = (int(value) for value in cell.lattice.signature_pair())
+            sign = 1 if positive == 1 else -1
+            signed_gram = gram if sign == 1 else -gram
+            rank = int(gram.nrows())
+            total = vector(SageZZ, (
+                sum(int(row[j]) for row in cell.rows) for j in range(rank)
+            ))
+            covector = signed_gram * total.column()
+            time_square = (total * covector)[0]
+            if time_square > 0:
+                rays_matrix = matrix(SageZZ, cell.rows)
+                time_pairings = rays_matrix * covector
+                if all(int(pairing) > 0 for pairing in time_pairings.list()):
+                    seen = set()
+                    primitive = []
+                    for row, norm in zip(
+                        cell.rows,
+                        _ConfigurationPairings(cell.rows, gram).diagonal(),
+                        strict=True,
+                    ):
+                        if norm != 0:
+                            continue
+                        content = gcd(*map(int, row))
+                        if not content:
+                            raise ArithmeticError("a null perfect-cell generator is zero")
+                        reduced = tuple(int(entry) // content for entry in row)
+                        if reduced not in seen:
+                            seen.add(reduced)
+                            primitive.append(_ambient_element(cell.lattice, reduced))
+                    return tuple(primitive)
         # A high-rank cell with very few rays can nevertheless have an
         # exponential number of facets: the 33-vector rank-17 source
         # crosspolytope has 65,536. Building a PPL cone forces that dual

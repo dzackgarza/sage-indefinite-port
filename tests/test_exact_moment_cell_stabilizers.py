@@ -385,6 +385,15 @@ def test_rank_seventeen_primal_extreme_rays_do_not_construct_exponential_dual(mo
             AssertionError("primitive null rays must not build the dual PPL cone")
         ),
     )
+    # The causal-cone proof eliminates both PPL and Normaliz, rather
+    # than merely switching between two costly polyhedral backends.
+    import sage.geometry.polyhedron.backend_normaliz as normaliz_backend
+    monkeypatch.setattr(
+        normaliz_backend, "NmzCone",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("primitive null rays require no V/H conversion")
+        ),
+    )
     rays = tuple(backend.cell_primitive_rays(cell, square=0))
     assert len(rays) == 32
     assert len(set(rays)) == 32
