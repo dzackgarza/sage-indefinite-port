@@ -113,9 +113,15 @@ def _mixed_marking_transporter(lattice, source, target):
     block_matrix = matrix(ZZ, [coordinates(v) for v in block_target])
     complement = (block_matrix * ambient).right_kernel().basis_matrix()
     together = block_matrix.stack(complement)
-    assert abs(together.det()) == 1, (
-        f"{block_target} does not split off {lattice}: its stabilizer needs the glue of the complement"
-    )
+    if not together.is_square() or abs(together.det()) != 1:
+        # A primitive nondegenerate summand need not split off integrally.
+        # Its orthogonal complement can meet it in an overlattice with
+        # nontrivial discriminant glue (e.g. <e+f> in U has index two).
+        # The direct-product O(S) x O(S^perp) construction below is exact
+        # only at index one. Pass a genuinely glued marking to the full
+        # based Coslice Isom algorithm, which checks the integral gluing
+        # conditions rather than asserting or discarding the orbit.
+        return NotImplemented
     assemble = lambda row: sum(
         (lattice.scalar_multiple(int(c), g) for c, g in zip(row, frame, strict=True)), lattice.zero()
     )
