@@ -1183,3 +1183,28 @@ def test_owned_finite_index_sublattice_stabilizer():
         engine.finite_index_sublattice_stabilizer_subgroup(
             ambient, 4, ((3, 0), (0, 1)),
         )
+
+
+def test_owned_multilevel_residue_stabilizer_preserves_joint_constraints():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    negative = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    constraints = ((2, {"vectors": ((1, 0),)}), (3, {"vectors": ((1, 0),)}))
+    subgroup = engine.multilevel_congruence_stabilizer_subgroup(
+        ambient, constraints, ambient_generators=(negative,),
+    )
+    assert ambient.O().identity() in subgroup
+    assert negative not in subgroup
+    _, generators = engine.multilevel_congruence_stabilizer_generators(
+        ambient, constraints, ambient_generators=(negative,),
+    )
+    assert all(g in subgroup for g in generators)
+    whole = engine.multilevel_congruence_stabilizer_subgroup(
+        ambient, ((2, {"vectors": ((1, 0),)}),),
+        ambient_generators=(negative,),
+    )
+    assert negative in whole

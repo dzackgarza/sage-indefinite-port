@@ -1186,6 +1186,42 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(image.reduce(image._lifts[key]) for key in allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def multilevel_congruence_stabilizer_subgroup(self, lattice: Lattices.ParentMethods, constraints, *, ambient_generators=None):
+        r"""Owned simultaneous residue stabilizer for several congruence levels.
+
+        Constraints are pulled back to their least common multiple and
+        intersected in the actual integral image, with no character-kernel
+        restriction. This retains correlations across different levels.
+        """
+        from math import lcm
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        constraints = tuple(constraints)
+        if not constraints:
+            raise ValueError("at least one congruence level is required")
+        if any(int(level) < 2 for level, _ in constraints):
+            raise ValueError("each congruence level must be at least two")
+        modulus = lcm(*(int(level) for level, _ in constraints))
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        conditions = []
+        for level, data in constraints:
+            target, projection = residue.project_to_level(int(level))
+            conditions.append((target, projection, target.simultaneous_residue_stabilizer_keys(**data)))
+        allowed = joint.subgroup_from_membership(
+            lambda key: all(
+                target._key(projection(residue.reduce(joint.section(key)))) in keys
+                for target, projection, keys in conditions
+            )
+        )
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
     def relative_congruence_kernel_generators(self, lattice: Lattices.ParentMethods, source_modulus: int, target_modulus: int, *, ambient_generators=None):
         r"""Owned generators for the kernel of reduction to a divisor level.
 
