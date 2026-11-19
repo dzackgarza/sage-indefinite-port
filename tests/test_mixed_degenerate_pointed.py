@@ -3,8 +3,8 @@ import pytest
 from tests.acceptance.consumer import lattice
 
 
-@pytest.mark.parametrize("radical_rank", (1, 2))
-def test_radical_first_maximal_null_flag_classes_in_u_plus_zero(radical_rank):
+@pytest.mark.parametrize("radical_rank,dimensions", ((1, (1, 2)), (2, (2, 3)), (2, (1, 2, 3))))
+def test_radical_first_maximal_null_flag_classes_in_u_plus_zero(radical_rank, dimensions):
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
     from sage_indefinite_port.indefinite.marked_lattices import (
@@ -13,15 +13,16 @@ def test_radical_first_maximal_null_flag_classes_in_u_plus_zero(radical_rank):
 
     ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * radical_rank for _ in range(radical_rank)])
     e, f, *radical = tuple(ambient.module_generators())
-    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
-    shape = category(_flag_marking_from_basis(ambient, (*radical, e), (radical_rank, radical_rank + 1)))
+    category = Cat().Mor(FiniteOrdinalCategory(len(dimensions) + 1), Lattices(ZZ))
+    shape = category(_flag_marking_from_basis(ambient, (*radical, e), dimensions))
     classes = tuple(primitive_marking_classes(category, shape, ambient))
     assert len(classes) == 1
-    first, second = _flag_arrows(classes[0])
-    assert (int(first.domain().rank()), int(second.domain().rank())) == (radical_rank, radical_rank + 1)
+    arrows = _flag_arrows(classes[0])
+    assert tuple(int(arrow.domain().rank()) for arrow in arrows) == dimensions
     radical_inclusion = ambient.primitive_isotropic_subobject(*radical).inclusion()
-    assert all(radical_inclusion.is_in_image(second(first(point)))
-               for point in first.domain().module_generators())
+    full_radical_arrow = arrows[-2]
+    assert all(radical_inclusion.is_in_image(arrows[-1](full_radical_arrow(point)))
+               for point in full_radical_arrow.domain().module_generators())
 
 
 def test_mixed_radical_shear_positive_and_negative_transporters():
