@@ -707,3 +707,25 @@ def test_joint_finite_double_cosets_and_intersections():
         intersection = image.double_coset_intersection(left, right, key)
         assert len(orbit) * len(intersection) == len(left) * len(right)
     assert covered == image.image_keys()
+
+
+def test_public_joint_character_double_cosets_return_owned_isometries():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True, level_modulus=4
+    )
+    left = image.subgroup_from_membership(lambda key: key[2] == 1)
+    right = image.subgroup_from_membership(lambda key: key[3] == 1)
+    classes = engine.joint_discriminant_double_coset_representatives(
+        ambient, left, right, determinant=True, real_spinor=True, level_modulus=4
+    )
+    assert len(classes) == len(image.double_coset_representatives(left, right))
+    for key, witness, intersection in classes:
+        assert witness.domain() is ambient and witness.codomain() is ambient
+        assert image.image(matrix(ZZ, [[int(x) for x in witness(v).to_vector()]
+                                       for v in ambient.module_generators()]).transpose()) == key
+        assert intersection == image.double_coset_intersection(left, right, key)

@@ -1413,6 +1413,23 @@ class EichlerRecursion:
             generating_morphism=ambient.free_cover(generators),
         )
 
+    def joint_discriminant_double_coset_representatives(self, lattice: Lattices.ParentMethods, left_subgroup, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Actual joint-character double cosets, with integral isometry witnesses.
+
+        The two subgroups are given as collections of keys in the generated
+        joint finite image, not in the nominal product target. The returned
+        witnesses are owned lattice automorphisms.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        return tuple((key, _isometry_from_column_matrix(lattice, lattice, witness),
+                      image.double_coset_intersection(left_subgroup, right_subgroup, key))
+                     for key, witness in image.double_coset_representatives(left_subgroup, right_subgroup))
+
     def stable_orthogonal_generators(self, lattice: Lattices.ParentMethods):
         r"""Constructive generators of the discriminant kernel ``O~(L)``."""
         image = self.joint_discriminant_character_image(lattice)
