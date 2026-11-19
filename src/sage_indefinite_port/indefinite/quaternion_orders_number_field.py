@@ -23,7 +23,7 @@ maximal `O_i \supseteq O`; with `\alpha` generating the connecting ideal `O_i O_
 """
 
 from collections import deque
-from itertools import combinations, product
+from itertools import combinations
 
 from sage.matrix.constructor import matrix
 from sage.matrix.special import identity_matrix
@@ -307,9 +307,19 @@ def _neighbours(lattices, maximal, prime):
     reduced = lattices.basis([algebra(g) * x for g in prime.basis() for x in maximal])
 
     def zero_divisor():
+        # Reduced norm is homogeneous quadratic and membership in P O_1 is
+        # homogeneous over the residue field. Every nonzero residue line has
+        # exactly one representative in these three affine projective charts.
+        # This replaces q^3 trials by q^2 + q + 1 without omitting a line.
+        residue_elements = tuple(residue)
+        def projective():
+            yield from ((residue.one(), b, c) for b in residue_elements for c in residue_elements)
+            yield from ((residue.zero(), residue.one(), c) for c in residue_elements)
+            yield residue.zero(), residue.zero(), residue.one()
+
         for x, x2 in combinations(maximal, 2):
-            for a, b, c in product(representatives, repeat=3):
-                z = algebra(a) + algebra(b) * x + algebra(c) * x2
+            for a, b, c in projective():
+                z = algebra(residue.lift(a)) + algebra(residue.lift(b)) * x + algebra(residue.lift(c)) * x2
                 # nrd(z) is integral for z in the order; it lies in P exactly when its residue is 0.
                 if residue(z.reduced_norm()) == 0 and not lattices.contains(reduced, [z]):
                     return z
