@@ -1233,6 +1233,23 @@ class EichlerRecursion:
         index, matrices = image.relative_level_kernel(target_modulus)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def relative_congruence_kernel_subgroup(self, lattice: Lattices.ParentMethods, source_modulus: int, target_modulus: int, *, ambient_generators=None):
+        r"""Owned inverse image of the kernel of reduction from m to d.
+
+        For d dividing m, the inverse image in the integral ambient group
+        equals its principal level-d subgroup; the source level controls
+        the admissibility of the specified finite quotient map.
+        """
+        from sage.rings.integer_ring import ZZ
+
+        source_modulus = ZZ(source_modulus)
+        target_modulus = ZZ(target_modulus)
+        if target_modulus < 2 or source_modulus % target_modulus:
+            raise ValueError("target level must be a divisor >= 2 of the source level")
+        return self.principal_congruence_subgroup(
+            lattice, target_modulus, ambient_generators=ambient_generators,
+        )
+
     def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Exact joint preimage of multilevel residues and finite characters.
 

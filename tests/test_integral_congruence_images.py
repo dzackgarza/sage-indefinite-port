@@ -1208,3 +1208,22 @@ def test_owned_multilevel_residue_stabilizer_preserves_joint_constraints():
         ambient_generators=(negative,),
     )
     assert negative in whole
+
+
+def test_owned_relative_congruence_kernel_and_invalid_projection():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    negative = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    subgroup = engine.relative_congruence_kernel_subgroup(ambient, 12, 3)
+    assert ambient.O().identity() in subgroup
+    assert negative not in subgroup
+    _, generators = engine.relative_congruence_kernel_generators(ambient, 12, 3)
+    assert all(g in subgroup for g in generators)
+    level_two = engine.relative_congruence_kernel_subgroup(ambient, 12, 2)
+    assert negative in level_two
+    with pytest.raises(ValueError):
+        engine.relative_congruence_kernel_subgroup(ambient, 12, 5)
