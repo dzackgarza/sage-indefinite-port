@@ -941,3 +941,22 @@ def test_public_relative_congruence_kernel_returns_owned_isometries():
     assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
     assert all(tuple(int(x) % 3 for x in g(v).to_vector()) == tuple(int(x) % 3 for x in v.to_vector())
                for g in generators for v in ambient.module_generators())
+
+
+def test_multilevel_constraints_on_proper_ambient_subgroup():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    e, f = ambient.module_generators()
+    negative = ambient.O()((-e, -f))
+    conditions = ((2, {"vectors": ((1, 0),)}),
+                  (3, {"vectors": ((1, 0),)}))
+    index, generators = engine.multilevel_congruence_stabilizer_generators(
+        ambient, conditions, ambient_generators=(negative,)
+    )
+    assert index == 2
+    assert all(g(e) == e and g(f) == f for g in generators)
+    assert len(engine.congruence_image(ambient, 6, ambient_generators=(negative,)).image_keys()) == 2
+    assert len(engine.congruence_image(ambient, 6, ambient_generators=()).image_keys()) == 1

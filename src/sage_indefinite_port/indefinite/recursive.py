@@ -1097,7 +1097,7 @@ class EichlerRecursion:
         self._models: dict[Lattices.ParentMethods, OrbitCoverModel] = {}
         self._isotropic_actions: dict[_IsotropicActionKey, IntegralStructureAction] = {}
 
-    def congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+    def congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
         r"""Actual finite image of ``O(lattice)`` on ``L / modulus L`` (#42).
 
         Uses the complete constructive integral orthogonal generators and the
@@ -1105,7 +1105,10 @@ class EichlerRecursion:
         """
         from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
 
-        generators = self.orthogonal_group_generators(lattice)
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
         return IntegralCongruenceImage(
             tuple(_column_matrix(g) for g in generators),
             modulus,
@@ -1155,7 +1158,7 @@ class EichlerRecursion:
         )
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def multilevel_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, constraints):
+    def multilevel_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, constraints, *, ambient_generators=None):
         r"""Exact simultaneous stabilizer of residue constraints at several levels.
 
         ``constraints`` consists of pairs ``(modulus, keyword_data)``, where
@@ -1173,7 +1176,7 @@ class EichlerRecursion:
             if int(level) < 2:
                 raise ValueError("each congruence level must be at least two")
             modulus = lcm(modulus, int(level))
-        image = self.congruence_image(lattice, modulus)
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         allowed = set(image.image_keys())
         for level, data in constraints:
             target, projection = image.project_to_level(int(level))
