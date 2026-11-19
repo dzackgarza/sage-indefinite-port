@@ -3,26 +3,26 @@ import pytest
 from tests.acceptance.consumer import lattice
 
 
-@pytest.mark.parametrize("radical_rank,dimensions", ((1, (1, 2)), (2, (2, 3)), (2, (1, 2, 3))))
-def test_radical_first_maximal_null_flag_classes_in_u_plus_zero(radical_rank, dimensions):
+@pytest.mark.parametrize("radical_rank,dimensions", (
+    (1, (1, 2)), (2, (2, 3)), (2, (1, 2, 3)),
+    (3, (1, 3, 4)), (3, (1, 2, 3, 4)),
+))
+def test_mixed_maximal_null_flag_finite_classifier_refuses_infinite_orbits(radical_rank, dimensions):
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
-    from sage_indefinite_port.indefinite.marked_lattices import (
-        _flag_arrows, _flag_marking_from_basis, primitive_marking_classes,
-    )
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, primitive_marking_classes
 
     ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * radical_rank for _ in range(radical_rank)])
     e, f, *radical = tuple(ambient.module_generators())
     category = Cat().Mor(FiniteOrdinalCategory(len(dimensions) + 1), Lattices(ZZ))
     shape = category(_flag_marking_from_basis(ambient, (*radical, e), dimensions))
-    classes = tuple(primitive_marking_classes(category, shape, ambient))
-    assert len(classes) == 1
-    arrows = _flag_arrows(classes[0])
-    assert tuple(int(arrow.domain().rank()) for arrow in arrows) == dimensions
-    radical_inclusion = ambient.primitive_isotropic_subobject(*radical).inclusion()
-    full_radical_arrow = arrows[-2]
-    assert all(radical_inclusion.is_in_image(arrows[-1](full_radical_arrow(point)))
-               for point in full_radical_arrow.domain().module_generators())
+    # The source specifies abstract zero-form ranks, not the condition
+    # that its penultimate term equal rad(L). In U + <0>, the flags
+    # <z + m e> < <z,e> have pairwise different projection content m
+    # in L/rad(L), for every m >= 1. The finite classifier cannot
+    # replace all of them with the radical-first representative.
+    with pytest.raises(ValueError, match="may be infinite"):
+        tuple(primitive_marking_classes(category, shape, ambient))
 
 
 def test_mixed_radical_shear_positive_and_negative_transporters():

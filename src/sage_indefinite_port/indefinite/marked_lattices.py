@@ -3478,45 +3478,6 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     raise ValueError("isotropic flag ranks must be positive and strictly increasing")
                 if dimensions[-1] > k + quotient_witt:
                     classes = ()
-                elif (quotient_witt == 1 and k > 0 and len(dimensions) >= 2
-                      and dimensions[-2:] == (k, k + 1)):
-                    # Every maximal null subspace contains the saturated
-                    # radical. The full radical is a characteristic term;
-                    # GL(rad L) acts transitively on its primitive flags
-                    # of prescribed dimensions. Its action extends to L
-                    # by the identity on the nondegenerate quotient.
-                    # Thus the orbit distinctions are exactly those of
-                    # the maximal subspace in the quotient.
-                    plane_source = lattice.lattice_category()([[0] * (k + 1) for _ in range(k + 1)])
-                    planes = primitive_marking_classes(ARROWS, plane_source, lattice)
-                    radical = tuple(reduction.isometry(reduced.module_generator(label))
-                                    for label in tuple(reduced.module_generating_set())[n:])
-                    from sage.matrix.constructor import matrix
-                    from sage.rings.integer_ring import ZZ as SageZZ
-                    from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
-
-                    def adapted_maximal_basis(plane):
-                        inclusion = plane.arrow()
-                        domain = inclusion.domain()
-                        labels = tuple(domain.module_generating_set())
-                        radical_rows = matrix(SageZZ, [
-                            [int(inclusion.lift(point).to_vector()(label)) for label in labels]
-                            for point in radical
-                        ])
-                        completion = _source_subspace_completion_int(radical_rows, k + 1)
-                        complement = domain.linear_combination({
-                            label: domain.base_ring()(int(completion[0, i]))
-                            for i, label in enumerate(labels)
-                        })
-                        return (*radical, inclusion(complement))
-                    classes = tuple(
-                        category(_flag_marking_from_basis(
-                            lattice,
-                            adapted_maximal_basis(plane),
-                            dimensions,
-                        ))
-                        for plane in planes
-                    )
                 elif quotient_witt:
                     raise ValueError(
                         "mixed degenerate primitive isotropic flag orbit sets may be infinite; "
