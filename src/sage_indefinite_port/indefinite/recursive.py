@@ -1304,6 +1304,55 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False):
+        r"""Actual joint discriminant/determinant/real-spinor image of O(L).
+
+        Uses the original discriminant-form action (quadratic if L is even,
+        bilinear otherwise) supplied by the provider. The real-spinor
+        character has the provider's normalized ``-b/2`` convention.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import JointDiscriminantCharacterImage
+
+        rho = lattice.discriminant_representation()
+        signs = []
+        identities = [rho.codomain().one()]
+        if determinant:
+            signs.append(lambda g: int(g.determinant()))
+            identities.append(1)
+        if real_spinor:
+            spinor = lattice.O_plus().preimage_morphism()
+            signs.append(lambda g: 1 if spinor(g).is_one() else -1)
+            identities.append(1)
+
+        def as_isometry(columns):
+            return _isometry_from_column_matrix(lattice, lattice, columns)
+
+        generators = self.orthogonal_group_generators(lattice)
+        return JointDiscriminantCharacterImage(
+            tuple(_column_matrix(g) for g in generators),
+            lambda g: rho(as_isometry(g)),
+            tuple((lambda g, chi=chi: chi(as_isometry(g))) for chi in signs),
+            identities,
+        )
+
+    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False):
+        r"""Integral preimage generators for an actual joint discriminant subgroup."""
+        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def stable_orthogonal_generators(self, lattice: Lattices.ParentMethods):
+        r"""Constructive generators of the discriminant kernel ``O~(L)``."""
+        image = self.joint_discriminant_character_image(lattice)
+        index, matrices = image.preimage_generators((image.identity,))
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def stable_positive_orthogonal_generators(self, lattice: Lattices.ParentMethods):
+        r"""Constructive generators of ``ker(discriminant) intersect O^+(L)``."""
+        image = self.joint_discriminant_character_image(lattice, real_spinor=True)
+        index, matrices = image.preimage_generators((image.identity,))
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 

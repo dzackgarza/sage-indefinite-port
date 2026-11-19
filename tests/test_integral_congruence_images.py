@@ -392,3 +392,34 @@ def test_public_simultaneous_residue_constraints():
     )
     assert index == 4
     assert all(g.domain() is ambient for g in generators)
+
+
+def test_public_joint_discriminant_determinant_real_spinor_image():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(ambient, determinant=True, real_spinor=True)
+    assert image.identity in image.image_keys()
+    assert all(len(key) == 3 for key in image.image_keys())
+    assert all(image.image(image.section(key)) == key for key in image.image_keys())
+    index, generators = engine.joint_discriminant_character_preimage_generators(
+        ambient, (image.identity,), determinant=True, real_spinor=True
+    )
+    assert index == len(image.image_keys())
+    assert all(g.discriminant_morphism().is_one() and g.determinant() == 1
+               and g in ambient.O_plus() for g in generators)
+
+
+def test_stable_and_stable_positive_kernels_are_distinct_exact_preimages():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    stable_index, stable = engine.stable_orthogonal_generators(ambient)
+    positive_index, positive = engine.stable_positive_orthogonal_generators(ambient)
+    assert positive_index >= stable_index
+    assert all(g.discriminant_morphism().is_one() for g in stable)
+    assert all(g.discriminant_morphism().is_one() and g in ambient.O_plus() for g in positive)

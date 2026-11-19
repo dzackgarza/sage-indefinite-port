@@ -582,3 +582,88 @@ class JointDeterminantFieldSpinorImage:
         assert len(transversal) * len(subgroup) == len(self._lifts)
         assert all(self.image(g) in subgroup for g in result)
         return len(transversal), tuple(result)
+
+
+class JointDiscriminantCharacterImage:
+    r"""Actual joint image of a discriminant action and finite characters.
+
+    ``discriminant`` evaluates an integral matrix as an element of the
+    provider's discriminant orthogonal group; ``characters`` are additional
+    homomorphisms to finite groups, including real spinor and determinant.
+    The target is their *generated joint image*, not the direct product.
+    """
+
+    def __init__(self, generators, discriminant, characters, identity):
+        self.generators = tuple(matrix(ZZ, g) for g in generators)
+        self.one = identity_matrix(ZZ, self.generators[0].nrows()) if self.generators else None
+        if self.one is None:
+            raise ValueError("rank must be known for an empty generating family")
+        self.discriminant = discriminant
+        self.characters = tuple(characters)
+        self.identity = tuple(identity)
+        if self.image(self.one) != self.identity:
+            raise ValueError("joint character identity mismatch")
+        self._lifts = {self.identity: self.one}
+        self._words = {self.identity: ()}
+        queue = deque([self.identity])
+        generator_images = tuple(self.image(g) for g in self.generators)
+        while queue:
+            key = queue.popleft()
+            for i, (g, value) in enumerate(zip(self.generators, generator_images)):
+                next_key = self._multiply(key, value)
+                if next_key not in self._lifts:
+                    self._lifts[next_key] = self._lifts[key] * g
+                    self._words[next_key] = self._words[key] + (i,)
+                    queue.append(next_key)
+        for lift in self._lifts.values():
+            for g, value in zip(self.generators, generator_images):
+                if self.image(lift * g) != self._multiply(self.image(lift), value):
+                    raise ValueError("a supplied joint character is not multiplicative")
+
+    def image(self, matrix_value):
+        g = matrix(ZZ, matrix_value)
+        if g.det() not in (1, -1):
+            raise ValueError("joint character requires an integral unimodular matrix")
+        return (self.discriminant(g), *(character(g) for character in self.characters))
+
+    @staticmethod
+    def _multiply(a, b):
+        return tuple(x * y for x, y in zip(a, b, strict=True))
+
+    def image_keys(self):
+        return frozenset(self._lifts)
+
+    def section(self, key):
+        return self._lifts[key]
+
+    def section_word(self, key):
+        return self._words[key]
+
+    def preimage_generators(self, allowed):
+        subgroup = set(allowed)
+        if self.identity not in subgroup or not subgroup <= self.image_keys():
+            raise ValueError("allowed must be contained in the actual joint image")
+        if any(self._multiply(a, b) not in subgroup for a in subgroup for b in subgroup):
+            raise ValueError("allowed is not a subgroup")
+        order = {key: i for i, key in enumerate(self._lifts)}
+
+        def coset_key(image):
+            return min((self._multiply(h, image) for h in subgroup), key=order.__getitem__)
+
+        transversal = {coset_key(self.identity): self.one}
+        queue = deque(transversal)
+        result = []
+        while queue:
+            t = transversal[queue.popleft()]
+            for g in self.generators:
+                moved = t * g
+                key = coset_key(self.image(moved))
+                if key not in transversal:
+                    transversal[key] = moved
+                    queue.append(key)
+                schreier = moved * transversal[key].inverse()
+                if schreier != self.one:
+                    result.append(schreier)
+        assert len(transversal) * len(subgroup) == len(self._lifts)
+        assert all(self.image(g) in subgroup for g in result)
+        return len(transversal), tuple(result)
