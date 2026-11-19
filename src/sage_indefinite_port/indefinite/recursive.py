@@ -1535,6 +1535,17 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def positive_cone_congruence_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+        r"""Owned inverse image of a level/component subgroup in O(L).
+
+        The component sign is independent of determinant and normalized
+        real spinor; retain the actual joint level/component correlations.
+        """
+        _, generators = self.joint_positive_cone_congruence_preimage_generators(
+            lattice, modulus, allowed,
+        )
+        return lattice.O().subgroup(generators)
+
     def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Actual joint discriminant/determinant/real- and field-spinor image.
 

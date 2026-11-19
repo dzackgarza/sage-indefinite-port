@@ -1241,3 +1241,20 @@ def test_owned_field_spinor_kernel_preserves_actual_character_not_level():
     assert negative not in subgroup
     _, generators = engine.field_spinor_kernel_generators(ambient)
     assert all(g in subgroup for g in generators)
+
+
+def test_owned_positive_cone_congruence_subgroup():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_positive_cone_congruence_image(ambient, 2)
+    allowed = tuple(key for key in image.image_keys() if key[1] == 1)
+    subgroup = engine.positive_cone_congruence_subgroup(ambient, 2, allowed)
+    assert ambient.O().identity() in subgroup
+    assert all(g.preserves_positive_cone() for g in subgroup.group_generators())
+    _, generators = engine.joint_positive_cone_congruence_preimage_generators(
+        ambient, 2, allowed,
+    )
+    assert all(g in subgroup for g in generators)
