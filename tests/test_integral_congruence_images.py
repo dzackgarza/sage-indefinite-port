@@ -729,3 +729,20 @@ def test_public_joint_character_double_cosets_return_owned_isometries():
         assert image.image(matrix(ZZ, [[int(x) for x in witness(v).to_vector()]
                                        for v in ambient.module_generators()]).transpose()) == key
         assert intersection == image.double_coset_intersection(left, right, key)
+
+
+def test_joint_double_coset_stabilizer_preimage_has_exact_index_and_generators():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    image = EichlerRecursion().joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True, level_modulus=4
+    )
+    left = image.subgroup_from_membership(lambda key: key[2] == 1)
+    right = image.subgroup_from_membership(lambda key: key[3] == 1)
+    for key, _ in image.double_coset_representatives(left, right):
+        intersection = image.double_coset_intersection(left, right, key)
+        index, generators = image.double_coset_stabilizer_preimage(left, right, key)
+        assert index * len(intersection) == len(image.image_keys())
+        assert all(image.image(g) in intersection for g in generators)

@@ -798,6 +798,20 @@ class JointDiscriminantCharacterImage:
         return frozenset(h for h in left
                          if self._multiply(self._multiply(inverse, h), representative) in right)
 
+    def double_coset_stabilizer_preimage(self, left_subgroup, right_subgroup, representative):
+        r"""Exact integral generators of ``rho^-1(H intersect r*K*r^-1)``.
+
+        This is the stabilizer of the double-coset marked representative
+        under the left preimage group, not merely a finite-image subgroup.
+        The index is measured in the ambient generated group.
+        """
+        intersection = self.double_coset_intersection(
+            left_subgroup, right_subgroup, representative
+        )
+        index, generators = self.preimage_generators(intersection)
+        assert index * len(intersection) == len(self._lifts)
+        return index, generators
+
     def preimage_generators(self, allowed):
         subgroup = set(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():
