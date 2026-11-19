@@ -639,6 +639,19 @@ class JointDiscriminantCharacterImage:
     def section_word(self, key):
         return self._words[key]
 
+    def preimage_membership(self, matrix_value, allowed):
+        r"""Exact membership in the preimage of a subgroup of the actual image."""
+        subgroup = set(allowed)
+        if self.identity not in subgroup or not subgroup <= self.image_keys():
+            raise ValueError("allowed must be contained in the actual joint image")
+        return self.image(matrix_value) in subgroup
+
+    def image_witness(self, key):
+        r"""Integral isometry-matrix witness lifting the specified joint image."""
+        witness = self.section(key)
+        assert self.image(witness) == key
+        return witness
+
     def preimage_generators(self, allowed):
         subgroup = set(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():

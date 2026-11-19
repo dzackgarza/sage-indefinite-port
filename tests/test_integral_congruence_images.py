@@ -423,3 +423,16 @@ def test_stable_and_stable_positive_kernels_are_distinct_exact_preimages():
     assert positive_index >= stable_index
     assert all(g.discriminant_morphism().is_one() for g in stable)
     assert all(g.discriminant_morphism().is_one() and g in ambient.O_plus() for g in positive)
+
+
+def test_joint_discriminant_preimage_membership_and_witness():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    image = EichlerRecursion().joint_discriminant_character_image(ambient, determinant=True, real_spinor=True)
+    for key in image.image_keys():
+        witness = image.image_witness(key)
+        assert image.image(witness) == key
+        assert image.preimage_membership(witness, (key, image.identity))
+    assert image.preimage_membership(image.one, (image.identity,))
