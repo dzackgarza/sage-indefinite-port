@@ -80,8 +80,18 @@ class IntegralCongruenceImage:
         return self.lift(image)
 
     def inclusion(self, other):
-        """Whether this generated finite image is contained in ``other``."""
-        return all(other.contains(self.reduce(lift)) for lift in self._lifts.values())
+        r"""Whether this finite image embeds in ``other`` at the *same level*.
+
+        Reduction images at distinct moduli are not subgroups of a common
+        matrix group. In particular, reducing representatives modulo the
+        wrong modulus can falsely certify containment. Compare images of
+        generators only after checking that both act on the same module.
+        """
+        if not isinstance(other, IntegralCongruenceImage):
+            raise TypeError("finite-image inclusion requires another congruence image")
+        if self.modulus != other.modulus or self.rank != other.rank:
+            raise ValueError("finite-image inclusion requires identical modulus and rank")
+        return all(other.contains(g) for g in self.image_generators)
 
     def residue_vector_stabilizer(self, coordinates):
         r"""Exact preimage of the stabilizer of a residue column vector.

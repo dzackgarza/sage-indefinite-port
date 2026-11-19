@@ -842,3 +842,20 @@ def test_public_restricted_transporter_returns_owned_witness_or_exact_negative()
     assert engine.joint_discriminant_restricted_transporter(
         ambient, allowed, swap, (negative,), level_modulus=4
     ) is None
+
+
+def test_congruence_image_inclusion_requires_same_finite_module():
+    from pytest import raises
+
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    negative = -identity_matrix(ZZ, 2)
+    small = IntegralCongruenceImage((negative,), 4)
+    large = IntegralCongruenceImage((negative, swap), 4)
+    assert small.inclusion(large)
+    assert not large.inclusion(small)
+    with raises(ValueError, match="identical modulus and rank"):
+        small.inclusion(IntegralCongruenceImage((negative,), 2))
+    with raises(ValueError, match="identical modulus and rank"):
+        small.inclusion(IntegralCongruenceImage((identity_matrix(ZZ, 3),), 4))
+    with raises(TypeError):
+        small.inclusion(object())
