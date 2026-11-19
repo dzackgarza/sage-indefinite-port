@@ -971,8 +971,9 @@ class RadicalCongruenceImage:
         `{D in GL_k(Z) : r D = r (mod modulus)}`, which is infinite and contains the congruence kernel
         `{D : D = 1 (mod modulus), r D = r}`. Agreement with `stabilizer_order` modulo the modulus is precisely a
         statement about that finite image and says nothing about the kernel, so no downstream claim of full
-        integral stabilizer generation may rest on this method. Generating the integral inverse image needs the
-        kernel as well, and that is a separate obligation which is **not** supplied here.
+        integral stabilizer generation may rest on this method. For the complete integral inverse image, including
+        its principal congruence kernel, use
+        :meth:`EichlerRecursion.radical_integral_row_stabilizer_generators`.
         """
         point, _ = self._orbit_gap(row)
         group = self.group.gap()
@@ -2512,6 +2513,46 @@ class EichlerRecursion:
             lifts=lifts,
             general_linear_order=int(GL(radical_rank, residue_ring).order()),
         )
+
+    def radical_integral_row_stabilizer_generators(self, lattice, modulus: int, row):
+        r"""Index and complete integral generators of ``{D in GL(R,Z) : row*D=row (mod m)}``.
+
+        This is the *full infinite inverse image* of the finite row
+        stabilizer, not just lifted generators of that finite subgroup.
+        In particular it contains the entire principal congruence kernel
+        of ``GL(R,Z)``. The actual integral finite image can be smaller than
+        ``GL(R,Z/m)``, since integral determinants are ±1; its order is
+        computed by :meth:`radical_congruence_image`, not inferred from
+        the larger finite general-linear group.
+
+        The radical is a free abelian module with zero pairing, so
+        ``O(R[0]) = GL(R,Z)`` *exactly*. We use the provider's owned
+        ``O(R[0]).congruence_vector_stabilizer``: it computes the actual
+        finite action, the finite stabilizer and the complete Schreier
+        preimage including its kernel. The provider uses column actions;
+        transposing its integral matrices changes to this port's row-right
+        convention ``row*D``. Transpose reverses multiplication but
+        preserves the generated set of all group words, hence the returned
+        matrices generate precisely the desired integral stabilizer.
+        """
+        image = self.radical_congruence_image(lattice, modulus)
+        rank = image.radical_rank
+        row = tuple(int(entry) for entry in row)
+        if len(row) != rank:
+            raise ValueError(f"a radical row must have {rank} entries, got {len(row)}")
+        radical = Lattices(ZZ)([[0] * rank for _ in range(rank)])
+        marked = _from_column(radical, row)
+        stabilizer = radical.O().congruence_vector_stabilizer(modulus, marked)
+        generators = tuple(_column_matrix(generator).transpose()
+                           for generator in stabilizer.group_generators())
+        residue = vector(Zmod(modulus), row)
+        for generator in generators:
+            if abs(int(generator.det())) != 1 or residue * generator.change_ring(Zmod(modulus)) != residue:
+                raise ArithmeticError("the provider's integral Schreier generator does not fix the radical residue")
+        index = int(stabilizer.index())
+        if index * image.stabilizer_order(row) != image.order:
+            raise ArithmeticError("the full integral preimage index disagrees with the actual finite radical image")
+        return index, generators
 
     def radical_stabilizer_congruence_image(self, lattice, modulus: int, fixed_row):
         r"""Actual mod-c image of the integral GL(R) stabilizer of a nonzero radical row.

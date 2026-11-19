@@ -975,6 +975,54 @@ def test_the_congruence_stabilizer_generators_lift_to_unimodular_matrices() -> N
     assert image_two.stabilizer_order((1, 0)) == 10
 
 
+def test_full_integral_radical_congruence_row_stabilizer_includes_schreier_kernel() -> None:
+    r"""Generate the *integral* preimage, not merely ten residue-stabilizer elements.
+
+    For GL_2(Z) on row (1,0) modulo 5, the finite image of order 240 has
+    a row stabilizer of order 10, hence an integral inverse image of index
+    24. Its kernel contains the infinite-order shear [[1,5],[0,1]], which
+    has trivial residue image, and cannot be ignored by lifting generators
+    of the order-ten finite group. The complete preimage must be obtained
+    by the provider's Schreier preimage with the full congruence kernel.
+    """
+    ambient = lattice(_RANK_TWO_GRAM)
+    image = _RECURSION.radical_congruence_image(ambient, 5)
+    assert image.order == 240 and image.stabilizer_order((1, 0)) == 10
+    index, generators = _RECURSION.radical_integral_row_stabilizer_generators(
+        ambient, 5, (1, 0),
+    )
+    assert index == 24 and generators
+    assert all(abs(int(g.det())) == 1 for g in generators)
+    assert all(vector(Zmod(5), [1, 0]) * g.change_ring(Zmod(5)) == vector(Zmod(5), [1, 0])
+               for g in generators)
+    assert int(MatrixGroup([g.change_ring(Zmod(5)) for g in generators]).order()) == 10
+
+    # The zero mark has no stabilizer restriction. The resulting integral
+    # generators have the entire 240-element determinant-±1 mod-5 image.
+    whole_index, whole_generators = _RECURSION.radical_integral_row_stabilizer_generators(
+        ambient, 5, (0, 0),
+    )
+    assert whole_index == 1
+    assert int(MatrixGroup([g.change_ring(Zmod(5)) for g in whole_generators]).order()) == 240
+
+    # Rank-one tests the ±1 determinant image, which is not all units mod 5.
+    rank_one = _degenerate_lattice()
+    one_index, one_generators = _RECURSION.radical_integral_row_stabilizer_generators(
+        rank_one, 5, (1,),
+    )
+    assert one_index == 2
+    assert all(g == identity_matrix(ZZ, 1) for g in one_generators)
+
+    # At a composite modulus, a nonprimitive row has an intermediate index.
+    composite_image = _RECURSION.radical_congruence_image(ambient, 6)
+    composite_index, composite_generators = _RECURSION.radical_integral_row_stabilizer_generators(
+        ambient, 6, (2, 0),
+    )
+    assert composite_index * composite_image.stabilizer_order((2, 0)) == composite_image.order
+    assert all(vector(Zmod(6), [2, 0]) * g.change_ring(Zmod(6)) == vector(Zmod(6), [2, 0])
+               for g in composite_generators)
+
+
 def test_a_proper_image_still_carries_the_rank_two_residue() -> None:
     r"""Vector transport is not group surjectivity: the image is proper (index two) and the residue still moves.
 
