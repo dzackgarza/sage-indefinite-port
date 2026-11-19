@@ -129,3 +129,24 @@ def test_full_radical_proper_projection_stabilizer_generators_are_complete():
                 frontier.append((moved_A,moved_d))
             assert len(reached) <= 8
     assert len(reached) == 8
+
+
+def test_proper_projection_partial_radical_marking_has_full_parabolic_generators():
+    r"""For L=U+<0>^2 and S=<e+f,r1>, the proper quotient
+    projection is P=<e+f>, and S cap R=<r1> has codimension
+    one in R. The stabilizer's rational blocks have
+    A in Stab_O(U)(P), D in Stab_GL_2(Z)(<r1>),
+    and B with B(e+f) in <r1>. In particular it contains
+    shears on both the radical complement and the quotient.
+    A full-radical-only implementation cannot generate it.
+    """
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0,0],[0,0]])
+    e, f, r1, r2 = tuple(ambient.module_generators())
+    inclusion = ambient.subobject_on((e+f,r1)).inclusion()
+    assert inclusion.is_primitive()
+    family = tuple(ambient.O().setwise_stabilizer(inclusion).group_generators())
+    assert family
+    assert all(inclusion.is_in_image(g(point))
+               for g in family for point in (e+f,r1))
+    assert any(g(r2) not in (r2,-r2) for g in family)
+    assert any(g(e) not in (e,f,-e,-f) for g in family)

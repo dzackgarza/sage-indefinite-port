@@ -3272,199 +3272,38 @@ def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multipli
 
 
 
-def _full_radical_nondegenerate_projection_stabilizer_generators(saturated: Parent):
-    r"""Complete integral stabilizer of S=P+rad(L), for nondegenerate P.
+def _split_radical_saturation_stabilizer_generators(saturated: Parent):
+    r"""Complete integral stabilizer of a primitive degenerate saturation.
 
-    Let R be the primitive radical and choose the integral splitting
-    L=C+R supplied by indefinite_reduced_presentation. A primitive
-    marking S containing the whole radical is the preimage under
-    L -> C of a primitive sublattice P of C, hence S=P+R with no
-    independent graph extension. Every isometry of L has unique blocks
-
-        [[A, B], [0, D]],  A in O(C), B in Hom_Z(C,R), D in GL(R),
-
-    in the reduced row convention. The condition g(S)=S is exactly
-    A(P)=P. Therefore the full stabilizer is the semidirect product
-    Hom(C,R) ⋊ (Stab_{O(C)}(P) × GL(R)). Its complete integral
-    generators are the actual stabilizer generators of the primitive
-    nondegenerate sublattice P (including finite discriminant glue),
-    the complete GL(R) generators and all elementary shear maps.
-    No generating-set filter or assumption that the projected P spans
-    the entire quotient is used.
+    The invariant of a degenerate marked submodule S is not its rank
+    minus rank(L/rad(L)): the projection of S to L/rad(L) can have
+    proper rank, or meet the radical in any proper primitive submodule.
+    The maintained degenerate_marking_generators takes the *actual*
+    isotropic/radical intersections and projected integral glue, and
+    computes the full setwise stabilizer by the integral parabolic
+    action, including its congruence inverse image. Reuse that
+    complete owner for every properly degenerate marking, rather
+    than guessing a full-quotient block from its rank.
     """
-    from sage.matrix.constructor import identity_matrix, matrix
-    from sage.rings.integer_ring import ZZ as SageZZ
-    from sage_indefinite_port.indefinite.recursive import (
-        _gram_in_label_order, _isometry_from_row_matrix, _conjugated,
-    )
+    from sage_indefinite_port.indefinite.degenerate_markings import degenerate_marking_generators
+    from sage_indefinite_port.indefinite.recursive import _isometry_from_column_matrix
 
     inclusion = saturated.inclusion()
     lattice = inclusion.codomain()
     if not inclusion.is_primitive():
-        raise ValueError("the full-radical marking must be primitive")
-    reduction = indefinite_reduced_presentation(lattice)
-    reduced = reduction.reduced
-    gram = _gram_in_label_order(reduced)
-    size, n = int(gram.nrows()), int(gram.rank())
-    k = size - n
-    if not n or not k:
-        raise ValueError("the full-radical stabilizer requires both nondegenerate and radical summands")
-    labels = tuple(reduced.module_generating_set())
-    inverse = ~reduction.isometry
-    radical = tuple(reduction.isometry(reduced.module_generator(label)) for label in labels[n:])
-    if not all(inclusion.is_in_image(point) for point in radical):
-        raise ValueError("the marked sublattice does not contain the full ambient radical")
-
-    complement = reduced.lattice_category()([
-        [int(gram[i, j]) for j in range(n)] for i in range(n)
-    ])
-    c_labels = tuple(complement.module_generating_set())
-    projected = []
-    for point in saturated.module_generators():
-        row = inverse(inclusion(point)).to_vector()
-        projected.append(complement.linear_combination({
-            label: complement.base_ring()(int(row(labels[i])))
-            for i, label in enumerate(c_labels) if row(labels[i])
-        }))
-    projected_sublattice = complement.subobject_on(tuple(projected))
-    p_inc = projected_sublattice.inclusion()
-    if (not p_inc.is_primitive()
-            or int(projected_sublattice.rank()) + k != int(saturated.rank())):
-        raise ArithmeticError("a primitive marking containing R must project primitively to L/R")
-    if not projected_sublattice.is_nondegenerate():
-        raise ValueError("the proper quotient projection is degenerate; use its general parabolic stabilizer")
-
-    blocks = []
-    for generator in _nondegenerate_stabilizer_generators(p_inc, based=False):
-        block = identity_matrix(SageZZ, size)
-        for i, point in enumerate(complement.module_generators()):
-            image = generator(point).to_vector()
-            for j, label in enumerate(c_labels):
-                block[i, j] = int(image(label))
-        blocks.append(block)
-
-    radical_lattice = reduced.lattice_category()([[0] * k for _ in range(k)])
-    r_labels = tuple(radical_lattice.module_generating_set())
-    for generator in radical_lattice.general_linear_group().group_generators():
-        block = identity_matrix(SageZZ, size)
-        for i, point in enumerate(radical_lattice.module_generators()):
-            image = generator(point).to_vector()
-            for j, label in enumerate(r_labels):
-                block[n+i, n+j] = int(image(label))
-        blocks.append(block)
-    for i in range(n):
-        for j in range(k):
-            block = identity_matrix(SageZZ, size)
-            block[i, n+j] = 1
-            blocks.append(block)
-    generators = _conjugated(reduction.isometry, tuple(
-        _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
-    )) or (lattice.O().identity(),)
-    if any(not inclusion.is_in_image(g(inclusion(point)))
-           for g in generators for point in saturated.module_generators()):
-        raise ArithmeticError("the full-radical stabilizer failed its integral marking certificate")
-    return generators
-
-
-def _split_radical_saturation_stabilizer_generators(saturated: Parent):
-    r"""Exact stabilizer of a primitive split-radical graph over all of C.
-
-    After integral adaptation, ``S=C+R'`` for a primitive rank-r direct
-    summand ``R'`` of ``R``.  The stabilizer is ``O(C)`` times the parabolic
-    ``Stab_GL(R)(R')``, extended by ``Hom(C,R')``.  Complete generators
-    of both general linear blocks and all integral shears give the full
-    group, not merely its finite image.
-    """
-    from sage.matrix.constructor import identity_matrix, matrix
-    from sage.rings.integer_ring import ZZ as SageZZ
-    from sage_extensions.categories.group.groups import OwnedGroups
-    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
-    from sage_indefinite_port.indefinite.recursive import (
-        _gram_in_label_order, _isometry_from_row_matrix, _conjugated,
-    )
-
-    lattice = saturated.inclusion().codomain()
-    reduction = indefinite_reduced_presentation(lattice)
-    reduced = reduction.reduced
-    gram = _gram_in_label_order(reduced)
-    n, k = int(gram.rank()), int(gram.nrows() - gram.rank())
-    r = int(saturated.inclusion().domain().rank()) - n
-    if not n or not (1 <= r <= k):
-        # The image of S in C=L/R may be a proper primitive
-        # nondegenerate sublattice. When S contains all of R,
-        # its stabilizer has a complete block description over
-        # Stab_O(C)(P) rather than the full O(C).
-        return _full_radical_nondegenerate_projection_stabilizer_generators(saturated)
-    labels = tuple(reduced.module_generating_set())
-    inverse = reduction.isometry.inverse()
-    actual = matrix(SageZZ, [[int(inverse(saturated.inclusion()(x)).to_vector()(label)) for label in labels]
-        for x in saturated.module_generators()]).hermite_form()
-    expected = matrix(SageZZ, [
-        [int(i == j) for j in range(n + k)] for i in range(n)
-    ] + [[int(j == n + i) for j in range(n + k)] for i in range(r)]).hermite_form()
-    size = n + k
-    # A primitive graph over all of C with one primitive radical line
-    # is conjugate to the standard C+Zz_1 by an integral radical change
-    # and an unrestricted shear C -> R.  Construct that conjugation,
-    # rather than requiring the caller's basis to be adapted.
-    if actual.nrows() != n + r or actual[:n, :n] != identity_matrix(SageZZ, n) or any(actual[n + i, j] for i in range(r) for j in range(n)):
-        raise ValueError("the saturation must project unimodularly onto the nondegenerate quotient")
-    radical_rows = matrix(SageZZ, [list(actual.row(n + i)[n:]) for i in range(r)])
-    _, _, d = radical_rows.smith_form()
-    if abs(int(d.det())) != 1:
-        raise ArithmeticError("the radical summand must have an integral unimodular completion")
-    adapted = identity_matrix(SageZZ, size)
-    for i in range(k):
-        for j in range(k):
-            adapted[n + i, n + j] = d[i, j]
-    for i in range(n):
-        for j in range(k):
-            adapted[i, n + j] = -sum(int(actual[i, n + t]) * int(d[t, j]) for t in range(k))
-    if (actual * adapted).hermite_form() != expected:
-        raise ValueError("the saturation radical summand is not primitive or the graph is not integral")
-    transport = _isometry_from_row_matrix(reduced, reduced, adapted)
-    blocks = []
-    complement = reduced.lattice_category()([[int(gram[i, j]) for j in range(n)] for i in range(n)])
-    clabels = tuple(complement.module_generating_set())
-    for generator in RECURSION.orthogonal_group_generators(complement):
-        block = identity_matrix(SageZZ, size)
-        for i, label in enumerate(clabels):
-            row = generator(complement.module_generator(label)).to_vector()
-            for j, target_label in enumerate(clabels):
-                block[i, j] = int(row(target_label))
-        blocks.append(block)
-    def embedded_gl(offset, dimension):
-        if not dimension:
-            return
-        group = OwnedGroups().GL(dimension, ZZ)
-        for generator in group.group_generators():
-            action = group._to_engine(generator).matrix()
-            block = identity_matrix(SageZZ, size)
-            for i in range(dimension):
-                for j in range(dimension):
-                    block[offset + i, offset + j] = int(action[i, j])
-            blocks.append(block)
-
-    embedded_gl(n, r)
-    embedded_gl(n + r, k - r)
-    for i in range(r, k):
-        for j in range(r):
-            shear = identity_matrix(SageZZ, size)
-            shear[n + i, n + j] = 1
-            blocks.append(shear)
-    for i in range(n):
-        for j in range(r):
-            shear = identity_matrix(SageZZ, size)
-            shear[i, n + j] = 1
-            blocks.append(shear)
-    reduced_generators = tuple(
-        transport.inverse() * _isometry_from_row_matrix(reduced, reduced, block) * transport
-        for block in blocks
-    )
-    generators = _conjugated(reduction.isometry, reduced_generators)
-    if any(not saturated.inclusion().is_in_image(g(saturated.inclusion()(x)))
-           for g in generators for x in saturated.module_generators()):
-        raise ArithmeticError("a claimed split-radical stabilizer generator does not preserve the saturation")
+        raise ValueError("a saturation stabilizer requires a primitive sublattice")
+    if lattice.is_nondegenerate():
+        raise ValueError("the degenerate saturation stabilizer requires a nonzero ambient radical")
+    basis = tuple(inclusion(point) for point in saturated.module_generators())
+    matrices = degenerate_marking_generators(lattice, basis, pointwise=False)
+    generators = tuple(
+        _isometry_from_column_matrix(lattice, lattice, action) for action in matrices
+    ) or (lattice.O().identity(),)
+    if any(not inclusion.is_in_image(generator(point))
+           for generator in generators for point in basis):
+        raise ArithmeticError(
+            "the integral degenerate stabilizer does not preserve its marked saturation"
+        )
     return generators
 
 
