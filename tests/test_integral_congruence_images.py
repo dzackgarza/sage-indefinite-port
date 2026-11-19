@@ -1121,3 +1121,23 @@ def test_public_joint_preimage_factorization_returns_owned_kernel_section():
     assert kernel.domain() is ambient and section.codomain() is ambient
     assert kernel(section(e)) == e and kernel(section(f)) == f
     assert word == ()
+
+
+def test_principal_congruence_owned_subgroup_does_not_force_discriminant_kernel():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    identity = ambient.O().identity()
+    e, f = ambient.module_generators()
+    swap = ambient.O()((f, e))
+    subgroup = engine.principal_congruence_subgroup(ambient, 2)
+    assert identity in subgroup
+    assert swap not in subgroup
+    _, generators = engine.principal_congruence_subgroup_generators(ambient, 2)
+    assert all(g in subgroup for g in generators)
+    # The full level-two kernel contains -I, independently of its
+    # discriminant action; no additional character restriction is allowed.
+    negative = ambient.O()((-e, -f))
+    assert negative in subgroup

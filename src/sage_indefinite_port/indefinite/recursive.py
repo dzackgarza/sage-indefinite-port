@@ -1387,6 +1387,22 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators((image.image_one,))
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def principal_congruence_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
+        r"""Owned kernel of reduction modulo ``modulus`` in the specified ambient group.
+
+        Retain every discriminant class: the discriminant factor in the joint
+        representation is auxiliary and must not impose a stable-kernel condition.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        identity_level = image.identity[0]
+        allowed = image.subgroup_from_membership(lambda key: key[0] == identity_level)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
     def joint_positive_cone_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
         r"""Actual joint image of congruence reduction and positive-cone component."""
         from sage_indefinite_port.indefinite.congruence_images import JointSignCongruenceImage
