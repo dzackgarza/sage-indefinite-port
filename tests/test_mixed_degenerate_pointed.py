@@ -4439,3 +4439,27 @@ def test_public_pure_radical_primitive_null_line_stream():
     arrow = representative.arrow()
     vector = arrow(next(iter(arrow.domain().module_generators())))
     assert vector.q() == ZZ(0) and vector.content() == ZZ(1)
+
+
+def test_exact_nonprimitive_radical_frame_stabilizer_generators():
+    """Smith-frame stabilizer is integral, complete on its shear block, and nontrivial."""
+    from sage.matrix.constructor import matrix
+    from sage.matrix.special import identity_matrix
+    from sage.rings.integer_ring import ZZ
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    frame = matrix(ZZ, [[2, 0, 0], [0, 3, 0]])
+    generators = EichlerRecursion()._radical_stabilizer_of_frame(frame)
+    assert generators
+    assert all(frame * g == frame and abs(g.det()) == 1 for g in generators)
+    # The full stabilizer includes both independent shears from the
+    # unmarked radical coordinate into the two marked coordinates.
+    a = identity_matrix(ZZ, 3)
+    a[2, 0] = 1
+    b = identity_matrix(ZZ, 3)
+    b[2, 1] = 1
+    shears = [g for g in generators if g[2, 2] == 1]
+    assert len(shears) >= 2
+    shear_coordinates = matrix(ZZ, [[g[2, 0], g[2, 1]] for g in shears])
+    assert abs(shear_coordinates.matrix_from_rows((0, 1)).det()) == 1
+    assert frame * a == frame and frame * b == frame
