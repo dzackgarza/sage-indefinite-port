@@ -269,3 +269,41 @@ def test_public_residue_colouring_stabilizer():
     )
     assert index == 2
     assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
+
+
+def test_actual_joint_field_spinor_image_uses_square_classes_not_full_target():
+    from sage_indefinite_port.indefinite.congruence_images import JointFieldSpinorCongruenceImage
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import _isometry_from_column_matrix
+
+    ambient = lattice([[6]])
+    minus = matrix(ZZ, [[-1]])
+    spinor = ambient.spinor_norm()
+    classes = spinor.codomain()
+    image = JointFieldSpinorCongruenceImage(
+        (minus,), 2,
+        lambda g: spinor(_isometry_from_column_matrix(ambient, ambient, g)),
+        classes.one(),
+    )
+    assert len(image.reduction.image_keys()) == 1
+    assert len(image.image_keys()) == 2
+    assert image.image(minus)[1] != classes.one()
+    index, generators = image.preimage_generators((image.identity,))
+    assert index == 2
+    assert all(image.image(g) == image.identity for g in generators)
+
+
+def test_public_field_spinor_image_on_anisotropic_rank_one():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[6]])
+    engine = EichlerRecursion()
+    image = engine.joint_field_spinor_congruence_image(ambient, 2)
+    assert len(image.image_keys()) == 2
+    assert len(image.reduction.image_keys()) == 1
+    index, generators = engine.joint_field_spinor_congruence_preimage_generators(
+        ambient, 2, (image.identity,)
+    )
+    assert index == 2
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)

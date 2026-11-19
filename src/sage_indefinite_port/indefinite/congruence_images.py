@@ -350,3 +350,87 @@ class JointTwoSignsCongruenceImage(JointSignCongruenceImage):
         a = matrix(ring, rank, rank, left[0])
         b = matrix(ring, rank, rank, right[0])
         return (self.reduction._key(a * b), left[1] * right[1], left[2] * right[2])
+
+
+class JointFieldSpinorCongruenceImage:
+    r"""Actual finite generated joint image of level and field-spinor square classes.
+
+    ``spinor`` evaluates integral matrices into a multiplicative square-class
+    group. Its image is enumerated jointly with reduction, rather than using
+    the (possibly infinite) ambient square-class group as the finite target.
+    """
+
+    def __init__(self, generators, modulus, spinor, one_class, rank=None):
+        self.reduction = IntegralCongruenceImage(generators, modulus, rank=rank)
+        self.generators = self.reduction.generators
+        self.one = self.reduction.one
+        self.spinor = spinor
+        self.identity = (self.reduction._key(self.reduction.image_one), one_class)
+        if self.image(self.one) != self.identity:
+            raise ValueError("spinor must map identity to the unit square class")
+        self._lifts = {self.identity: self.one}
+        queue = deque([self.identity])
+        images = tuple(self.image(g) for g in self.generators)
+        while queue:
+            key = queue.popleft()
+            lift = self._lifts[key]
+            for g, image in zip(self.generators, images):
+                moved = self._multiply(key, image)
+                if moved not in self._lifts:
+                    self._lifts[moved] = lift * g
+                    queue.append(moved)
+        for lift in self._lifts.values():
+            for g in self.generators:
+                if self.image(lift * g) != self._multiply(self.image(lift), self.image(g)):
+                    raise ValueError("spinor is not multiplicative on the generated image")
+
+    def image(self, g):
+        g = matrix(ZZ, g)
+        if g.det() not in (1, -1):
+            raise ValueError("image requires an integral unimodular matrix")
+        return (self.reduction._key(self.reduction.reduce(g)), self.spinor(g))
+
+    def _multiply(self, a, b):
+        ring, rank = self.reduction.ring, self.reduction.rank
+        left = matrix(ring, rank, rank, a[0])
+        right = matrix(ring, rank, rank, b[0])
+        return (self.reduction._key(left * right), a[1] * b[1])
+
+    def image_keys(self):
+        return frozenset(self._lifts)
+
+    def lift(self, image):
+        return self._lifts[image]
+
+    def preimage_generators(self, allowed):
+        r"""Exact inverse-image generators for a subgroup of the joint image."""
+        subgroup = set(allowed)
+        if self.identity not in subgroup or not subgroup <= self.image_keys():
+            raise ValueError("allowed must contain identity and lie in the actual joint image")
+        if any(self._multiply(a, b) not in subgroup for a in subgroup for b in subgroup):
+            raise ValueError("allowed is not a subgroup")
+        # Square classes need not admit a total ordering; use the image's
+        # deterministic BFS enumeration order as coset representative order.
+        order = {key: i for i, key in enumerate(self._lifts)}
+
+        def coset_key(image):
+            return min((self._multiply(h, image) for h in subgroup), key=order.__getitem__)
+
+        first = coset_key(self.identity)
+        transversal = {first: self.one}
+        queue = deque([first])
+        result = []
+        while queue:
+            t = transversal[queue.popleft()]
+            for g in self.generators:
+                moved = t * g
+                key = coset_key(self.image(moved))
+                if key not in transversal:
+                    transversal[key] = moved
+                    queue.append(key)
+                word = moved * transversal[key].inverse()
+                if word != self.one:
+                    result.append(word)
+        assert len(transversal) * len(subgroup) == len(self._lifts)
+        assert all(self.image(g) in subgroup for g in result)
+        return len(transversal), tuple(result)

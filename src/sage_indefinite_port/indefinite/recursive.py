@@ -1212,6 +1212,34 @@ class EichlerRecursion:
         index, matrices = image.residue_colouring_stabilizer(colour_classes)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def joint_field_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, field_map=None, form_multiplier=None):
+        r"""Actual finite generated image of level and field-spinor square classes.
+
+        The field-spinor normalization is exactly that of the provider's
+        ``spinor_norm``; unlike the real-spinor sign this retains full
+        square classes, including the finite image in an infinite target.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import JointFieldSpinorCongruenceImage
+
+        character = lattice.spinor_norm(field_map, form_multiplier)
+
+        def spinor(columns):
+            isometry = _isometry_from_column_matrix(lattice, lattice, columns)
+            return character(isometry)
+
+        generators = self.orthogonal_group_generators(lattice)
+        return JointFieldSpinorCongruenceImage(
+            tuple(_column_matrix(g) for g in generators), modulus,
+            spinor, character.codomain().one(),
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_field_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, field_map=None, form_multiplier=None):
+        r"""Integral generators of a subgroup of the actual joint field-spinor image."""
+        image = self.joint_field_spinor_congruence_image(lattice, modulus, field_map, form_multiplier)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 
