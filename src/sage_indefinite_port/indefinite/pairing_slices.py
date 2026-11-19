@@ -12,7 +12,7 @@ equivariant marked transporter of `(L, F, v)` (:class:`CentralizerTupleOrbit`, o
 
 from itertools import count, product
 
-from sage.matrix.constructor import matrix
+from sage.matrix.constructor import identity_matrix, matrix
 from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
@@ -183,6 +183,149 @@ def line_transporter(lattice, generator, left, right):
     return None
 
 
+def _full_radical_setwise_transporter(lattice, fixed, left, right):
+    r"""Exact setwise transporter when S=P+R contains R=rad(L), P nondegenerate.
+
+    The reduced lattice L=C+R is an integral direct sum of a nondegenerate
+    quotient and a free zero-form radical. Since S contains the whole
+    radical, its image P in C is a primitive sublattice and S=P+R;
+    it has no additional graph/gluing datum over R.
+
+    Every integral isometry has the unique row block form
+        [[A,B],[0,D]], A in O(C), B in Hom_Z(C,R), D in GL(R).
+    It preserves S precisely when A(P)=P. For x=(c,r), y=(c',s),
+    first decide c A=c' by the complete nondegenerate setwise
+    transporter of P. Then solve rD+cB=s. If c has content d>0,
+    the set of possible cB is exactly dR by Bezout, so a solution
+    exists iff the *actual* integral GL(R) image carries r mod d
+    to s mod d. The maintained RadicalCongruenceImage decides this
+    and returns an integral lift D; one Bezout column constructs B.
+    At d=0, the shear disappears and GL(R) must carry r exactly
+    to s, decided by the complete pure-radical pointed transporter.
+
+    Every decision is necessary and sufficient, and the constructed
+    map is checked on the original ambient lattice and marked span.
+    Return NotImplemented unless the full-radical, nondegenerate-P
+    hypothesis holds, so the caller may choose another valid route.
+    """
+    from math import gcd
+
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+    from sage_indefinite_port.indefinite.recursive import (
+        EichlerRecursion, _gram_in_label_order, _isometry_from_row_matrix,
+    )
+
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    gram = _gram_in_label_order(reduced)
+    size, n = int(gram.nrows()), int(gram.rank())
+    k = size - n
+    if not n or not k:
+        return NotImplemented
+    labels = tuple(reduced.module_generating_set())
+    inclusion = lattice.subobject_on(tuple(fixed)).inclusion()
+    radical = tuple(
+        reduction.isometry(reduced.module_generator(label))
+        for label in labels[n:]
+    )
+    if not inclusion.is_primitive() or not all(inclusion.is_in_image(point) for point in radical):
+        return NotImplemented
+
+    complement = Lattices(lattice.base_ring())([
+        [int(gram[i,j]) for j in range(n)] for i in range(n)
+    ])
+    c_labels = tuple(complement.module_generating_set())
+    inverse = ~reduction.isometry
+
+    def chart(point):
+        row = inverse(point).to_vector()
+        return tuple(int(row(label)) for label in labels)
+
+    def c_point(coords):
+        return complement.linear_combination({
+            label: complement.base_ring()(coefficient)
+            for label, coefficient in zip(c_labels, coords, strict=True) if coefficient
+        })
+
+    projected = tuple(c_point(chart(point)[:n]) for point in fixed)
+    plane = complement.subobject_on(projected)
+    if not plane.inclusion().is_primitive() or not plane.is_nondegenerate():
+        return NotImplemented
+    if int(plane.rank()) + k != int(inclusion.domain().rank()):
+        raise ArithmeticError("the marked full-radical lattice is not the pullback of its projected sublattice")
+
+    x, y = chart(left), chart(right)
+    c, c_target = x[:n], y[:n]
+    r, t = x[n:], y[n:]
+    if not any(c) and not any(c_target):
+        a = identity_matrix(ZZ, n)
+    else:
+        projected_basis = tuple(plane.inclusion()(point) for point in plane.module_generators())
+        a_witness = setwise_transporter(complement, projected_basis, c_point(c), c_point(c_target))
+        if a_witness is None:
+            return None
+        a = matrix(ZZ, [
+            [int(a_witness(point).to_vector()(label)) for label in c_labels]
+            for point in complement.module_generators()
+        ])
+
+    d = 0
+    for entry in c:
+        d = gcd(d, entry)
+    recursion = EichlerRecursion()
+    if d > 1:
+        D = recursion.radical_congruence_image(lattice, d).transporter(r, t)
+        if D is None:
+            return None
+    elif d == 1 or r == t:
+        D = identity_matrix(ZZ, k)
+    else:
+        pure_source = reduced.linear_combination({
+            labels[n+i]: reduced.base_ring()(entry)
+            for i, entry in enumerate(r) if entry
+        })
+        pure_target = reduced.linear_combination({
+            labels[n+i]: reduced.base_ring()(entry)
+            for i, entry in enumerate(t) if entry
+        })
+        radical_witness = recursion.pointed_isometry(pure_source, pure_target)
+        if radical_witness is None:
+            return None
+        D = matrix(ZZ, [
+            [int(radical_witness(reduced.module_generator(labels[n+i]))
+                 .to_vector()(labels[n+j])) for j in range(k)]
+            for i in range(k)
+        ])
+
+    residual = matrix(ZZ, [list(t)]) - matrix(ZZ, [list(r)]) * D
+    if d:
+        if any(int(entry) % d for entry in residual.list()):
+            raise ArithmeticError("the radical GL congruence lift violates the prescribed residue")
+        _, _, smith_right = matrix(ZZ, [list(c)]).smith_form()
+        bezout = smith_right.column(0)
+        if sum(c[i]*int(bezout[i]) for i in range(n)) == -d:
+            bezout = -bezout
+        if sum(c[i]*int(bezout[i]) for i in range(n)) != d:
+            raise ArithmeticError("the projected content lacks its integral Bezout column")
+        B = matrix(ZZ, n, k, lambda i,j: int(bezout[i])*int(residual[0,j])//d)
+    else:
+        if any(residual.list()):
+            return None
+        B = matrix(ZZ, n, k, 0)
+
+    block = identity_matrix(ZZ, size)
+    block[:n,:n] = a
+    block[:n,n:] = B
+    block[n:,n:] = D
+    reduced_witness = _isometry_from_row_matrix(reduced, reduced, block)
+    witness = reduction.isometry * reduced_witness * inverse
+    if witness(left) != right:
+        raise ArithmeticError("the mixed setwise transporter failed the prescribed vector equation")
+    if any(not inclusion.is_in_image(witness(point)) for point in fixed):
+        raise ArithmeticError("the mixed setwise transporter failed its marked lattice equation")
+    return witness
+
+
 def setwise_transporter(lattice, fixed, left, right):
     r"""Return `g` preserving the span of ``fixed`` with `g(left) = right`, or ``None``.
 
@@ -192,6 +335,15 @@ def setwise_transporter(lattice, fixed, left, right):
     """
     gram = [[int(lattice.b(x, y)) for y in fixed] for x in fixed]
     source = Lattices(lattice.base_ring())(gram)
+    if not source.is_nondegenerate():
+        found = _full_radical_setwise_transporter(lattice, fixed, left, right)
+        if found is NotImplemented:
+            raise NotImplementedError(
+                "setwise transport of a degenerate marking not containing the entire "
+                "ambient radical with nondegenerate quotient projection requires "
+                "the general equivariant gluing algorithm"
+            )
+        return found
     if not source.is_definite():
         return _glued_setwise_transporter(lattice, fixed, left, right)
     frame = tuple(source.module_generators())
