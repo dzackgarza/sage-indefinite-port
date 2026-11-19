@@ -1304,7 +1304,7 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, level_modulus=None):
+    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, level_modulus=None, ambient_generators=None):
         r"""Actual joint discriminant/determinant/real-spinor image of O(L).
 
         Uses the original discriminant-form action (quadratic if L is even,
@@ -1327,7 +1327,10 @@ class EichlerRecursion:
         def as_isometry(columns):
             return _isometry_from_column_matrix(lattice, lattice, columns)
 
-        generators = self.orthogonal_group_generators(lattice)
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient subgroup generators must be integral automorphisms of the supplied lattice")
         return JointDiscriminantCharacterImage(
             tuple(_column_matrix(g) for g in generators),
             lambda g: rho(as_isometry(g)),
@@ -1335,9 +1338,9 @@ class EichlerRecursion:
             identities, level_modulus=level_modulus,
         )
 
-    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, level_modulus=None):
+    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, level_modulus=None, ambient_generators=None):
         r"""Integral preimage generators for an actual joint discriminant subgroup."""
-        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, level_modulus=level_modulus)
+        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, level_modulus=level_modulus, ambient_generators=ambient_generators)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 

@@ -471,3 +471,26 @@ def test_public_joint_discriminant_level_and_signs_preserves_correlations():
                and g in ambient.O_plus() for g in generators)
     assert all(tuple(int(x) % 4 for x in g(ambient.module_generators()[0]).to_vector()) == (1, 0)
                for g in generators)
+
+
+def test_public_joint_image_of_proper_generated_ambient_subgroup():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    e, f = ambient.module_generators()
+    negative = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True, level_modulus=3,
+        ambient_generators=(negative,),
+    )
+    assert len(image.image_keys()) == 2
+    assert all(image.image(image.section(key)) == key for key in image.image_keys())
+    index, kernel = engine.joint_discriminant_character_preimage_generators(
+        ambient, (image.identity,), determinant=True, real_spinor=True,
+        level_modulus=3, ambient_generators=(negative,),
+    )
+    assert index == 2
+    assert all(image.image(matrix(ZZ, [list(g(x).to_vector()) for x in (e, f)]).transpose()) == image.identity
+               for g in kernel)
