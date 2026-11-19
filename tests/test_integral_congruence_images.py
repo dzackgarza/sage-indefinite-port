@@ -119,3 +119,45 @@ def test_public_composite_residue_flag_stabilizer():
     assert index == 2
     assert all(tuple(int(x) % 4 for x in g(2 * ambient.module_generators()[0]).to_vector()) == (2, 0)
                for g in generators)
+
+
+def test_joint_determinant_image_remembers_sign_lost_mod_two():
+    from sage_indefinite_port.indefinite.congruence_images import JointDeterminantCongruenceImage
+
+    minus = -identity_matrix(ZZ, 3)
+    image = JointDeterminantCongruenceImage((minus,), 2)
+    assert len(image.reduction.image_keys()) == 1
+    assert len(image.image_keys()) == 2
+    assert image.image(minus) != image.identity
+    index, kernel = image.preimage_generators((image.identity,))
+    assert index == 2
+    assert all(g.det() == 1 and g.change_ring(image.reduction.ring) == image.reduction.image_one for g in kernel)
+
+
+def test_joint_determinant_nonnormal_subgroup_of_s3():
+    from sage_indefinite_port.indefinite.congruence_images import JointDeterminantCongruenceImage
+
+    a = matrix(ZZ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    b = matrix(ZZ, [[1, 0, 0], [0, 0, 1], [0, 1, 0]])
+    image = JointDeterminantCongruenceImage((a, b), 2)
+    assert len(image.image_keys()) == 6
+    index, generators = image.preimage_generators((image.identity, image.image(a)))
+    assert index == 3
+    assert all(image.image(g) in (image.identity, image.image(a)) for g in generators)
+
+
+def test_public_joint_level_and_determinant_on_odd_rank():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
+    engine = EichlerRecursion()
+    image = engine.joint_determinant_congruence_image(ambient, 2)
+    assert any(sign == -1 for _, sign in image.image_keys())
+    index, generators = engine.joint_determinant_congruence_preimage_generators(
+        ambient, 2, (image.identity,)
+    )
+    assert index == len(image.image_keys())
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
+    assert all(image.image(matrix(ZZ, [list(g(x).to_vector()) for x in ambient.module_generators()]).transpose()) == image.identity
+               for g in generators)

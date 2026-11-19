@@ -1129,6 +1129,23 @@ class EichlerRecursion:
         index, matrices = image.residue_flag_stabilizer(stages)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def joint_determinant_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+        r"""Actual joint determinant and level image of the integral orthogonal group."""
+        from sage_indefinite_port.indefinite.congruence_images import JointDeterminantCongruenceImage
+
+        generators = self.orthogonal_group_generators(lattice)
+        return JointDeterminantCongruenceImage(
+            tuple(_column_matrix(g) for g in generators),
+            modulus,
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_determinant_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+        r"""Integral generators for a subgroup of the actual joint level/sign image."""
+        image = self.joint_determinant_congruence_image(lattice, modulus)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 
