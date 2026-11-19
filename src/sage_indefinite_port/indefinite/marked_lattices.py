@@ -3491,16 +3491,28 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     planes = primitive_marking_classes(ARROWS, plane_source, lattice)
                     radical = tuple(reduction.isometry(reduced.module_generator(label))
                                     for label in tuple(reduced.module_generating_set())[n:])
-                    radical_inclusion = lattice.primitive_isotropic_subobject(*radical).inclusion()
+                    from sage.matrix.constructor import matrix
+                    from sage.rings.integer_ring import ZZ as SageZZ
+                    from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+
+                    def adapted_maximal_basis(plane):
+                        inclusion = plane.arrow()
+                        domain = inclusion.domain()
+                        labels = tuple(domain.module_generating_set())
+                        radical_rows = matrix(SageZZ, [
+                            [int(inclusion.lift(point).to_vector()(label)) for label in labels]
+                            for point in radical
+                        ])
+                        completion = _source_subspace_completion_int(radical_rows, k + 1)
+                        complement = domain.linear_combination({
+                            label: domain.base_ring()(int(completion[0, i]))
+                            for i, label in enumerate(labels)
+                        })
+                        return (*radical, inclusion(complement))
                     classes = tuple(
                         category(_flag_marking_from_basis(
                             lattice,
-                            (*radical, next(
-                                point for point in (
-                                    plane.arrow()(generator)
-                                    for generator in plane.arrow().domain().module_generators()
-                                ) if not radical_inclusion.is_in_image(point)
-                            )),
+                            adapted_maximal_basis(plane),
                             dimensions,
                         ))
                         for plane in planes
