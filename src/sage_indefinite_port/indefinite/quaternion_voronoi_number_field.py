@@ -139,11 +139,18 @@ class QuaternionOrderVoronoi:
         return [self.from_order(v) for v in _short_vectors(gram, bound) if (v * gram * v) < bound]
 
     def minimum(self, s):
-        gram = self.gram(s)
-        bound = min(gram[i, i] for i in range(gram.nrows()))
-        vectors = _short_vectors(gram, bound)
-        mu = min(v * gram * v for v in vectors)
-        return mu, [self.from_order(v) for v in vectors if v * gram * v == mu]
+        # The same perfect representatives occur in every neighbour comparison.
+        # Cache by exact rational coordinates, not a floating approximation.
+        key = tuple(self.coordinates(s))
+        cache = self.__dict__.setdefault("_minimum_cache", {})
+        if key not in cache:
+            gram = self.gram(s)
+            bound = min(gram[i, i] for i in range(gram.nrows()))
+            vectors = _short_vectors(gram, bound)
+            mu = min(v * gram * v for v in vectors)
+            cache[key] = (mu, tuple(self.from_order(v) for v in vectors if v * gram * v == mu))
+        mu, minimal = cache[key]
+        return mu, list(minimal)
 
     def is_perfect(self, s):
         _mu, minimal = self.minimum(s)
