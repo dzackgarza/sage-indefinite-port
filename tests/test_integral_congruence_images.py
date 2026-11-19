@@ -684,3 +684,26 @@ def test_joint_discriminant_right_coset_transporter_has_verified_integral_witnes
             witness = image.right_coset_transporter(subgroup, i, j)
             assert abs(witness.det()) == 1
             assert act(i, witness) == j
+
+
+def test_joint_finite_double_cosets_and_intersections():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    image = EichlerRecursion().joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True, level_modulus=4
+    )
+    left = image.subgroup_from_membership(lambda key: key[2] == 1)
+    right = image.subgroup_from_membership(lambda key: key[3] == 1)
+    representatives = image.double_coset_representatives(left, right)
+    assert representatives
+    covered = set()
+    for key, witness in representatives:
+        assert image.image(witness) == key
+        orbit = {image._multiply(image._multiply(h, key), k) for h in left for k in right}
+        assert not covered.intersection(orbit)
+        covered.update(orbit)
+        intersection = image.double_coset_intersection(left, right, key)
+        assert len(orbit) * len(intersection) == len(left) * len(right)
+    assert covered == image.image_keys()

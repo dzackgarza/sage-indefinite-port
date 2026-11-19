@@ -755,6 +755,49 @@ class JointDiscriminantCharacterImage:
         assert act(source_index, witness) == target_index
         return matrix(ZZ, witness)
 
+    def double_coset_representatives(self, left_subgroup, right_subgroup):
+        r"""Exact representatives and integral lifts of ``H\F/K``.
+
+        Both subgroups must lie in the actual joint image ``F``. Every
+        double coset is enumerated using multiplication in ``F``, not in
+        the nominal product of the character targets. Return pairs of
+        an image key and a certified integral lift.
+        """
+        left = frozenset(left_subgroup)
+        right = frozenset(right_subgroup)
+        actual = self.image_keys()
+        for subgroup in (left, right):
+            if self.identity not in subgroup or not subgroup <= actual:
+                raise ValueError("double-coset subgroup is not in the actual image")
+            if any(self._multiply(a, b) not in subgroup for a in subgroup for b in subgroup):
+                raise ValueError("double-coset argument is not a subgroup")
+        unseen = set(actual)
+        result = []
+        for representative in self._lifts:
+            if representative not in unseen:
+                continue
+            orbit = {self._multiply(self._multiply(h, representative), k)
+                     for h in left for k in right}
+            if not orbit <= unseen:
+                raise ArithmeticError("double cosets do not partition the actual image")
+            unseen.difference_update(orbit)
+            witness = self.section(representative)
+            assert self.image(witness) == representative
+            result.append((representative, witness))
+        assert not unseen
+        return tuple(result)
+
+    def double_coset_intersection(self, left_subgroup, right_subgroup, representative):
+        r"""Exact subgroup ``H intersect r*K*r^-1`` in the actual image."""
+        left = self.subgroup_from_generators(tuple(left_subgroup))
+        right = self.subgroup_from_generators(tuple(right_subgroup))
+        if representative not in self._lifts:
+            raise ValueError("representative is outside the actual image")
+        r = self.section(representative)
+        inverse = self.image(r.inverse())
+        return frozenset(h for h in left
+                         if self._multiply(self._multiply(inverse, h), representative) in right)
+
     def preimage_generators(self, allowed):
         subgroup = set(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():
