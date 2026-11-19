@@ -882,6 +882,100 @@ def _flag_action(marked: Parent) -> tuple[tuple[int, ...], tuple[Lattices.Elemen
     return dimensions, basis, images
 
 
+def _oriented_flag_action(marked: Parent) -> tuple[
+    tuple[int, ...], tuple[Lattices.ElementMethods, ...],
+    tuple[tuple[Lattices.ElementMethods, ...], ...],
+]:
+    r"""The full orientation-preserving rational Levi image of a marked flag.
+
+    CombinedAlgorithms.h:682-717 constructs the complete integral block
+    parabolic P in GL(I). The orientation character of each successive
+    graded factor gives a homomorphism P -> {+1,-1}^t. Its *kernel* is
+    the required oriented Levi group. Filtering P's original generators
+    by their signs would generally lose the kernel: a product of two
+    disallowed generators may preserve every graded orientation.
+
+    Enumerate the finite sign image and choose an exact word transversal
+    T_s in P. Schreier's lemma gives all generators
+    T_s g (T_(s*sign(g)))^-1 of the orientation kernel, not a
+    selected subset of P. Express these products on the adapted integral
+    basis of I and pass their actual images to the same rational
+    stabilizer/lattice-intersection algorithm as for unoriented flags.
+    """
+    from collections import deque
+
+    from sage.matrix.constructor import identity_matrix, matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+
+    oriented = marked.functor().oriented_flag()
+    dimensions, basis, images = _flag_action(marked)
+    top = _isotropic_sublattice(_flag_arrows(marked)[-1]).inclusion()
+    labels = tuple(top.domain().module_generating_set())
+    rank = len(basis)
+
+    def rows(points):
+        return matrix(SageZZ, [
+            [int(top.lift(point).to_vector()(label)) for label in labels]
+            for point in points
+        ])
+
+    initial_rows = rows(basis)
+    if abs(int(initial_rows.det())) != 1:
+        raise ArithmeticError("an adapted oriented isotropic frame must be unimodular in its top sublattice")
+    inverse = initial_rows.inverse().change_ring(SageZZ)
+    matrices = tuple((rows(family) * inverse).change_ring(SageZZ) for family in images)
+    if any(abs(int(transformation.det())) != 1 for transformation in matrices):
+        raise ArithmeticError("the full flag Levi generators must be integral unimodular")
+
+    block_starts = (0, *dimensions[:-1])
+
+    def signs(transformation):
+        result = tuple(int(transformation[left:right, left:right].det())
+                       for left, right in zip(block_starts, dimensions, strict=True))
+        if any(sign not in (-1, 1) for sign in result):
+            raise ArithmeticError("a flag Levi generator has a nonunimodular graded block")
+        return result
+
+    generator_signs = tuple(signs(generator) for generator in matrices)
+    identity_signs = (1,) * len(dimensions)
+    transversal = {identity_signs: identity_matrix(SageZZ, rank)}
+    queue = deque((identity_signs,))
+    while queue:
+        current = queue.popleft()
+        representative = transversal[current]
+        for generator, signature in zip(matrices, generator_signs, strict=True):
+            next_signs = tuple(a*b for a,b in zip(current, signature, strict=True))
+            if next_signs not in transversal:
+                transversal[next_signs] = representative * generator
+                queue.append(next_signs)
+
+    kernel_matrices = []
+    for current, representative in transversal.items():
+        for generator, signature in zip(matrices, generator_signs, strict=True):
+            next_signs = tuple(a*b for a,b in zip(current, signature, strict=True))
+            schreier = (
+                representative * generator
+                * transversal[next_signs].inverse().change_ring(SageZZ)
+            )
+            if signs(schreier) != identity_signs:
+                raise ArithmeticError("a Schreier generator fails to preserve the graded orientations")
+            if schreier != identity_matrix(SageZZ, rank):
+                kernel_matrices.append(schreier)
+
+    ambient = oriented.lattice()
+    ring = ambient.base_ring()
+
+    def image_family(transformation):
+        return tuple(
+            sum((ambient.scalar_multiple(ring(int(value)), basis[j])
+                 for j, value in enumerate(transformation.row(i)) if value),
+                ambient.zero())
+            for i in range(rank)
+        )
+
+    return dimensions, basis, tuple(image_family(generator) for generator in kernel_matrices)
+
+
 def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsometryMethods | None:
     r"""The isometry of an isomorphism of marked lattices ``source -> target`` in ``category``, or ``None`` when there is none."""
     match category:
@@ -4025,6 +4119,8 @@ def isotropic_stabilizer_right_cosets(category: Category, marked: Parent) -> Par
                 ambient = marked.arrow().codomain()
                 return finite_ordered_set((ambient.O().identity(),))
             basis, images = INDUCTION.plane_vectors(sublattice), INDUCTION.sublattice_action_images(sublattice)
+        case OrientedIsotropicFlags():
+            _dimensions, basis, images = _oriented_flag_action(marked)
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             _dimensions, basis, images = _flag_action(marked)
         case _:
