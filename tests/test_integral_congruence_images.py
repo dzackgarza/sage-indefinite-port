@@ -1047,3 +1047,28 @@ def test_multilevel_joint_character_preimage_in_proper_ambient_group():
     )
     assert index == 1
     assert any(g(e) == -e and g(f) == -f for g in generators)
+
+
+def test_multilevel_joint_character_preimage_is_owned_subgroup():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    negative = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    characters = engine.joint_discriminant_character_image(
+        ambient, determinant=True, ambient_generators=(negative,)
+    )
+    conditions = ((2, {"vectors": ((1, 0),)}), (3, {"vectors": ((1, 0),)}))
+    subgroup = engine.multilevel_joint_character_preimage_subgroup(
+        ambient, conditions, characters.image_keys(), determinant=True,
+        ambient_generators=(negative,),
+    )
+    assert ambient.O().identity() in subgroup
+    assert negative not in subgroup
+    whole = engine.multilevel_joint_character_preimage_subgroup(
+        ambient, (), characters.image_keys(), determinant=True,
+        ambient_generators=(negative,),
+    )
+    assert negative in whole

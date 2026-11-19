@@ -1244,6 +1244,23 @@ class EichlerRecursion:
         index, matrices = joint.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def multilevel_joint_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Owned subgroup realizing all multilevel and character restrictions.
+
+        The subgroup is formed inside the explicitly generated ambient group
+        when provided, otherwise O(L). Its generators are the exact Schreier
+        preimage generators, not merely lifts of the finite allowed image.
+        """
+        _, generators = self.multilevel_joint_character_preimage_generators(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, field_map=field_map,
+            form_multiplier=form_multiplier, ambient_generators=ambient_generators,
+        )
+        ambient = (lattice.O() if ambient_generators is None
+                   else lattice.O().subgroup(tuple(ambient_generators)))
+        return ambient.subgroup(generators)
+
     def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
         r"""Integral isometries preserving the specified finite-index sublattice.
 
