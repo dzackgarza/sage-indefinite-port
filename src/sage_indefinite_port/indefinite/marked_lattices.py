@@ -1602,7 +1602,15 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                        for point in source_basis[:rank]):
                     return witness
                 raise ArithmeticError("integral adapted flag completion failed its transport certificate")
-            return RECURSION.isotropic_subspace_isometry(source_basis, target_basis, target_images)
+            try:
+                return RECURSION.isotropic_subspace_isometry(source_basis, target_basis, target_images)
+            except ValueError as exc:
+                if "partial isometry does not identify the ambient radical intersections" in str(exc):
+                    # A flag isometry preserves its intersections with
+                    # the characteristic ambient radical. The rational
+                    # extension owner certifies this obstruction.
+                    return None
+                raise
     raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
 
 
@@ -3511,6 +3519,62 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
     return finite_ordered_set(classes)
 
 
+def iter_primitive_isotropic_flag_classes(lattice: Parent, dimensions: tuple[int, ...], *, acting_group=None):
+    r"""Exhaustive height-shell stream of primitive moving isotropic flags.
+
+    Unlike the finite flag classifier, this permits infinitely many orbits
+    when the ambient form is degenerate. Each finite shell is exhausted
+    before the next; exact public flag transporters eliminate duplicates.
+    Completeness and productivity are conditional on termination of those
+    exact transporter decisions for the supplied lattice. Supported
+    finite-image arithmetic subgroups split each full-group orbit.
+    """
+    from itertools import count, product
+    from sage_indefinite_port.indefinite.recursive import _coordinate_box, _coordinate_element
+
+    if not dimensions or dimensions[0] < 1 or any(a >= b for a, b in pairwise(dimensions)):
+        raise ValueError("isotropic flag ranks must be positive and strictly increasing")
+    rank = int(lattice.rank())
+    top = dimensions[-1]
+    if top > rank:
+        return
+    if lattice.is_nondegenerate() and top > int(lattice.witt_index()):
+        return
+    if acting_group is lattice.O() or (
+        acting_group is not None and rank % 2 and acting_group is lattice.SO()
+    ):
+        # Central -id preserves every unoriented flag in odd rank.
+        acting_group = None
+    category = Cat().Mor(FiniteOrdinalCategory(len(dimensions) + 1), LATTICES)
+    seen = []
+    zero = lattice.base_ring().zero()
+    for height in count(1):
+        # The maximum of the coordinate heights must equal this shell.
+        # Enumerating bounded tuples afresh would duplicate earlier shells.
+        vectors = tuple(_coordinate_element(lattice, coordinates)
+                        for bound in range(1, height + 1)
+                        for coordinates in _coordinate_box(lattice, bound))
+        for basis in product(vectors, repeat=top):
+            if max(max((abs(int(point.to_vector()(label)))
+                        for label in lattice.module_generating_set()), default=0)
+                       for point in basis) != height:
+                continue
+            if any(lattice.b(x, y) != zero for x in basis for y in basis):
+                continue
+            if any(not lattice.subobject_on(basis[:d]).inclusion().is_primitive()
+                   or int(lattice.subobject_on(basis[:d]).rank()) != d
+                   for d in dimensions):
+                continue
+            marked = category(_flag_marking_from_basis(lattice, basis, dimensions))
+            if any(isometry(category, marked, previous) is not None for previous in seen):
+                continue
+            seen.append(marked)
+            if acting_group is None:
+                yield marked
+            else:
+                yield from lattice.O().split_orbit(marked, acting_group)
+
+
 def _flag_marking_from_basis(lattice: Lattices.ParentMethods, basis: tuple[Lattices.ElementMethods, ...], dimensions: tuple[int, ...]) -> tuple[Morphism, ...]:
     r"""The chain of primitive isotropic prefix sublattices of an adapted basis."""
     if not dimensions or dimensions[0] < 1 or dimensions[-1] != len(basis) or any(
@@ -3552,6 +3616,7 @@ __all__ = [
     "nonprimitive_sublattice_classes",
     "nonprimitive_isotropic_sublattice_classes",
     "iter_all_isotropic_sublattice_classes",
+    "iter_primitive_isotropic_flag_classes",
     "nonprimitive_nondegenerate_sublattice_classes",
     "iter_all_nondegenerate_sublattice_index_classes",
 ]

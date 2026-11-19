@@ -25,6 +25,23 @@ def test_mixed_maximal_null_flag_finite_classifier_refuses_infinite_orbits(radic
         tuple(primitive_marking_classes(category, shape, ambient))
 
 
+def test_primitive_null_flag_stream_yields_integral_saturated_diagrams():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        _flag_arrows, isometry, iter_primitive_isotropic_flag_classes,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    flags = tuple(islice(iter_primitive_isotropic_flag_classes(ambient, (1, 2)), 2))
+    assert len(flags) == 2
+    for flag in flags:
+        first, second = _flag_arrows(flag)
+        assert first.is_primitive() and second.is_primitive()
+        assert isometry(flag.parent(), flag, flag) is not None
+    assert isometry(flags[0].parent(), flags[0], flags[1]) is None
+
+
 def test_mixed_radical_shear_positive_and_negative_transporters():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
