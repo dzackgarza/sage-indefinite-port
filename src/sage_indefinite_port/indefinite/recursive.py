@@ -1476,6 +1476,20 @@ class EichlerRecursion:
             lattice, allowed, determinant=True, ambient_generators=ambient_generators,
         )
 
+    def real_spinor_kernel_subgroup(self, lattice: Lattices.ParentMethods, *, ambient_generators=None):
+        r"""Owned kernel of the normalized real-spinor character.
+
+        This is not the determinant kernel or the positive-cone subgroup.
+        The provider's O_plus character fixes the reflection normalization.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, real_spinor=True, ambient_generators=ambient_generators,
+        )
+        allowed = image.subgroup_from_membership(lambda key: key[-1] == 1)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, real_spinor=True, ambient_generators=ambient_generators,
+        )
+
     def principal_congruence_subgroup_generators(self, lattice: Lattices.ParentMethods, modulus: int):
         r"""Generators of ``ker(O(L) -> Aut(L/modulus*L))`` (principal congruence subgroup)."""
         image = self.congruence_image(lattice, modulus)

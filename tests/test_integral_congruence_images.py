@@ -1276,3 +1276,16 @@ def test_owned_determinant_kernel_distinguishes_reflection_from_negative_identit
         ambient, g, image.subgroup_from_membership(lambda key: key[-1] == 1),
         determinant=True,
     ) is not None for g in (ambient.O().identity(), ambient.O()((-e, -f))))
+
+
+def test_owned_real_spinor_kernel_matches_normalized_character():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    subgroup = engine.real_spinor_kernel_subgroup(ambient)
+    character = ambient.O_plus().preimage_morphism()
+    assert ambient.O().identity() in subgroup
+    for generator in engine.orthogonal_group_generators(ambient):
+        assert (generator in subgroup) == bool(character(generator).is_one())
