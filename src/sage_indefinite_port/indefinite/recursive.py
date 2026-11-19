@@ -1240,6 +1240,19 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def joint_determinant_field_spinor_image(self, lattice: Lattices.ParentMethods, modulus: int, field_map=None, form_multiplier=None):
+        r"""Actual joint level, determinant and field-spinor image."""
+        from sage_indefinite_port.indefinite.congruence_images import JointDeterminantFieldSpinorImage
+
+        character = lattice.spinor_norm(field_map, form_multiplier)
+        def spinor(columns):
+            return character(_isometry_from_column_matrix(lattice, lattice, columns))
+        generators = self.orthogonal_group_generators(lattice)
+        return JointDeterminantFieldSpinorImage(
+            tuple(_column_matrix(g) for g in generators), modulus, spinor,
+            character.codomain().one(), rank=len(tuple(lattice.module_generating_set())),
+        )
+
     def field_spinor_kernel_generators(self, lattice: Lattices.ParentMethods, field_map=None, form_multiplier=None):
         r"""Exact integral generators of the field-spinor kernel.
 

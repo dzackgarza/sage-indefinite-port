@@ -338,3 +338,17 @@ def test_public_principal_congruence_and_positive_component_image():
     assert all(g.preserves_positive_cone() for g in engine.joint_positive_cone_congruence_preimage_generators(
         ambient, 2, (image.identity,)
     )[1])
+
+
+def test_joint_determinant_field_spinor_image_keeps_both_characters():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[6]])
+    image = EichlerRecursion().joint_determinant_field_spinor_image(ambient, 2)
+    assert len(image.image_keys()) == 2
+    assert {key[1] for key in image.image_keys()} == {-1, 1}
+    assert len({key[2] for key in image.image_keys()}) == 2
+    index, generators = image.preimage_generators((image.identity,))
+    assert index == 2
+    assert all(image.image(g) == image.identity for g in generators)
