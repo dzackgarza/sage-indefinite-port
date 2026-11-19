@@ -1769,12 +1769,24 @@ class EichlerRecursion:
                 ) is not None:
                     generators = witt_one
                 case _ if int(profile.signed_view.witt_index()) < 2:
-                    # The approximate model needs two hyperbolic planes; the source
-                    # stops below rational Witt index two (IndefiniteForms.g:830).
-                    raise UnfinishedCapability(
-                        f"O(L) generators for {profile.signed_view}: positive index {profile.positive_index}, "
-                        f"rational Witt index {profile.signed_view.witt_index()} and no recognized model; "
-                        "work unit #69 owns this case"
+                    # The source's approximate model requires Witt index >= 2.
+                    # Li–Margulis, GAFA 26 (2016), Theorem 2 provides a
+                    # *complete* finite coefficient bound for O(B,ZZ) at
+                    # every nonsingular indefinite rank >= 3, independent
+                    # of rational Witt index. The port evaluates a certified
+                    # dimension-only majorant and exhausts precisely that
+                    # finite box. This is a terminating fallback, not a
+                    # partial enumeration or a finite-index subgroup.
+                    # Specialized quaternion/Hilbert routes above remain
+                    # selected where they offer practical exact generators.
+                    from sage_indefinite_port.indefinite.li_margulis import (
+                        default_constants,
+                        orthogonal_group_generators as li_margulis_generators,
+                    )
+
+                    generators = li_margulis_generators(
+                        profile.signed_view,
+                        default_constants(int(profile.signed_view.module_rank())),
                     )
                 case _:
                     generators = self._generation_step(profile.signed_view)

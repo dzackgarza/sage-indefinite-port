@@ -7,7 +7,6 @@ marked transporter. The result is a statement about the supplied box: the bound 
 """
 
 from dataclasses import dataclass
-from itertools import product
 from math import comb as binomial, factorial, isqrt
 
 from sage.matrix.constructor import matrix
@@ -79,21 +78,54 @@ def isotropic_pair_grams(lattice):
 
 
 def _vectors_in_box(lattice, bound):
+    r"""Every vector in an arbitrary-precision integer coordinate box, lazily.
+
+    Enumerate exact sup-norm shells in increasing order. Each finite shell is
+    traversed by a base-(2r+1) odometer rather than by ``product(range(...))``:
+    ``itertools.product`` eagerly materializes its pools and fails before
+    the first point when the Li–Margulis bound exceeds machine-sized lengths.
+    The odometer uses unbounded integer arithmetic and constant memory in
+    the bound (apart from the vector's coordinates), and terminates after
+    exhausting every shell with radius at most the proved finite bound.
+    """
     generators = tuple(lattice.module_generators())
-    for coordinates in product(range(-bound, bound + 1), repeat=len(generators)):
-        yield sum(
-            (lattice.scalar_multiple(c, g) for c, g in zip(coordinates, generators, strict=True)), lattice.zero()
-        )
+    bound = ZZ(bound)
+    if bound < 0:
+        return
+    if not generators:
+        yield lattice.zero()
+        return
+    radius = 0
+    while radius <= bound:
+        coordinates = [-radius] * len(generators)
+        while True:
+            if max(abs(value) for value in coordinates) == radius:
+                yield sum(
+                    (lattice.scalar_multiple(value, g)
+                     for value, g in zip(coordinates, generators, strict=True) if value),
+                    lattice.zero(),
+                )
+            for position in range(len(coordinates) - 1, -1, -1):
+                if coordinates[position] < radius:
+                    coordinates[position] += 1
+                    coordinates[position + 1:] = [-radius] * (len(coordinates) - position - 1)
+                    break
+            else:
+                break
+        radius += 1
 
 
 def primitive_tuples_in_box(lattice, gram, bound):
-    r"""Yield the primitive tuples with Gram matrix ``gram`` and coordinates of absolute value at most ``bound``."""
+    r"""Yield primitive Gram tuples from a proved finite box without materializing norm shells.
+
+    Every candidate at every recursive depth is streamed afresh.  The
+    induction terminates because each single-vector box is finite and the
+    tuple rank is finite. Unlike precomputing all norm-shell vectors, the
+    first certified primitive tuple can be emitted before the rest of an
+    astronomically large theorem box has been traversed.
+    """
     gram = matrix(ZZ, gram)
     size = gram.nrows()
-    shell = {}
-    for index in range(size):
-        target = gram[index, index]
-        shell[index] = [v for v in _vectors_in_box(lattice, bound) if int(lattice.b(v, v)) == int(target)]
 
     def extend(prefix):
         index = len(prefix)
@@ -102,7 +134,9 @@ def primitive_tuples_in_box(lattice, gram, bound):
             if rows.rank() == size and all(d == 1 for d in rows.elementary_divisors()):
                 yield tuple(prefix)
             return
-        for candidate in shell[index]:
+        for candidate in _vectors_in_box(lattice, bound):
+            if int(lattice.b(candidate, candidate)) != int(gram[index, index]):
+                continue
             if all(int(lattice.b(prefix[i], candidate)) == int(gram[i, index]) for i in range(index)):
                 yield from extend([*prefix, candidate])
 
