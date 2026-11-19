@@ -1461,6 +1461,28 @@ class EichlerRecursion:
             ambient_contains=lambda g: as_isometry(g) in ambient_group,
         )
 
+    def joint_discriminant_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Owned kernel/section witnesses and exact word for preimage membership.
+
+        Returns ``None`` for a nonmember of the arithmetic preimage; a
+        positive result consists of two owned integral automorphisms whose
+        product is the supplied isometry, and a generator-index section word.
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("factorization requires an automorphism of the supplied lattice")
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        result = image.preimage_factorization(_column_matrix(isometry), allowed)
+        if result is None:
+            return None
+        kernel, section, word = result
+        return (_isometry_from_column_matrix(lattice, lattice, kernel),
+                _isometry_from_column_matrix(lattice, lattice, section), word)
+
     def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Integral preimage generators for an actual joint discriminant subgroup."""
         image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, field_spinor=field_spinor, field_map=field_map, form_multiplier=form_multiplier, level_modulus=level_modulus, ambient_generators=ambient_generators)

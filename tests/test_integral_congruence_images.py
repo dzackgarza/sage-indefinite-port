@@ -1097,3 +1097,27 @@ def test_joint_preimage_factorization_returns_kernel_section_and_word():
         for position in word:
             product *= image.generators[position]
         assert product == section
+
+
+def test_public_joint_preimage_factorization_returns_owned_kernel_section():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    e, f = ambient.module_generators()
+    swap = ambient.O()((f, e))
+    image = engine.joint_discriminant_character_image(ambient, determinant=True, level_modulus=4)
+    allowed = image.subgroup_from_membership(lambda key: key[-1] == 1)
+    assert engine.joint_discriminant_character_preimage_factorization(
+        ambient, swap, allowed, determinant=True, level_modulus=4
+    ) is None
+    identity = ambient.O().identity()
+    result = engine.joint_discriminant_character_preimage_factorization(
+        ambient, identity, allowed, determinant=True, level_modulus=4
+    )
+    assert result is not None
+    kernel, section, word = result
+    assert kernel.domain() is ambient and section.codomain() is ambient
+    assert kernel(section(e)) == e and kernel(section(f)) == f
+    assert word == ()
