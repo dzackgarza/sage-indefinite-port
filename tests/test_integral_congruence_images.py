@@ -746,3 +746,24 @@ def test_joint_double_coset_stabilizer_preimage_has_exact_index_and_generators()
         index, generators = image.double_coset_stabilizer_preimage(left, right, key)
         assert index * len(intersection) == len(image.image_keys())
         assert all(image.image(g) in intersection for g in generators)
+
+
+def test_public_double_coset_stabilizers_are_owned_integral_isometries():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True, level_modulus=4
+    )
+    left = image.subgroup_from_membership(lambda key: key[2] == 1)
+    right = image.subgroup_from_membership(lambda key: key[3] == 1)
+    classes = engine.joint_discriminant_double_coset_stabilizers(
+        ambient, left, right, determinant=True, real_spinor=True, level_modulus=4
+    )
+    assert len(classes) == len(image.double_coset_representatives(left, right))
+    for representative, index, generators in classes:
+        assert representative.domain() is ambient and representative.codomain() is ambient
+        assert index >= 1
+        assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
