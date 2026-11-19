@@ -951,6 +951,10 @@ class JointDiscriminantCharacterImage:
         if t_image not in self._lifts:
             raise ValueError("ambient transporter image is outside the generated group")
         generators = tuple(matrix(ZZ, g) for g in stabilizer_generators)
+        if self.ambient_contains is not None and any(
+            not self.ambient_contains(g) for g in generators
+        ):
+            raise ValueError("stabilizer generator is outside the specified ambient subgroup")
         images = tuple(self.image(g) for g in generators)
         if any(key not in self._lifts for key in images):
             raise ValueError("stabilizer generator image lies outside the generated group")

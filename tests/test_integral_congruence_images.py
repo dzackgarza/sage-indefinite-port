@@ -981,3 +981,24 @@ def test_relative_congruence_kernel_in_proper_generated_ambient_group():
     )
     assert index == 2
     assert all(g(e) == e and g(f) == f for g in generators)
+
+
+def test_restricted_transporter_rejects_stabilizer_outside_proper_ambient_group():
+    from pytest import raises
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    e, f = ambient.module_generators()
+    engine = EichlerRecursion()
+    negative = ambient.O()((-e, -f))
+    swap = ambient.O()((f, e))
+    image = engine.joint_discriminant_character_image(
+        ambient, level_modulus=2, ambient_generators=(negative,)
+    )
+    # Swap and identity have the same level-two reduction, but swap is not
+    # in < -I >. An image-only check would accept this invalid correction.
+    with raises(ValueError, match="outside the specified ambient subgroup"):
+        image.restricted_transporter((image.identity,), image.one,
+                                     (matrix(ZZ, [[0, 1], [1, 0]]),))
+    assert image.restricted_transporter((image.identity,), image.one, ()) == image.one
