@@ -3553,13 +3553,27 @@ def iter_primitive_isotropic_flag_classes(lattice: Parent, dimensions: tuple[int
         # Central -id preserves every unoriented flag in odd rank.
         acting_group = None
     category = Cat().Mor(FiniteOrdinalCategory(len(dimensions) + 1), LATTICES)
+    if lattice.is_nondegenerate():
+        # The source-backed isotropic induction already certifies the
+        # complete finite orbit set in its nondegenerate algorithmic
+        # domain. Do not continue searching height shells indefinitely
+        # after its final representative.
+        for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions):
+            arrows = _flag_marking_from_basis(lattice, basis, dimensions)
+            marked = category(arrows[0] if len(arrows) == 1 else arrows)
+            if acting_group is None:
+                yield marked
+            else:
+                yield from lattice.O().split_orbit(marked, acting_group)
+        return
     if all(lattice.b(x, y) == lattice.base_ring().zero()
            for x in lattice.module_generators() for y in lattice.module_generators()):
         # Every primitive flag in a zero-form lattice is a primitive
         # module flag, and GL(L) is transitive on flags of fixed ranks.
         # The complete full-group quotient is finite, so terminate it.
         basis = tuple(lattice.module_generators())[:top]
-        marked = category(_flag_marking_from_basis(lattice, basis, dimensions))
+        arrows = _flag_marking_from_basis(lattice, basis, dimensions)
+        marked = category(arrows[0] if len(arrows) == 1 else arrows)
         if acting_group is None:
             yield marked
         else:
@@ -3574,7 +3588,8 @@ def iter_primitive_isotropic_flag_classes(lattice: Parent, dimensions: tuple[int
         labels = tuple(reduced.module_generating_set())[nondegenerate_rank:]
         basis = tuple(reduction.isometry(reduced.module_generator(label))
                       for label in labels[:top])
-        marked = category(_flag_marking_from_basis(lattice, basis, dimensions))
+        arrows = _flag_marking_from_basis(lattice, basis, dimensions)
+        marked = category(arrows[0] if len(arrows) == 1 else arrows)
         if acting_group is None:
             yield marked
         else:
@@ -3599,7 +3614,8 @@ def iter_primitive_isotropic_flag_classes(lattice: Parent, dimensions: tuple[int
                    or int(lattice.subobject_on(basis[:d]).rank()) != d
                    for d in dimensions):
                 continue
-            marked = category(_flag_marking_from_basis(lattice, basis, dimensions))
+            arrows = _flag_marking_from_basis(lattice, basis, dimensions)
+            marked = category(arrows[0] if len(arrows) == 1 else arrows)
             if any(isometry(category, marked, previous) is not None for previous in seen):
                 continue
             seen.append(marked)

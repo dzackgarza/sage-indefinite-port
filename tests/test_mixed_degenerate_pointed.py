@@ -86,6 +86,25 @@ def test_anisotropic_quotient_primitive_flag_stream_exhausts_radical_flags():
     assert all(arrow.is_primitive() for arrow in _flag_arrows(flags[0]))
 
 
+def test_nondegenerate_primitive_flag_stream_terminates_after_source_classes():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_flag_classes
+
+    ambient = Lattices(ZZ)("U")
+    flags = tuple(iter_primitive_isotropic_flag_classes(ambient, (1,)))
+    assert len(flags) == 1
+    assert flags[0].arrow().is_primitive()
+
+
+def test_one_term_degenerate_flag_stream_returns_arrow_objects():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_flag_classes
+
+    for ambient in (Lattices(ZZ)([[0]]), Lattices(ZZ)([[2, 0], [0, 0]])):
+        flags = tuple(iter_primitive_isotropic_flag_classes(ambient, (1,)))
+        assert len(flags) == 1 and flags[0].arrow().is_primitive()
+
+
 def test_mixed_radical_shear_positive_and_negative_transporters():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
