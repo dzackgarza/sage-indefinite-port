@@ -177,6 +177,47 @@ Continue independent port work against the frozen API rather than changing
 research source in the port worktree. Do not claim an upstream research
 operation is correct merely because its public name exists.
 
+## Mathematical implementation feedback loop
+
+**The inner loop is one mathematical obligation, not a test module, test
+family, CI tier, or acceptance suite.** Identify the pinned source operation,
+its exact hypotheses, and the smallest input on which the proposed behavior
+is nontrivial. Establish the expected answer independently: prove the orbit
+count, subgroup equality, integral obstruction, termination condition or
+transporter property as applicable. A passing test checks that example; it
+does **not** substitute for a proof of the routine's full advertised domain.
+
+Run one explicitly named pytest node with
+`just test-node 'tests/path.py::test_exact_mathematical_claim'`. The recipe
+rejects bare files and selections expanding to more than one collected test,
+including an unqualified parametrized function; specify its exact parameter ID. Prefer a directly executable
+one-case witness of the actual public operation over a large imported
+fixture or an expensive integration case. If the smallest valid counterexample
+is expensive, keep that example; do not replace the required mathematics
+with a weaker claim merely to save time.
+
+For each source correction: establish the failure or missing branch on that
+single witness; implement the full source-supported construction; rerun the
+same node; then check the *few other nodes for genuinely distinct mathematical
+branches* touched by the change. For generator algorithms prove the family
+generates the complete group, not merely that each proposed generator
+preserves the form. For orbit enumerators prove exhaustiveness and pairwise
+inequivalence, not just that returned elements are legal. For transporters
+verify existence/nonexistence against an independent invariant, integral
+maps, both directions and the requested subgroup when applicable. For
+inductive routines prove the rank-general step separately from testing its
+smallest instance. Keep every essential hypothesis and do not infer
+completeness from lack of further examples in a search.
+
+**Do not run a whole test module, multi-module selection, acceptance family
+or CI workflow as a routine inner-loop step.** Broader integration tests run
+once when a demonstrated dependency or a completed coherent implementation
+needs them; frozen full acceptance is the separate final gate. The existing
+suite-complexity/budget records concern that later gate and do not determine
+what to implement or what to test in the hot loop. In particular, a long
+regression suite is never a prerequisite to making the next mathematical
+code change.
+
 ## Tests and acceptance
 
 Run-time work follows [the suite triage](references/complexity/triage.md): the probe-backed suite estimate is the problem, and a fix counts only by the hours it removes from it. A saving of seconds counts only when it compounds over enough cases to remove hours. The suite is not run whole while the estimate exceeds 6 hours.

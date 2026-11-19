@@ -22,13 +22,31 @@ ambient:
 test-commit:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-commit
 
-# Run the full SageMath test suite before pushing.
+# Syntax checks on outgoing commits (not a full SageMath test run).
 test-push:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-push
 
 # Run CI acceptance QC through the central implementation.
 test-ci:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-ci
+
+# Inner mathematical feedback loop: run exactly one public regression node.
+# A bare file or -k selection is deliberately rejected: neither identifies
+# the smallest independently proved mathematical obligation.
+test-node node:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    node={{quote(node)}}
+    case "$node" in
+        tests/*::* ) ;;
+        *) echo "Expected one explicit test node: tests/path.py::test_claim[parameter]" >&2; exit 2 ;;
+    esac
+    # This Sage launcher is a container wrapper and does not forward
+    # arbitrary environment variables or additional argv. Serialize only
+    # the selected node as a quoted Python string literal.
+    node_literal="$(python3 -c 'import json, sys; print(json.dumps(sys.argv[1]))' "$node")"
+    export PYTHONPATH="$PWD/src:$PWD${PYTHONPATH:+:$PYTHONPATH}"
+    "${SAGE_BIN:-sage}" -c "import sage.all, sys; from ci.one_node import run; sys.exit(run($node_literal))"
 
 # Run the README example as a doctest; it is the smallest acceptance.
 readme-example:
