@@ -322,3 +322,19 @@ def test_field_spinor_kernel_does_not_accidentally_impose_level_two():
     assert index == expected_index
     character = ambient.spinor_norm()
     assert all(character(g).is_one() for g in generators)
+
+
+def test_public_principal_congruence_and_positive_component_image():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_positive_cone_congruence_image(ambient, 2)
+    assert {sign for _, sign in image.image_keys()} == {-1, 1}
+    index, kernel = engine.principal_congruence_subgroup_generators(ambient, 2)
+    assert index == len(engine.congruence_image(ambient, 2).image_keys())
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in kernel)
+    assert all(g.preserves_positive_cone() for g in engine.joint_positive_cone_congruence_preimage_generators(
+        ambient, 2, (image.identity,)
+    )[1])

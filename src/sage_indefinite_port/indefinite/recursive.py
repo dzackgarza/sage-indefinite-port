@@ -1253,6 +1253,36 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def principal_congruence_subgroup_generators(self, lattice: Lattices.ParentMethods, modulus: int):
+        r"""Generators of ``ker(O(L) -> Aut(L/modulus*L))`` (principal congruence subgroup)."""
+        image = self.congruence_image(lattice, modulus)
+        index, matrices = image.preimage_generators((image.image_one,))
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def joint_positive_cone_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+        r"""Actual joint image of congruence reduction and positive-cone component."""
+        from sage_indefinite_port.indefinite.congruence_images import JointSignCongruenceImage
+
+        # Calling the provider predicate enforces its exact signature (1,n)
+        # hypothesis and selected positive-cone convention.
+        lattice.O_component()  # Enforce the provider's exact signature hypothesis.
+
+        def sign(columns):
+            isometry = _isometry_from_column_matrix(lattice, lattice, columns)
+            return 1 if isometry.preserves_positive_cone() else -1
+
+        generators = self.orthogonal_group_generators(lattice)
+        return JointSignCongruenceImage(
+            tuple(_column_matrix(g) for g in generators), modulus, sign,
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_positive_cone_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+        r"""Integral generators of a subgroup of the actual level/component image."""
+        image = self.joint_positive_cone_congruence_image(lattice, modulus)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 
