@@ -3540,8 +3540,10 @@ def iter_primitive_isotropic_flag_classes(lattice: Parent, dimensions: tuple[int
         return
     if lattice.is_nondegenerate() and top > int(lattice.witt_index()):
         return
+    reduction = None
+    quotient_witt = None
     if not lattice.is_nondegenerate():
-        _reduction, _n, radical_rank, quotient = _degenerate_quotient_and_radical(lattice)
+        reduction, nondegenerate_rank, radical_rank, quotient = _degenerate_quotient_and_radical(lattice)
         quotient_witt = int(quotient.witt_index()) if quotient is not None and quotient.is_isotropic() else 0
         if top > radical_rank + quotient_witt:
             return
@@ -3557,6 +3559,21 @@ def iter_primitive_isotropic_flag_classes(lattice: Parent, dimensions: tuple[int
         # module flag, and GL(L) is transitive on flags of fixed ranks.
         # The complete full-group quotient is finite, so terminate it.
         basis = tuple(lattice.module_generators())[:top]
+        marked = category(_flag_marking_from_basis(lattice, basis, dimensions))
+        if acting_group is None:
+            yield marked
+        else:
+            yield from lattice.O().split_orbit(marked, acting_group)
+        return
+    if reduction is not None and quotient_witt == 0:
+        # A rationally anisotropic nondegenerate quotient forces every
+        # totally isotropic subspace into rad(L). The radical is saturated,
+        # and its full GL action extends to the split reduced lattice.
+        # Thus each primitive flag shape has exactly one full O(L)-orbit.
+        reduced = reduction.reduced
+        labels = tuple(reduced.module_generating_set())[nondegenerate_rank:]
+        basis = tuple(reduction.isometry(reduced.module_generator(label))
+                      for label in labels[:top])
         marked = category(_flag_marking_from_basis(lattice, basis, dimensions))
         if acting_group is None:
             yield marked
