@@ -1271,6 +1271,22 @@ class EichlerRecursion:
         index, matrices = image.finite_index_sublattice_stabilizer(basis)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def finite_index_sublattice_stabilizer_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, basis, *, ambient_generators=None):
+        r"""Owned setwise stabilizer of a full-rank sublattice containing mL."""
+        from sage.matrix.constructor import matrix
+        from sage.rings.integer_ring import ZZ
+
+        rows = matrix(ZZ, basis)
+        rank = len(tuple(lattice.module_generating_set()))
+        if rows.dimensions() != (rank, rank) or rows.det() == 0:
+            raise ValueError("sublattice basis must be square and full rank")
+        if any(x not in ZZ for x in (ZZ(modulus) * rows.inverse()).list()):
+            raise ValueError("modulus times the ambient lattice must lie in the sublattice")
+        return self.simultaneous_congruence_stabilizer_subgroup(
+            lattice, modulus, submodules=(tuple(rows.rows()),),
+            ambient_generators=ambient_generators,
+        )
+
     def joint_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
         r"""Actual joint image of level reduction and normalized real spinor sign.
 

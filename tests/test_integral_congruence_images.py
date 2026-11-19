@@ -1160,3 +1160,26 @@ def test_owned_simultaneous_residue_stabilizer_in_proper_ambient_group():
         ambient, 3, ambient_generators=(negative,),
     )
     assert negative in unrestricted
+
+
+def test_owned_finite_index_sublattice_stabilizer():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    engine = EichlerRecursion()
+    subgroup = engine.finite_index_sublattice_stabilizer_subgroup(
+        ambient, 4, ((2, 0), (0, 1)),
+    )
+    assert ambient.O().identity() in subgroup
+    assert ambient.O()((f, e)) not in subgroup
+    assert ambient.O()((-e, -f)) in subgroup
+    _, generators = engine.finite_index_sublattice_stabilizer_generators(
+        ambient, 4, ((2, 0), (0, 1)),
+    )
+    assert all(g in subgroup for g in generators)
+    with pytest.raises(ValueError):
+        engine.finite_index_sublattice_stabilizer_subgroup(
+            ambient, 4, ((3, 0), (0, 1)),
+        )
