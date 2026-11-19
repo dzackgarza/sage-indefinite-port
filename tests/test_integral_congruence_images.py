@@ -307,3 +307,18 @@ def test_public_field_spinor_image_on_anisotropic_rank_one():
     )
     assert index == 2
     assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
+
+
+def test_field_spinor_kernel_does_not_accidentally_impose_level_two():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_field_spinor_congruence_image(ambient, 2)
+    one = image.identity[1]
+    expected_index = len({key[1] for key in image.image_keys()})
+    index, generators = engine.field_spinor_kernel_generators(ambient)
+    assert index == expected_index
+    character = ambient.spinor_norm()
+    assert all(character(g).is_one() for g in generators)

@@ -1240,6 +1240,19 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def field_spinor_kernel_generators(self, lattice: Lattices.ParentMethods, field_map=None, form_multiplier=None):
+        r"""Exact integral generators of the field-spinor kernel.
+
+        The finite generated spinor image is computed using the joint level
+        model at modulus two and then *all* reduction classes with trivial
+        spinor are retained. Thus no level-two restriction is imposed.
+        """
+        image = self.joint_field_spinor_congruence_image(lattice, 2, field_map, form_multiplier)
+        one = image.identity[1]
+        allowed = (key for key in image.image_keys() if key[1] == one)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 
