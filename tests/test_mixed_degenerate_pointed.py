@@ -42,6 +42,15 @@ def test_primitive_null_flag_stream_yields_integral_saturated_diagrams():
     assert isometry(flags[0].parent(), flags[0], flags[1]) is None
 
 
+def test_primitive_null_flag_stream_terminates_above_degenerate_witt_bound():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_flag_classes
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 2, 0], [0, 0, 2]])
+    assert tuple(iter_primitive_isotropic_flag_classes(ambient, (1, 2))) == ()
+    assert tuple(iter_primitive_isotropic_flag_classes(ambient, (4,))) == ()
+
+
 def test_mixed_radical_shear_positive_and_negative_transporters():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

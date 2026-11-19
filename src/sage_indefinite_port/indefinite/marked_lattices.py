@@ -3540,6 +3540,11 @@ def iter_primitive_isotropic_flag_classes(lattice: Parent, dimensions: tuple[int
         return
     if lattice.is_nondegenerate() and top > int(lattice.witt_index()):
         return
+    if not lattice.is_nondegenerate():
+        _reduction, _n, radical_rank, quotient = _degenerate_quotient_and_radical(lattice)
+        quotient_witt = int(quotient.witt_index()) if quotient is not None and quotient.is_isotropic() else 0
+        if top > radical_rank + quotient_witt:
+            return
     if acting_group is lattice.O() or (
         acting_group is not None and rank % 2 and acting_group is lattice.SO()
     ):
