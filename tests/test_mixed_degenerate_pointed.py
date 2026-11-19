@@ -3,6 +3,27 @@ import pytest
 from tests.acceptance.consumer import lattice
 
 
+@pytest.mark.parametrize("radical_rank", (1, 2))
+def test_radical_first_maximal_null_flag_classes_in_u_plus_zero(radical_rank):
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        _flag_arrows, _flag_marking_from_basis, primitive_marking_classes,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * radical_rank for _ in range(radical_rank)])
+    e, f, *radical = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    shape = category(_flag_marking_from_basis(ambient, (*radical, e), (radical_rank, radical_rank + 1)))
+    classes = tuple(primitive_marking_classes(category, shape, ambient))
+    assert len(classes) == 1
+    first, second = _flag_arrows(classes[0])
+    assert (int(first.domain().rank()), int(second.domain().rank())) == (radical_rank, radical_rank + 1)
+    radical_inclusion = ambient.primitive_isotropic_subobject(*radical).inclusion()
+    assert all(radical_inclusion.is_in_image(second(first(point)))
+               for point in first.domain().module_generators())
+
+
 def test_mixed_radical_shear_positive_and_negative_transporters():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

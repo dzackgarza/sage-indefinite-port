@@ -3478,6 +3478,30 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     raise ValueError("isotropic flag ranks must be positive and strictly increasing")
                 if dimensions[-1] > k + quotient_witt:
                     classes = ()
+                elif quotient_witt == 1 and k > 0 and dimensions == (k, k + 1):
+                    # Every maximal null plane contains the saturated
+                    # radical. Thus its radical-first flag is
+                    # uniquely determined by the moving plane. Reuse the
+                    # exact maximal-plane classification, retaining its
+                    # quotient-line orbit distinctions.
+                    plane_source = lattice.lattice_category()([[0] * (k + 1) for _ in range(k + 1)])
+                    planes = primitive_marking_classes(ARROWS, plane_source, lattice)
+                    radical = tuple(reduction.isometry(reduced.module_generator(label))
+                                    for label in tuple(reduced.module_generating_set())[n:])
+                    radical_inclusion = lattice.primitive_isotropic_subobject(*radical).inclusion()
+                    classes = tuple(
+                        category(_flag_marking_from_basis(
+                            lattice,
+                            (*radical, next(
+                                point for point in (
+                                    plane.arrow()(generator)
+                                    for generator in plane.arrow().domain().module_generators()
+                                ) if not radical_inclusion.is_in_image(point)
+                            )),
+                            dimensions,
+                        ))
+                        for plane in planes
+                    )
                 elif quotient_witt:
                     raise ValueError(
                         "mixed degenerate primitive isotropic flag orbit sets may be infinite; "
