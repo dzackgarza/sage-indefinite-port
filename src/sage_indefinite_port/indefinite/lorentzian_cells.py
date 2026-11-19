@@ -915,7 +915,7 @@ def _iter_owned_row_blocks(rows, block_size: int) -> Iterator[tuple[tuple[int, .
 # isometry is determined by the images of a rank-sized basis. Large frozen
 # configurations use only intrinsic vertex colours here and retain exact
 # pairwise constraints in the basis-image search below.
-_PAIRING_GRAPH_REFINEMENT_LIMIT = 4096
+_PAIRING_GRAPH_REFINEMENT_LIMIT = 512
 # Sage's exact canonical-label search on the labelled pairing graph exhausts
 # the hosted runner already for the frozen 503-vector rank-seven A2+A2
 # covariance case.  The graph's edge-label encoding adds substantial
