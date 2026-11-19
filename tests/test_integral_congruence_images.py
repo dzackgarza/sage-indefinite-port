@@ -494,3 +494,21 @@ def test_public_joint_image_of_proper_generated_ambient_subgroup():
     assert index == 2
     assert all(image.image(matrix(ZZ, [list(g(x).to_vector()) for x in (e, f)]).transpose()) == image.identity
                for g in kernel)
+
+
+def test_trivial_generated_ambient_subgroup_has_exact_identity_image():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True,
+        level_modulus=4, ambient_generators=(),
+    )
+    assert image.image_keys() == frozenset((image.identity,))
+    index, generators = engine.joint_discriminant_character_preimage_generators(
+        ambient, (image.identity,), determinant=True, real_spinor=True,
+        level_modulus=4, ambient_generators=(),
+    )
+    assert index == 1 and generators == ()

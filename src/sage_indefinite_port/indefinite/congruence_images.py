@@ -593,11 +593,15 @@ class JointDiscriminantCharacterImage:
     The target is their *generated joint image*, not the direct product.
     """
 
-    def __init__(self, generators, discriminant, characters, identity, *, level_modulus=None):
+    def __init__(self, generators, discriminant, characters, identity, *, level_modulus=None, rank=None):
         self.generators = tuple(matrix(ZZ, g) for g in generators)
-        self.one = identity_matrix(ZZ, self.generators[0].nrows()) if self.generators else None
-        if self.one is None:
+        if rank is None:
+            rank = self.generators[0].nrows() if self.generators else None
+        if rank is None:
             raise ValueError("rank must be known for an empty generating family")
+        self.one = identity_matrix(ZZ, rank)
+        if any(g.dimensions() != (rank, rank) or g.det() not in (1, -1) for g in self.generators):
+            raise ValueError("ambient generators must be unimodular square matrices")
         self.discriminant = discriminant
         self.characters = tuple(characters)
         self.identity = tuple(identity)

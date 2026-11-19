@@ -1336,6 +1336,7 @@ class EichlerRecursion:
             lambda g: rho(as_isometry(g)),
             tuple((lambda g, chi=chi: chi(as_isometry(g))) for chi in signs),
             identities, level_modulus=level_modulus,
+            rank=len(tuple(lattice.module_generating_set())),
         )
 
     def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, level_modulus=None, ambient_generators=None):
