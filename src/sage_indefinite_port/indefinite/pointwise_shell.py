@@ -83,6 +83,7 @@ __all__ = [
     "pointwise_shell_action",
     "pointwise_shell_group",
     "pointwise_shell_quotient",
+    "pointwise_shell_representatives",
     "shell_coordinates",
 ]
 
@@ -282,6 +283,93 @@ def pointwise_shell_action(lattice, *, square=0):
 def pointwise_shell_quotient(lattice, *, square=0):
     r"""`L[square] / Gamma` as the provider's orbit set, built on :func:`pointwise_shell_action`."""
     return pointwise_shell_action(lattice, square=square).orbits()
+
+
+def pointwise_shell_representatives(lattice, *, square=0):
+    r"""Exhaustively and without repetition enumerate canonical `Gamma`-orbit vectors on `L[square]`.
+
+    This is a *lazy*, provably complete iterator, not a finite list or a
+    bounded cover misidentified as a quotient. Every even shell has
+    infinitely many orbits: `(0,m,n,1)` has norm `2n` and the invariant
+    `b(e1,v)=m` is distinct for each integer `m`. Odd shells are empty.
+
+    For fixed `square=2n`, visit `m=0` and `m=+r,-r` as `r=0,1,...`:
+
+    * At nonzero `m`, reduce `c,d` modulo `|m|` and retain exactly pairs
+      satisfying `cd == n (mod m)`, with `a=(n-cd)/m`. This is exhaustive
+      because integral unipotents move `c,d` independently by multiples of
+      `m` and preserve the norm.
+    * At `m=0`, the equation is `cd=n`. Visit every pair once at radius
+      `max(|c|,|d|)`, and use `0 <= a < gcd(c,d)`. For `c=d=0` and `n=0`,
+      enumerate all `a` by their absolute value instead. Bézout's identity
+      proves this covers exactly the possible `a`-classes.
+
+    Canonicalization and the already-proved full orbit key suppress the
+    remaining finite symmetries and possible repetitions. Each radius has
+    finitely many candidate vectors. Consequently *every* class is reached
+    after finitely many finite stages, and no class is emitted twice.
+
+    With `square=None`, enumerate all of `L` in increasing coordinate
+    sup-norm, again canonically selecting one vector per orbit. This is
+    likewise exhaustive, not a finite-depth truncation.
+    """
+    from itertools import chain, count, product
+
+    # Validate the distinguished U+U presentation even on an empty odd shell.
+    shell_coordinates(lattice, lattice.zero())
+    if square is not None:
+        square = ZZ(square)
+        if square % 2:
+            return
+        half_norm = int(square // 2)
+    frame = tuple(lattice.module_generators())
+
+    def from_coordinates(coordinates):
+        return sum(
+            (lattice.scalar_multiple(lattice.base_ring()(coefficient), basis)
+             for coefficient, basis in zip(coordinates, frame, strict=True) if coefficient),
+            lattice.zero(),
+        )
+
+    seen = set()
+    for radius in count(0):
+        if square is None:
+            candidates = (
+                entries for entries in product(range(-radius, radius + 1), repeat=4)
+                if max(abs(x) for x in entries) == radius
+            )
+        else:
+            # The gcd is zero only at (c,d)=(0,0), whose unrestricted a
+            # classes are enumerated separately at every radius.
+            m_zero = (
+                (a, 0, c, d)
+                for c, d in product(range(-radius, radius + 1), repeat=2)
+                if max(abs(c), abs(d)) == radius and c * d == half_norm
+                for a in range(gcd(abs(c), abs(d)))
+            )
+            zero_axis = (
+                (a, 0, 0, 0) for a in (
+                    ((0,) if radius == 0 else (-radius, radius)) if half_norm == 0 else ()
+                )
+            )
+            m_nonzero = (
+                ((half_norm - c * d) // m, m, c, d)
+                for m in ((radius, -radius) if radius else ())
+                for c, d in product(range(radius), repeat=2)
+                if (half_norm - c * d) % m == 0
+            )
+            candidates = chain(zero_axis, m_zero, m_nonzero)
+
+        for coordinates in candidates:
+            candidate = from_coordinates(coordinates)
+            key = gamma_class(lattice, candidate)
+            if key in seen:
+                continue
+            canonical, transporter = gamma_canonical_representative(lattice, candidate)
+            if transporter(candidate) != canonical:
+                raise ArithmeticError("uncertified orbit representative in the complete shell iterator")
+            seen.add(key)
+            yield canonical
 
 
 def gamma_class(lattice, vector) -> tuple:

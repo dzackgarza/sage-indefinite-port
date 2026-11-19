@@ -25,6 +25,7 @@ from sage_indefinite_port.indefinite.pointwise_shell import (
     gamma_witness,
     isotropic_content,
     pointwise_shell_action,
+    pointwise_shell_representatives,
     pointwise_shell_group,
     pointwise_shell_quotient,
     shell_coordinates,
@@ -595,3 +596,45 @@ def test_all_norm_pointwise_orbits_have_complete_keys_and_witnesses() -> None:
         assert certificate(point) == canonical and certificate(_e1()) == _e1()
     assert gamma_canonical_representative(L, source)[0] == gamma_canonical_representative(L, target)[0]
     assert gamma_canonical_representative(L, first)[0] != gamma_canonical_representative(L, second)[0]
+
+
+def test_all_norm_shell_iterator_is_lazy_exhaustive_and_duplicate_free() -> None:
+    r"""Prove an infinite quotient from distinct signed m and inspect finite exhaustive prefixes.
+
+    At each radius the iterator must finish all finite m=0 factor cases and
+    both signs of that radius' nonzero m. Every vector eventually has its m
+    and residues visited (or its m=0 coordinates visited), and the key-set
+    permits no duplicate Gamma classes.
+    """
+    from itertools import islice
+
+    L = _L()
+    assert tuple(pointwise_shell_representatives(L, square=1)) == ()  # q is always even.
+    for square in (0, 4, -4):
+        prefix = tuple(islice(pointwise_shell_representatives(L, square=square), 32))
+        assert len(prefix) == 32
+        assert len({gamma_class(L, v) for v in prefix}) == len(prefix)
+        assert all(int(v.q()) == square for v in prefix)
+        assert all(gamma_canonical_representative(L, v)[0] == v for v in prefix)
+        signed_m = {shell_coordinates(L, v)[1] for v in prefix}
+        assert {0, -1, 1, -2, 2} <= signed_m
+
+    # The classes of (0,m,n,1) are distinct for all m, by the invariant m.
+    for n in (0, 2, -2):
+        witnesses = (_v(0, m, n, 1) for m in range(-5, 6))
+        assert len({gamma_class(L, v) for v in witnesses}) == 11
+
+    # Any fixed finite collection of existing vectors must be reached by
+    # the representative iterator at finite height, not merely be assigned keys.
+    sample = (_v(1, 2, 1, 0), _v(0, 2, -1, -2), _v(1, 0, 1, 2))
+    enumerated = set(islice(pointwise_shell_representatives(L, square=4), 45))
+    assert all(gamma_canonical_representative(L, v)[0] in enumerated for v in sample)
+
+    # The unrestricted action/iterator must retain vectors of different norms,
+    # but must never conflate them in a single orbit.
+    all_action = pointwise_shell_action(L, square=None)
+    assert _v(0, 0, 0, 0) in all_action and _v(1, 1, 0, 0) in all_action
+    assert not all_action.in_same_orbit(_v(1, 1, 0, 0), _v(0, 1, 1, 0))
+    all_prefix = tuple(islice(pointwise_shell_representatives(L, square=None), 40))
+    assert len({gamma_class(L, v) for v in all_prefix}) == 40
+    assert {0, -2, 2} <= {int(v.q()) for v in all_prefix}
