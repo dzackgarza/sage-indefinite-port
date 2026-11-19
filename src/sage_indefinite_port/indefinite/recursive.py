@@ -1450,6 +1450,22 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def field_spinor_kernel_subgroup(self, lattice: Lattices.ParentMethods, field_map=None, form_multiplier=None, *, ambient_generators=None):
+        r"""Owned kernel of the field spinor character in the actual image.
+
+        No congruence condition is imposed, including at level two.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, field_spinor=True, field_map=field_map,
+            form_multiplier=form_multiplier, ambient_generators=ambient_generators,
+        )
+        one = image.identity[-1]
+        allowed = image.subgroup_from_membership(lambda key: key[-1] == one)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, field_spinor=True, field_map=field_map,
+            form_multiplier=form_multiplier, ambient_generators=ambient_generators,
+        )
+
     def principal_congruence_subgroup_generators(self, lattice: Lattices.ParentMethods, modulus: int):
         r"""Generators of ``ker(O(L) -> Aut(L/modulus*L))`` (principal congruence subgroup)."""
         image = self.congruence_image(lattice, modulus)

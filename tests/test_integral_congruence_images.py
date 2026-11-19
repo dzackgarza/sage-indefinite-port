@@ -1227,3 +1227,17 @@ def test_owned_relative_congruence_kernel_and_invalid_projection():
     assert negative in level_two
     with pytest.raises(ValueError):
         engine.relative_congruence_kernel_subgroup(ambient, 12, 5)
+
+
+def test_owned_field_spinor_kernel_preserves_actual_character_not_level():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[6]])
+    engine = EichlerRecursion()
+    subgroup = engine.field_spinor_kernel_subgroup(ambient)
+    assert ambient.O().identity() in subgroup
+    negative = ambient.O()((-ambient.module_generators()[0],))
+    assert negative not in subgroup
+    _, generators = engine.field_spinor_kernel_generators(ambient)
+    assert all(g in subgroup for g in generators)
