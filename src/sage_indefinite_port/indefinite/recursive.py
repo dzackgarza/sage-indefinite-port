@@ -1360,6 +1360,33 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def joint_discriminant_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Return an *owned group* realizing the exact joint finite-image inverse image.
+
+        The defining condition retains literal membership in the supplied
+        generated ambient group; the complete Schreier generating epimorphism
+        is selected by that group's owned free-cover construction.  Unlike a
+        bare tuple of matrices, the result is a subgroup on which marked
+        orbit, stabilizer and transporter consumers can evaluate membership.
+        """
+        allowed = frozenset(allowed)
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        _, matrices = image.preimage_generators(allowed)
+        ambient = (lattice.O() if ambient_generators is None
+                   else lattice.O().subgroup(ambient_generators))
+        generators = tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+        return ambient.predicate_subgroup(
+            lambda g: image.preimage_membership(_column_matrix(g), allowed),
+            lambda: "preimage of the selected subgroup under the actual joint discriminant and character image",
+            generating_morphism=ambient.free_cover(generators),
+        )
+
     def stable_orthogonal_generators(self, lattice: Lattices.ParentMethods):
         r"""Constructive generators of the discriminant kernel ``O~(L)``."""
         image = self.joint_discriminant_character_image(lattice)

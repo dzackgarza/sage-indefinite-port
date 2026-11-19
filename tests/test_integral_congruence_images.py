@@ -555,3 +555,46 @@ def test_preimage_membership_rejects_elements_outside_generated_ambient_subgroup
     assert image.image_keys() == frozenset((image.identity,))  # A_U = 0.
     assert image.preimage_membership(matrix(ZZ, [[-1, 0], [0, -1]]), (image.identity,))
     assert not image.preimage_membership(matrix(ZZ, [[0, 1], [1, 0]]), (image.identity,))
+
+
+def test_public_joint_character_preimage_is_owned_subgroup_with_generators():
+    """The determinant kernel O(U) has two elements and index two."""
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    minus = ambient.O()((-e, -f))
+    swap = ambient.O()((f, e))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(ambient, determinant=True)
+    subgroup = engine.joint_discriminant_character_preimage_subgroup(
+        ambient, iter((image.identity,)), determinant=True,
+    )
+    assert subgroup.supergroup() is ambient.O()
+    assert ambient.O().one() in subgroup and minus in subgroup
+    assert swap not in subgroup
+    selected = tuple(subgroup.group_generators())
+    assert selected and all(g in subgroup for g in selected)
+    assert ambient.O().subgroup(selected).cardinality() == 2
+
+
+def test_joint_preimage_subgroup_retains_proper_generated_ambient_group():
+    """A trivial quotient restriction must return G, not the larger O(U)."""
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    minus = ambient.O()((-e, -f))
+    swap = ambient.O()((f, e))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(ambient, ambient_generators=(minus,))
+    subgroup = engine.joint_discriminant_character_preimage_subgroup(
+        ambient, (image.identity,), ambient_generators=(minus,),
+    )
+    assert subgroup.supergroup() in ambient.O().subgroups()
+    assert minus in subgroup and swap not in subgroup
+    selected = tuple(subgroup.group_generators())
+    assert selected and all(g in subgroup for g in selected)
+    assert ambient.O().subgroup(selected).cardinality() == 2
