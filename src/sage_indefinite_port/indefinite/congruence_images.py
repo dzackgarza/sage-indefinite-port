@@ -593,7 +593,7 @@ class JointDiscriminantCharacterImage:
     The target is their *generated joint image*, not the direct product.
     """
 
-    def __init__(self, generators, discriminant, characters, identity):
+    def __init__(self, generators, discriminant, characters, identity, *, level_modulus=None):
         self.generators = tuple(matrix(ZZ, g) for g in generators)
         self.one = identity_matrix(ZZ, self.generators[0].nrows()) if self.generators else None
         if self.one is None:
@@ -601,6 +601,13 @@ class JointDiscriminantCharacterImage:
         self.discriminant = discriminant
         self.characters = tuple(characters)
         self.identity = tuple(identity)
+        self.level_modulus = ZZ(level_modulus) if level_modulus is not None else None
+        if self.level_modulus is not None:
+            if self.level_modulus < 2:
+                raise ValueError("congruence level must be at least two")
+            self.level_ring = Integers(self.level_modulus)
+            self.rank = self.one.nrows()
+            self.identity = (tuple(int(x) for x in identity_matrix(self.level_ring, self.rank).list()), *self.identity)
         if self.image(self.one) != self.identity:
             raise ValueError("joint character identity mismatch")
         self._lifts = {self.identity: self.one}
@@ -624,11 +631,18 @@ class JointDiscriminantCharacterImage:
         g = matrix(ZZ, matrix_value)
         if g.det() not in (1, -1):
             raise ValueError("joint character requires an integral unimodular matrix")
-        return (self.discriminant(g), *(character(g) for character in self.characters))
+        values = (self.discriminant(g), *(character(g) for character in self.characters))
+        if self.level_modulus is None:
+            return values
+        return (tuple(int(x) for x in g.change_ring(self.level_ring).list()), *values)
 
-    @staticmethod
-    def _multiply(a, b):
-        return tuple(x * y for x, y in zip(a, b, strict=True))
+    def _multiply(self, a, b):
+        if self.level_modulus is None:
+            return tuple(x * y for x, y in zip(a, b, strict=True))
+        left = matrix(self.level_ring, self.rank, self.rank, a[0])
+        right = matrix(self.level_ring, self.rank, self.rank, b[0])
+        level = tuple(int(x) for x in (left * right).list())
+        return (level, *(x * y for x, y in zip(a[1:], b[1:], strict=True)))
 
     def image_keys(self):
         return frozenset(self._lifts)

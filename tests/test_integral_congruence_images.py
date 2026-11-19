@@ -450,3 +450,24 @@ def test_joint_discriminant_subgroup_generator_and_membership_presentations_agre
     index, generators = image.preimage_generators(chosen)
     assert index * len(chosen) == len(image.image_keys())
     assert all(image.image(g)[1] == 1 for g in generators)
+
+
+def test_public_joint_discriminant_level_and_signs_preserves_correlations():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True, level_modulus=4
+    )
+    assert all(len(key) == 4 for key in image.image_keys())
+    assert all(image.image(image.section(key)) == key for key in image.image_keys())
+    index, generators = engine.joint_discriminant_character_preimage_generators(
+        ambient, (image.identity,), determinant=True, real_spinor=True, level_modulus=4
+    )
+    assert index == len(image.image_keys())
+    assert all(g.discriminant_morphism().is_one() and g.determinant() == 1
+               and g in ambient.O_plus() for g in generators)
+    assert all(tuple(int(x) % 4 for x in g(ambient.module_generators()[0]).to_vector()) == (1, 0)
+               for g in generators)

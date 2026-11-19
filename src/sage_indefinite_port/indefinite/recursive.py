@@ -1304,7 +1304,7 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False):
+    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, level_modulus=None):
         r"""Actual joint discriminant/determinant/real-spinor image of O(L).
 
         Uses the original discriminant-form action (quadratic if L is even,
@@ -1332,12 +1332,12 @@ class EichlerRecursion:
             tuple(_column_matrix(g) for g in generators),
             lambda g: rho(as_isometry(g)),
             tuple((lambda g, chi=chi: chi(as_isometry(g))) for chi in signs),
-            identities,
+            identities, level_modulus=level_modulus,
         )
 
-    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False):
+    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, level_modulus=None):
         r"""Integral preimage generators for an actual joint discriminant subgroup."""
-        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor)
+        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, level_modulus=level_modulus)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
