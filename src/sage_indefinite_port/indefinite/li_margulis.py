@@ -119,15 +119,17 @@ def embedding_orbits_in_box(lattice, gram, bound):
 
 
 def is_isometric_in_box(source, target, bound):
-    r"""Return an isometry `source -> target` with images in the box, or ``None`` if the box has none."""
+    r"""Return an owned isometry ``source -> target`` in the box, or ``None`` if none is in it."""
     frame = tuple(source.module_generators())
     gram = [[int(source.b(x, y)) for y in frame] for x in frame]
-    labels = tuple(source.module_generating_set())
     for images in primitive_tuples_in_box(target, gram, bound):
         rows = matrix(ZZ, [[int(c) for c in v] for v in images])
         if abs(rows.det()) == 1:
-            table = dict(zip(labels, images, strict=True))
-            return source.Hom(target)(lambda label: table[label])
+            # The checked Gram and determinant identities certify an
+            # *integral isometry*, not merely an arbitrary lattice Hom.
+            # Return it in the owned isometry carrier for downstream
+            # arithmetic-group and marked-transporter operations.
+            return (source.O() if source is target else source.Isom(target))(tuple(images))
     return None
 
 
@@ -578,14 +580,14 @@ def _check_rank(gram, constants):
 
 
 def isometries_in_box(lattice, bound):
-    r"""Return every isometry of ``lattice`` whose basis images have coordinates at most ``bound``."""
+    r"""Return every owned ``O(lattice)`` element whose images lie in the box."""
     gram = _gram(lattice)
-    labels = tuple(lattice.module_generating_set())
     found = []
     for images in primitive_tuples_in_box(lattice, gram, bound):
         if abs(matrix(ZZ, [[int(c) for c in v] for v in images]).det()) == 1:
-            table = dict(zip(labels, images, strict=True))
-            found.append(lattice.Hom(lattice)(lambda label, table=table: table[label]))
+            # The Gram constraint and determinant ±1 are already verified.
+            # Do not discard the group carrier by constructing a Hom arrow.
+            found.append(lattice.O()(tuple(images)))
     return tuple(found)
 
 
