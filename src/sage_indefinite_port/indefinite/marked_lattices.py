@@ -3734,55 +3734,22 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     raise ValueError("mixed degenerate Gram sublattices require their radical/glue classification")
                 classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()) for basis in INDUCTION.isotropic_flag_bases(lattice, (rank,)))
         case OrientedIsotropicFlags():
-            dimensions = _shape_dimensions(source)
-            classes = tuple(category(oriented) for oriented in lattice.O().oriented_isotropic_orbit_representatives(FlagType(dimensions)))
-        case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
-            if isinstance(source, Morphism):
-                shape_arrows = (source,)
-            else:
-                shape_arrows = _flag_arrows(source)
-            if not shape_arrows:
-                raise ValueError("an isotropic flag shape requires at least one inclusion")
-            full_diagram_shape = (
-                not isinstance(source, Morphism)
-                and len(shape_arrows) == int(category.domain_category().object_set().cardinality()) - 1
-                and (
-                    shape_arrows[-1].codomain() is lattice
-                    # A terminal ambient can have zero Gram and a distinct
-                    # presentation/parent. Full-rank terminal objects still
-                    # supply the ambient leg, not a further flag rank.
-                    or int(shape_arrows[-1].codomain().rank()) == int(lattice.rank())
-                    or not all(
-                        shape_arrows[-1].codomain().b(left, right) == 0
-                        for left in shape_arrows[-1].codomain().module_generators()
-                        for right in shape_arrows[-1].codomain().module_generators()
-                    )
+            # A full oriented marked object has the ambient lattice as its
+            # underlying parent. Reading source.rank() would therefore
+            # add the ambient rank as a fictitious isotropic flag rank.
+            # Use the actual oriented flag's successive term dimensions.
+            dimensions = (
+                source.functor().oriented_flag().flag().flag_type().dimensions
+                if source in category
+                else _isotropic_flag_shape_dimensions(
+                    source, lattice, int(category.domain_category().object_set().cardinality()) - 1
                 )
             )
-            last_shape_lattice = shape_arrows[-1].domain() if full_diagram_shape else shape_arrows[-1].codomain()
-            if any(
-                arrow.domain().b(left, right) != 0
-                for arrow in shape_arrows
-                for left in arrow.domain().module_generators()
-                for right in arrow.domain().module_generators()
-            ) or any(
-                last_shape_lattice.b(left, right) != 0
-                for left in last_shape_lattice.module_generators()
-                for right in last_shape_lattice.module_generators()
-            ):
-                raise ValueError("nonisotropic flag shapes require a general formed-diagram classification")
-            if full_diagram_shape:
-                # A full marked diagram includes its final arrow into the
-                # ambient lattice; this arrow is not another flag rank.
-                dimensions = tuple(int(arrow.domain().rank()) for arrow in shape_arrows)
-            else:
-                # A shorter source diagram is precisely the source flag
-                # shape, with its last codomain the final isotropic term.
-                dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
-            if len(dimensions) != int(category.domain_category().object_set().cardinality()) - 1:
-                raise ValueError("the isotropic source shape must specify exactly the target flag's ranks")
-            if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
-                raise ValueError("isotropic flag ranks must be positive and strictly increasing")
+            classes = tuple(category(oriented) for oriented in lattice.O().oriented_isotropic_orbit_representatives(FlagType(dimensions)))
+        case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
+            dimensions = _isotropic_flag_shape_dimensions(
+                source, lattice, int(category.domain_category().object_set().cardinality()) - 1
+            )
             if dimensions[-1] > int(lattice.rank()):
                 classes = ()
             elif all(lattice.b(x, y) == 0 for x in lattice.module_generators() for y in lattice.module_generators()):
@@ -3833,12 +3800,55 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
     return finite_ordered_set(classes)
 
 
-def _shape_dimensions(source: Parent | Morphism) -> tuple[int, ...]:
-    r"""The ranks of the terms of a flag shape: a lattice ``I`` for one term, one arrow ``I_1 -> I_2``, or a chain."""
+def _isotropic_flag_shape_dimensions(source: Parent | Morphism, lattice: Parent, expected_terms: int) -> tuple[int, ...]:
+    r"""Ranks of the isotropic terms of a source shape, excluding the ambient.
+
+    A shorter diagram encodes only its null terms, while a full marked
+    diagram has one final ambient leg. These are different even if the
+    ambient Gram form vanishes or belongs to another isometric parent.
+    Both oriented and unoriented flag classifiers consume the same shape.
+    """
     if isinstance(source, Parent):
-        return (int(source.rank()),)
-    shape_arrows = (source,) if isinstance(source, Morphism) else _flag_arrows(source)
-    return (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
+        shape_lattices = (source,)
+        dimensions = (int(source.rank()),)
+    else:
+        shape_arrows = (source,) if isinstance(source, Morphism) else _flag_arrows(source)
+        if not shape_arrows:
+            raise ValueError("an isotropic flag shape requires at least one inclusion")
+        terminal = shape_arrows[-1].codomain()
+        # A full marked diagram has the same number of arrows as the
+        # requested isotropic terms, with its last codomain representing
+        # the ambient lattice. It can be a distinct isometric presentation
+        # or a pure zero form, so neither parent identity nor nonzero Gram
+        # detects this leg. Its ambient rank must equal the target rank.
+        # Otherwise, a diagram of the same arrow count may specify one
+        # additional isotropic source term, which must not be discarded.
+        full_diagram_shape = (
+            not isinstance(source, Morphism)
+            and len(shape_arrows) == expected_terms
+            and int(terminal.rank()) == int(lattice.rank())
+        )
+        shape_lattices = tuple(arrow.domain() for arrow in shape_arrows) + (
+            (() if full_diagram_shape else (terminal,))
+        )
+        dimensions = (
+            tuple(int(arrow.domain().rank()) for arrow in shape_arrows)
+            if full_diagram_shape
+            else (int(shape_arrows[0].domain().rank()),
+                  *(int(arrow.codomain().rank()) for arrow in shape_arrows))
+        )
+    if any(
+        term.b(left, right) != 0
+        for term in shape_lattices
+        for left in term.module_generators()
+        for right in term.module_generators()
+    ):
+        raise ValueError("nonisotropic flag shapes require a general formed-diagram classification")
+    if len(dimensions) != expected_terms:
+        raise ValueError("the isotropic source shape must specify exactly the target flag's ranks")
+    if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
+        raise ValueError("isotropic flag ranks must be positive and strictly increasing")
+    return dimensions
 
 
 def _flag_marking_from_basis(lattice: Lattices.ParentMethods, basis: tuple[Lattices.ElementMethods, ...], dimensions: tuple[int, ...]) -> tuple[Morphism, ...]:
