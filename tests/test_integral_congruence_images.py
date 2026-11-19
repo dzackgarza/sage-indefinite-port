@@ -767,3 +767,22 @@ def test_public_double_coset_stabilizers_are_owned_integral_isometries():
         assert representative.domain() is ambient and representative.codomain() is ambient
         assert index >= 1
         assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
+
+
+def test_actual_marked_stabilizer_excludes_ambient_kernel():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(ambient, level_modulus=2)
+    generators = tuple(_column_matrix(g) for g in engine.orthogonal_group_generators(ambient))
+    # P = <swap> is the stabilizer of the unordered pair of isotropic axes.
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    assert swap in generators or image.image(swap) in image.image_keys()
+    left = frozenset((image.identity,))
+    index, stabilizer = image.conjugate_stabilizer_generators(left, (swap,), image.identity)
+    assert index == len({image.identity, image.image(swap)})
+    assert all(image.image(g) == image.identity for g in stabilizer)
+    # This is a subgroup of P, not the full congruence kernel of O(L).
+    assert all(g in (identity_matrix(ZZ, 2), swap) for g in stabilizer)
