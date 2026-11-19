@@ -1403,6 +1403,29 @@ class EichlerRecursion:
             ambient_generators=ambient_generators,
         )
 
+    def simultaneous_congruence_stabilizer_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, *, vectors=(), submodules=(), flags=(), colour_classes=None, ambient_generators=None):
+        r"""Owned inverse image of simultaneous residue stabilizers in O(L).
+
+        The selected residue stabilizer is intersected with the *actual*
+        integral image, not with the full automorphism group of L/mL.
+        Discriminant actions remain unrestricted.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        permitted = residue.simultaneous_residue_stabilizer_keys(
+            vectors=vectors, submodules=submodules, flags=flags,
+            colour_classes=colour_classes,
+        )
+        allowed = joint.subgroup_from_membership(lambda key: key[0] in permitted)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
     def joint_positive_cone_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
         r"""Actual joint image of congruence reduction and positive-cone component."""
         from sage_indefinite_port.indefinite.congruence_images import JointSignCongruenceImage

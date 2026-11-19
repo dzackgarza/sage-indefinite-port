@@ -1141,3 +1141,22 @@ def test_principal_congruence_owned_subgroup_does_not_force_discriminant_kernel(
     # discriminant action; no additional character restriction is allowed.
     negative = ambient.O()((-e, -f))
     assert negative in subgroup
+
+
+def test_owned_simultaneous_residue_stabilizer_in_proper_ambient_group():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    negative = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    fixed = engine.simultaneous_congruence_stabilizer_subgroup(
+        ambient, 3, vectors=((1, 0),), ambient_generators=(negative,),
+    )
+    assert ambient.O().identity() in fixed
+    assert negative not in fixed
+    unrestricted = engine.simultaneous_congruence_stabilizer_subgroup(
+        ambient, 3, ambient_generators=(negative,),
+    )
+    assert negative in unrestricted
