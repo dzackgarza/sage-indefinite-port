@@ -1164,7 +1164,6 @@ class EichlerRecursion:
         construct a single Schreier preimage in the actual reduction image.
         """
         from math import lcm
-        from collections import deque
 
         constraints = tuple(constraints)
         if not constraints:
@@ -1178,22 +1177,7 @@ class EichlerRecursion:
         allowed = set(image.image_keys())
         for level, data in constraints:
             target, projection = image.project_to_level(int(level))
-            index, generators = target.simultaneous_residue_stabilizer(**data)
-            # The images of the integral Schreier generators generate the
-            # selected finite subgroup; enumerate it inside the actual image.
-            subgroup = {target._key(target.image_one)}
-            queue = deque(subgroup)
-            generator_images = tuple(target.reduce(g) for g in generators)
-            while queue:
-                key = queue.popleft()
-                current = target.reduce(target._lifts[key])
-                for g in generator_images:
-                    moved = target._key(current * g)
-                    if moved not in subgroup:
-                        subgroup.add(moved)
-                        queue.append(moved)
-            if len(subgroup) * index != len(target.image_keys()):
-                raise ArithmeticError("finite stabilizer image has incorrect index")
+            subgroup = target.simultaneous_residue_stabilizer_keys(**data)
             allowed = {key for key in allowed
                        if target._key(projection(image.reduce(image._lifts[key]))) in subgroup}
         index, matrices = image.preimage_generators(image.reduce(image._lifts[key]) for key in allowed)

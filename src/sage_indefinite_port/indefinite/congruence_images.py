@@ -184,6 +184,13 @@ class IntegralCongruenceImage:
         return self.preimage_generators(allowed)
 
     def simultaneous_residue_stabilizer(self, *, vectors=(), submodules=(), flags=(), colour_classes=None):
+        """Schreier preimage of the exact simultaneous residue stabilizer."""
+        keys = self.simultaneous_residue_stabilizer_keys(
+            vectors=vectors, submodules=submodules, flags=flags, colour_classes=colour_classes
+        )
+        return self.preimage_generators(self.reduce(self._lifts[key]) for key in keys)
+
+    def simultaneous_residue_stabilizer_keys(self, *, vectors=(), submodules=(), flags=(), colour_classes=None):
         r"""Preimage of the intersection of any finite family of residue stabilizers.
 
         All constraints are tested against each element of the same actual
@@ -236,7 +243,7 @@ class IntegralCongruenceImage:
             if not all({tuple(image * vector(self.ring, x)) for x in points} == points for points in colours):
                 continue
             allowed.append(image)
-        return self.preimage_generators(allowed)
+        return frozenset(self._key(g) for g in allowed)
 
     def finite_index_sublattice_stabilizer(self, basis):
         r"""Preimage stabilizing a full-rank sublattice ``M`` of ``Z^rank``.

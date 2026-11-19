@@ -894,3 +894,25 @@ def test_public_multilevel_residue_stabilizer_intersects_actual_images():
     for g in generators:
         coordinates = g(ambient.module_generators()[0]).to_vector()
         assert tuple(int(x) % 6 for x in coordinates) == (1, 0)
+
+
+def test_multilevel_intersection_with_different_residue_constraints():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    conditions = ((2, {"vectors": ((1, 0),)}),
+                  (3, {"vectors": ((0, 1),)}),
+                  (4, {"submodules": (((2, 0),),)}))
+    index, generators = engine.multilevel_congruence_stabilizer_generators(ambient, conditions)
+    image = engine.congruence_image(ambient, 12)
+    allowed = set(image.image_keys())
+    for level, data in conditions:
+        target, projection = image.project_to_level(level)
+        keys = target.simultaneous_residue_stabilizer_keys(**data)
+        allowed = {key for key in allowed if target._key(projection(image.reduce(image._lifts[key]))) in keys}
+    assert index * len(allowed) == len(image.image_keys())
+    assert all(image._key(image.reduce(matrix(ZZ, [[int(x) for x in g(v).to_vector()]
+                                                    for v in ambient.module_generators()]).transpose())) in allowed
+               for g in generators)
