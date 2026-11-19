@@ -821,3 +821,24 @@ def test_finite_image_restricted_transporter_uses_actual_stabilizer_words():
     # P=< -I > cannot correct a swap modulo 4.
     assert image.restricted_transporter(allowed, swap, (negative,)) is None
     assert image.restricted_transporter(allowed, image.one, ()) == image.one
+
+
+def test_public_restricted_transporter_returns_owned_witness_or_exact_negative():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    engine = EichlerRecursion()
+    e, f = ambient.module_generators()
+    swap = ambient.O()((f, e))
+    negative = ambient.O()((-e, -f))
+    image = engine.joint_discriminant_character_image(ambient, level_modulus=4)
+    allowed = (image.identity,)
+    witness = engine.joint_discriminant_restricted_transporter(
+        ambient, allowed, swap, (swap,), level_modulus=4
+    )
+    assert witness is not None and witness.domain() is ambient
+    assert witness(e) == e and witness(f) == f
+    assert engine.joint_discriminant_restricted_transporter(
+        ambient, allowed, swap, (negative,), level_modulus=4
+    ) is None

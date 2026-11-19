@@ -1474,6 +1474,30 @@ class EichlerRecursion:
         )
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def joint_discriminant_restricted_transporter(self, lattice: Lattices.ParentMethods, allowed, ambient_transporter, stabilizer_generators, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Correct an ambient marked transporter to an exact subgroup witness.
+
+        The stabilizer is the *right correction group* for the supplied
+        ambient transporter. Return an owned integral isometry or ``None``
+        when no correction has image in the selected arithmetic subgroup.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        if ambient_transporter.domain() is not lattice or ambient_transporter.codomain() is not lattice:
+            raise ValueError("ambient transporter must be an automorphism of the supplied lattice")
+        stabilizer_generators = tuple(stabilizer_generators)
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in stabilizer_generators):
+            raise ValueError("stabilizer generators must be automorphisms of the supplied lattice")
+        witness = image.restricted_transporter(
+            allowed, _column_matrix(ambient_transporter),
+            tuple(_column_matrix(g) for g in stabilizer_generators),
+        )
+        return None if witness is None else _isometry_from_column_matrix(lattice, lattice, witness)
+
     def stable_orthogonal_generators(self, lattice: Lattices.ParentMethods):
         r"""Constructive generators of the discriminant kernel ``O~(L)``."""
         image = self.joint_discriminant_character_image(lattice)
