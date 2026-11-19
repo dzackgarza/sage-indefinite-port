@@ -76,6 +76,29 @@ class IntegralCongruenceImage:
                    if self.reduce(lift) * point == point)
         return self.preimage_generators(allowed)
 
+    def residue_colouring_stabilizer(self, colour_classes):
+        r"""Preimage preserving every named colour class of residue vectors.
+
+        ``colour_classes`` maps colour labels to finite collections of vectors.
+        Each colour is preserved setwise, with no permitted permutation of
+        labels. Membership is tested in the *actual* finite reduction image.
+        """
+        from sage.modules.free_module_element import vector
+
+        classes = []
+        for points in colour_classes.values():
+            entries = frozenset(tuple(vector(self.ring, point)) for point in points)
+            if any(len(point) != self.rank for point in entries):
+                raise ValueError("coloured residue vector has the wrong rank")
+            classes.append(entries)
+        allowed = []
+        for lift in self._lifts.values():
+            image = self.reduce(lift)
+            if all({tuple(image * vector(self.ring, point)) for point in points} == points
+                   for points in classes):
+                allowed.append(image)
+        return self.preimage_generators(allowed)
+
     def residue_submodule_stabilizer(self, generators):
         r"""Exact inverse image of the setwise stabilizer of a residue submodule.
 

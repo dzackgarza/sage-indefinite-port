@@ -1206,6 +1206,12 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def congruence_colouring_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, colour_classes):
+        r"""Integral stabilizer preserving each named residue-vector colour."""
+        image = self.congruence_image(lattice, modulus)
+        index, matrices = image.residue_colouring_stabilizer(colour_classes)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 

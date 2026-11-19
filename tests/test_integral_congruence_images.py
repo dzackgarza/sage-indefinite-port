@@ -245,3 +245,27 @@ def test_public_joint_level_determinant_and_real_spinor():
     )
     assert index == len(image.image_keys())
     assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
+
+
+def test_coloured_residue_stabilizer_preserves_labels():
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    image = IntegralCongruenceImage((swap, -identity_matrix(ZZ, 2)), 4)
+    index, generators = image.residue_colouring_stabilizer({
+        "red": ((1, 0), (3, 0)), "blue": ((0, 1), (0, 3)),
+    })
+    assert index == 2
+    red = {tuple(vector(image.ring, x)) for x in ((1, 0), (3, 0))}
+    assert all({tuple(g.change_ring(image.ring) * vector(image.ring, x)) for x in red} == red
+               for g in generators)
+
+
+def test_public_residue_colouring_stabilizer():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    index, generators = EichlerRecursion().congruence_colouring_stabilizer_generators(
+        ambient, 4, {"red": ((1, 0), (3, 0)), "blue": ((0, 1), (0, 3))}
+    )
+    assert index == 2
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
