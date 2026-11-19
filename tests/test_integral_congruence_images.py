@@ -803,3 +803,21 @@ def test_public_actual_marked_stabilizer_uses_supplied_stabilizer_group():
     assert index == 2
     assert all(g.domain() is ambient and g.codomain() is ambient for g in generators)
     assert all(g(e) in (e, f) and g(f) in (e, f) for g in generators)
+
+
+def test_finite_image_restricted_transporter_uses_actual_stabilizer_words():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    image = EichlerRecursion().joint_discriminant_character_image(ambient, level_modulus=4)
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    negative = -identity_matrix(ZZ, 2)
+    allowed = frozenset((image.identity,))
+    # t is not in the kernel, but the correction p=t^-1 is in P.
+    corrected = image.restricted_transporter(allowed, swap, (swap,))
+    assert corrected is not None and image.image(corrected) == image.identity
+    assert corrected == identity_matrix(ZZ, 2)
+    # P=< -I > cannot correct a swap modulo 4.
+    assert image.restricted_transporter(allowed, swap, (negative,)) is None
+    assert image.restricted_transporter(allowed, image.one, ()) == image.one

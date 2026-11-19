@@ -872,6 +872,46 @@ class JointDiscriminantCharacterImage:
         assert all(self.image(g) in left for g in words)
         return len(transversal), tuple(words)
 
+    def restricted_transporter(self, allowed, ambient_transporter, stabilizer_generators):
+        r"""Find a transporter in ``rho^-1(H)`` inside the coset ``t*P``.
+
+        ``ambient_transporter`` is an actual ambient witness ``t`` from a
+        marked object to its target, and ``stabilizer_generators`` generate
+        the target-preserving right correction group ``P``. Return ``t*p``
+        with ``p in P`` and image in H, or ``None`` if none exists. The
+        finite search is complete because it enumerates the actual image
+        of P and retains integral words lifting every image element.
+        """
+        allowed = frozenset(allowed)
+        if self.identity not in allowed or not allowed <= self.image_keys():
+            raise ValueError("allowed must be a subgroup of the actual image")
+        if any(self._multiply(a, b) not in allowed for a in allowed for b in allowed):
+            raise ValueError("allowed is not a subgroup")
+        t = matrix(ZZ, ambient_transporter)
+        if self.ambient_contains is not None and not self.ambient_contains(t):
+            raise ValueError("ambient transporter is not in the generated ambient group")
+        t_image = self.image(t)
+        if t_image not in self._lifts:
+            raise ValueError("ambient transporter image is outside the generated group")
+        generators = tuple(matrix(ZZ, g) for g in stabilizer_generators)
+        images = tuple(self.image(g) for g in generators)
+        if any(key not in self._lifts for key in images):
+            raise ValueError("stabilizer generator image lies outside the generated group")
+        lifts = {self.identity: self.one}
+        queue = deque([self.identity])
+        while queue:
+            key = queue.popleft()
+            candidate = t * lifts[key]
+            if self._multiply(t_image, key) in allowed:
+                assert self.image(candidate) in allowed
+                return matrix(ZZ, candidate)
+            for g, image in zip(generators, images):
+                moved = self._multiply(key, image)
+                if moved not in lifts:
+                    lifts[moved] = lifts[key] * g
+                    queue.append(moved)
+        return None
+
     def preimage_generators(self, allowed):
         subgroup = set(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():
