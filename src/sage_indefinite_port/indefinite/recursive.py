@@ -1117,6 +1117,12 @@ class EichlerRecursion:
         index, matrices = image.residue_vector_stabilizer(residue)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def congruence_submodule_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, generators):
+        r"""Integral setwise stabilizer of a submodule of ``L / modulus L``."""
+        image = self.congruence_image(lattice, modulus)
+        index, matrices = image.residue_submodule_stabilizer(generators)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
 

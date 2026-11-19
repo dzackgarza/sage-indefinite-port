@@ -76,6 +76,35 @@ class IntegralCongruenceImage:
                    if self.reduce(lift) * point == point)
         return self.preimage_generators(allowed)
 
+    def residue_submodule_stabilizer(self, generators):
+        r"""Exact inverse image of the setwise stabilizer of a residue submodule.
+
+        The finite submodule is generated additively in ``(Z/m)^rank``;
+        testing its full image avoids assuming it is a free summand.
+        """
+        from sage.modules.free_module_element import vector
+
+        rows = tuple(vector(self.ring, x) for x in generators)
+        if any(len(x) != self.rank for x in rows):
+            raise ValueError("residue submodule generator has the wrong rank")
+        zero = vector(self.ring, [0] * self.rank)
+        elements = {tuple(zero)}
+        queue = deque([zero])
+        while queue:
+            x = queue.popleft()
+            for y in rows:
+                z = x + y
+                key = tuple(z)
+                if key not in elements:
+                    elements.add(key)
+                    queue.append(z)
+        allowed = []
+        for lift in self._lifts.values():
+            image = self.reduce(lift)
+            if all(tuple(image * row) in elements for row in rows):
+                allowed.append(image)
+        return self.preimage_generators(allowed)
+
     def preimage_generators(self, allowed):
         r"""Generators of the inverse image of a subgroup of the actual image.
 
