@@ -1130,3 +1130,20 @@ def test_factorwise_transporter_with_a_gl_type_pair():
     t = equivariant_transporter(commutant, moved, [F])
     assert t is not None and _is_transporter(t, gram, moved, [F], [F])
     assert equivariant_transporter(commutant, int(3) * gram, [F]) is None
+
+
+def test_number_field_voronoi_reuses_exact_minima_and_unit_generators():
+    algebra, voronoi = _lipschitz_over_sqrt2()
+    s = algebra(1)
+    first = voronoi.minimum(s)
+    assert first[1]
+    key = tuple(voronoi.coordinates(s))
+    assert key in voronoi._minimum_cache
+    # A second evaluation must not construct the Gram matrix or enumerate vectors.
+    original_gram = voronoi.gram
+    voronoi.gram = lambda _: (_ for _ in ()).throw(AssertionError("minimum recomputed"))
+    assert voronoi.minimum(s) == first
+    voronoi.gram = original_gram
+    units = voronoi.unit_generators()
+    voronoi.stabilizer = lambda _: (_ for _ in ()).throw(AssertionError("unit generators recomputed"))
+    assert voronoi.unit_generators() == units
