@@ -705,6 +705,40 @@ class JointDiscriminantCharacterImage:
         assert self.image(witness) == key
         return witness
 
+    def right_coset_action(self, allowed):
+        r"""Exact right action of the actual image on ``H\F``.
+
+        Return an ordered tuple of left cosets ``H*f`` (represented by
+        canonical image keys), and an action function taking a coset index
+        and an integral ambient matrix to the index of its right translate.
+        The action is a *right* action, so ``act(act(i,g),h)=act(i,g*h)``.
+        """
+        subgroup = set(allowed)
+        if self.identity not in subgroup or not subgroup <= self.image_keys():
+            raise ValueError("allowed must lie in the actual joint image and contain identity")
+        if any(self._multiply(a, b) not in subgroup for a in subgroup for b in subgroup):
+            raise ValueError("allowed is not a subgroup")
+        order = {key: i for i, key in enumerate(self._lifts)}
+
+        def representative(key):
+            return min((self._multiply(h, key) for h in subgroup), key=order.__getitem__)
+
+        cosets = tuple(dict.fromkeys(representative(key) for key in self._lifts))
+        positions = {key: i for i, key in enumerate(cosets)}
+        assert len(cosets) * len(subgroup) == len(self._lifts)
+
+        def act(index, matrix_value):
+            if not 0 <= index < len(cosets):
+                raise IndexError("coset index out of range")
+            if self.ambient_contains is not None and not self.ambient_contains(matrix_value):
+                raise ValueError("matrix is not in the specified ambient subgroup")
+            image = self.image(matrix_value)
+            if image not in self._lifts:
+                raise ValueError("matrix image is outside the generated ambient group")
+            return positions[representative(self._multiply(cosets[index], image))]
+
+        return cosets, act
+
     def preimage_generators(self, allowed):
         subgroup = set(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():

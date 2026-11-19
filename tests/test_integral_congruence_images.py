@@ -647,3 +647,23 @@ def test_owned_preimage_index_is_relative_to_proper_generated_ambient():
     assert int(subgroup.cardinality()) == 1
     assert ambient.O().one() in subgroup
     assert swap not in subgroup and minus not in subgroup
+
+
+def test_joint_discriminant_right_coset_action_respects_multiplication():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    image = EichlerRecursion().joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True, level_modulus=4
+    )
+    subgroup = image.subgroup_from_membership(lambda key: key[2] == 1)
+    cosets, act = image.right_coset_action(subgroup)
+    assert len(cosets) * len(subgroup) == len(image.image_keys())
+    assert len(cosets) == 2
+    lifts = tuple(image.section(key) for key in image.image_keys())
+    for i in range(len(cosets)):
+        for g in lifts:
+            for h in lifts:
+                assert act(act(i, g), h) == act(i, g * h)
+    assert all(act(0, g) == 0 for g in image.preimage_generators(subgroup)[1])
