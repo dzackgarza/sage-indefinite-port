@@ -312,6 +312,7 @@ def _neighbours(lattices, maximal, prime):
         # exactly one representative in these three affine projective charts.
         # This replaces q^3 trials by q^2 + q + 1 without omitting a line.
         residue_elements = tuple(residue)
+
         def projective():
             yield from ((residue.one(), b, c) for b in residue_elements for c in residue_elements)
             yield from ((residue.zero(), residue.one(), c) for c in residue_elements)
@@ -330,14 +331,13 @@ def _neighbours(lattices, maximal, prime):
     base = ideal(algebra(1))
     # v must be a unit modulo P with l_0 v != l_0: its ideal has the index of the base ideal and differs from it. A v in P gives P O_1.
     size = lattices.discriminant(base)
-    v = next(
-        (
-            y
-            for y in (*maximal, *(x + algebra(t) for x in maximal for t in representatives))
-            if lattices.discriminant(ideal(y)) == size and lattices.key(ideal(y)) != lattices.key(base)
-        ),
-        None,
-    )
+    base_key = lattices.key(base)
+    v = None
+    for y in (*maximal, *(x + algebra(t) for x in maximal for t in representatives)):
+        candidate_ideal = ideal(y)
+        if lattices.discriminant(candidate_ideal) == size and lattices.key(candidate_ideal) != base_key:
+            v = y
+            break
     assert v is not None, f"every element of {maximal} fixes the line of {z} modulo {prime}"
     ideals = [base, *(ideal(v + algebra(t)) for t in representatives)]
     assert len({lattices.key(i) for i in ideals}) == len(representatives) + 1
