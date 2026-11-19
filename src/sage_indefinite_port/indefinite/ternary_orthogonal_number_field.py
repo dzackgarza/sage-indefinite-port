@@ -19,6 +19,8 @@ norm theorem; for `M` definite at every real place, by the exact finite search o
 `O(M) = SO(M) \times \{\pm 1\}`.
 """
 
+from collections import deque
+
 from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
 from sage.matrix.constructor import matrix
 from sage.matrix.special import identity_matrix
@@ -109,9 +111,9 @@ class TernaryOrthogonalGroup:
 
         one = algebra(1)
         transversal = {act(one): one}
-        queue, stabilizer = [one], []
+        queue, stabilizer = deque([one]), []
         while queue:
-            current = queue.pop(0)
+            current = queue.popleft()
             for g in generators:
                 moved = g * current
                 point = act(moved)

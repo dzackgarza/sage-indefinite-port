@@ -22,6 +22,7 @@ maximal `O_i \supseteq O`; with `\alpha` generating the connecting ideal `O_i O_
 `N(O_1)`-orbit transversal at `\alpha^{-1} O \alpha`. These extra elements complete `N(O)`.
 """
 
+from collections import deque
 from itertools import combinations, product
 
 from sage.matrix.constructor import matrix
@@ -347,9 +348,9 @@ def maximal_orders_containing(algebra, order, expected):
     ramified = list(algebra.ramified_places(inf=False))
     split = [P for p in primes for P in lattices.field.primes_above(p) if P not in ramified]
     found = {lattices.key(first): first}
-    queue = [first]
+    queue = deque([first])
     while queue:
-        current = queue.pop(0)
+        current = queue.popleft()
         for prime in split:
             for neighbour in _neighbours(lattices, current, prime):
                 key = lattices.key(neighbour)
@@ -436,9 +437,9 @@ def normalizer_generators(algebra, order, maximal):
 
     one = algebra(1)
     transversal = {act(one): one}
-    queue, stabilizer = [one], []
+    queue, stabilizer = deque([one]), []
     while queue:
-        current = queue.pop(0)
+        current = queue.popleft()
         for g in generators:
             moved = g * current
             point = act(moved)
