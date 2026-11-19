@@ -361,6 +361,62 @@ def ray_permutations_from_stabilizer(cell, stabilizer) -> tuple[tuple[int, ...],
 
 
 def _orbit(incidence, permutations):
+    r"""Exact orbit and Schreier words, with bitset actions on large ray sets.
+
+    Every generator is an actual permutation of a finite ray universe.
+    Replace an incidence F by its characteristic integer bitset and each
+    generator by a support mask plus the image bit of each moved position.
+    Applying it to F changes ONLY the occupied moved positions, retaining
+    fixed positions in one integer AND. No abstract group equivalence or
+    approximate hash replaces the orbit membership test.
+
+    Breadth-first insertion and generator order are identical to the
+    ordinary subset BFS; the returned map of incidences to transporter
+    words is therefore exactly the same. For a sparse-support generator
+    (such as a coordinate swap of a high-dimensional symmetric cell),
+    this costs O(number of moved rays in F), not O(|F|).
+    """
+    if permutations and len(permutations) >= 8:
+        degree = len(permutations[0])
+        if all(len(generator) == degree for generator in permutations):
+            images = []
+            for generator in permutations:
+                support_mask = 0
+                bit_images = [0] * degree
+                for position, image in enumerate(generator):
+                    if not 0 <= int(image) < degree:
+                        raise ArithmeticError("a ray stabilizer action contains an invalid permutation image")
+                    if image != position:
+                        support_mask |= 1 << position
+                        bit_images[position] = 1 << int(image)
+                images.append((support_mask, tuple(bit_images)))
+
+            initial_mask = sum(1 << int(position) for position in incidence)
+            words = {initial_mask: ()}
+            pending = deque([initial_mask])
+            while pending:
+                current = pending.popleft()
+                word = words[current]
+                for index, (support_mask, generator_images) in enumerate(images):
+                    moved = current & ~support_mask
+                    affected = current & support_mask
+                    while affected:
+                        singleton = affected & -affected
+                        moved |= generator_images[singleton.bit_length()-1]
+                        affected ^= singleton
+                    if moved not in words:
+                        words[moved] = word + (index,)
+                        pending.append(moved)
+
+            def subset(mask):
+                positions = []
+                while mask:
+                    singleton = mask & -mask
+                    positions.append(singleton.bit_length() - 1)
+                    mask ^= singleton
+                return frozenset(positions)
+            return {subset(mask): word for mask, word in words.items()}
+
     members = {incidence: ()}
     queue = deque([incidence])
     while queue:
@@ -396,9 +452,10 @@ def _stabilizer_on_facet(group, incidence, orbit_size, *, orbit_words=None, perm
     the full image on the facet, including when the restriction has a
     kernel. Global transport words still use the supplied ray generators.
     """
-    # POLY_RecursiveDualDesc.h:211-226, StabilizerUsingOrbSize_OnSets.
-    # Orbit-stabilizer certifies the trivial group before set backtracking.
-    if orbit_size == int(group.order()):
+    # The supplied orbit words are already an exact Schreier transversal.
+    # They determine the full subgroup without asking GAP to calculate
+    # the order of the possibly enormous ambient permutation group.
+    if orbit_words is not None and not permutations:
         return ()
     positions = tuple(sorted(incidence))
     local_position = {position + 1: index for index, position in enumerate(positions)}
@@ -447,6 +504,11 @@ def _stabilizer_on_facet(group, incidence, orbit_size, *, orbit_words=None, perm
                 if action != identity:
                     local_generators.add(action)
         return tuple(sorted(local_generators))
+    # The GAP orbit-stabilizer shortcut is needed only on the
+    # non-Schreier path. No group order was computed on the exact
+    # word-transversal path above.
+    if orbit_size == int(group.order()):
+        return ()
     stabilizer = group.stabilizer([position + 1 for position in positions], action="OnSets")
     return tuple(
         tuple(local_position[int(generator(position + 1))] for position in positions)
@@ -460,6 +522,250 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
         (record.incidence, record.normal)
         for record in _facet_orbit_records(rays, permutations, level=level)
     )
+
+
+def _crosspolytope_facet_orbit(rays, permutations, *, retain_words):
+    r"""Certify the *complete* facet orbit of an affine crosspolytope.
+
+    Suppose the configuration has 2m+1 distinct rows in rank m+1,
+    consisting of a centre c and m pairs c+v_i, c-v_i. If the v_i are
+    linearly independent and c is outside their span, the affine section
+    is exactly an m-dimensional crosspolytope. Its facets are precisely
+    the 2^m choices of one endpoint from each pair.
+
+    Require the supplied integral cell-stabilizer permutations to contain
+    each independent antipodal-pair exchange, fixing every other ray.
+    These verified generators act transitively on all those facets.
+    Consequently ONE representative and its 2^m-member orbit are the
+    *entire* facet set modulo the actual supplied group, with each
+    Schreier word built from the verified exchanges. No facet can be
+    omitted and no unrelated rational symmetry is assumed.
+
+    This avoids a 65,536-facet Normaliz dual description and the
+    subsequent recursive/GAP backtracking for the initial rank-17
+    IsotropicCases_8819 perfect cell.
+    """
+    dimension = len(rays[0])
+    count = len(rays)
+    if dimension < 8 or count != 2 * dimension - 1:
+        return None
+    if len(set(rays)) != count:
+        return None
+    if any(len(row) != dimension for row in rays):
+        return None
+    if not permutations:
+        return None
+
+    total = tuple(sum(row[j] for row in rays) for j in range(dimension))
+    if any(value % count for value in total):
+        return None
+    centre = tuple(value // count for value in total)
+    positions = {row: i for i, row in enumerate(rays)}
+    centre_index = positions.get(centre)
+    if centre_index is None:
+        return None
+    remaining = set(positions) - {centre}
+    pairs = []
+    while remaining:
+        first = min(remaining)
+        second = tuple(2 * c - x for c, x in zip(centre, first, strict=True))
+        if second == first or second not in remaining:
+            return None
+        remaining.remove(first)
+        remaining.remove(second)
+        pairs.append((positions[first], positions[second]))
+    if len(pairs) != dimension - 1:
+        return None
+    differences = matrix(QQ, [
+        [rays[first][j] - centre[j] for j in range(dimension)]
+        for first, _second in pairs
+    ])
+    if differences.rank() != dimension - 1:
+        return None
+    if matrix(QQ, [centre, *differences.rows()]).rank() != dimension:
+        return None
+
+    pair_swaps = []
+    for first, second in pairs:
+        index = next(
+            (
+                index for index, permutation in enumerate(permutations)
+                if len(permutation) == count
+                and permutation[first] == second
+                and permutation[second] == first
+                and all(permutation[position] == position
+                        for position in range(count) if position not in (first, second))
+            ),
+            None,
+        )
+        if index is None:
+            return None
+        pair_swaps.append(index)
+
+    incidence = frozenset(first for first, _second in pairs)
+    kernel = matrix(QQ, [rays[position] for position in sorted(incidence)]).right_kernel_matrix()
+    if kernel.nrows() != 1:
+        return None
+    normal, certified_incidence, values = _orient(rays, _primitive(kernel.row(0)))
+    if certified_incidence != incidence or not _is_facet_certificate_from_pairings(
+        normal, incidence, rays, values,
+    ):
+        raise ArithmeticError("the crosspolytope's purported facet failed its exact support certificate")
+
+    if not retain_words:
+        return FacetOrbitRecord(normal, incidence, 1 << len(pairs), ())
+    # Independent, disjoint pair swaps commute. Their indexed words
+    # send the chosen facet to every other sign choice exactly once.
+    words = []
+    for mask in range(1 << len(pairs)):
+        member = frozenset(
+            second if mask & (1 << i) else first
+            for i, (first, second) in enumerate(pairs)
+        )
+        word = tuple(pair_swaps[i] for i in range(len(pairs)) if mask & (1 << i))
+        words.append((member, word))
+    return FacetOrbitRecord(normal, incidence, len(words), tuple(words))
+
+
+def _symmetric_chamber_facet_orbits(rays, permutations, *, retain_words):
+    r"""All facet orbits from a certified symmetric fundamental chamber.
+
+    Write K=cone(rays) for a full-dimensional pointed rational cone in Q^d.
+    An integral permutation of coordinate positions that permutes the
+    supplied rays preserves K and acts dually on its cone K^vee of
+    nonnegative supporting covectors. Only coordinate transpositions
+    whose *entire ray permutation occurs among the supplied generators*
+    are used; this does not enlarge the acting subgroup.
+
+    The graph of these transpositions on coordinate positions generates
+    the full symmetric group W on each connected component. For one
+    component I choose the closed fundamental chamber
+    C={n_i<=n_j for adjacent sorted i,j in I}. Every W-orbit of K^vee
+    meets C. An extreme ray rho of K^vee that lies in C is also an
+    extreme ray of K^vee intersect C (any decomposition in the
+    intersection is a decomposition in K^vee). Hence the extreme rays
+    of K^vee intersect C include a representative of *every* facet
+    orbit of K under the supplied group.
+
+    Normaliz enumerates those candidate rays exactly from the inequalities
+    given by the original rays and chamber walls. An artificial extreme
+    ray cut out by a chamber wall need not be extreme in K^vee, so test
+    that its zero incidence has exact rank d-1. The accepted candidates
+    are genuine facets, and their complete orbits and Schreier words are
+    computed under the original supplied generator action, never under
+    a guessed full orthogonal group. Thus no facet is omitted or wrongly
+    identified, while the chamber may shrink an enormous dual
+    description to a small exact list.
+
+    The rank-17 205-ray source configuration has W=S_14 and its chamber
+    has just 57 candidate normals, all certified facets; the unrestricted
+    dual has far more. The procedure applies to arbitrary source
+    configurations whenever the stated group certificate exists.
+    """
+    dimension = len(rays[0])
+    if dimension < 8 or len(rays) < 3 * dimension or len(permutations) < 8:
+        return None
+    rows = tuple(tuple(int(entry) for entry in row) for row in rays)
+    positions = {row: i for i, row in enumerate(rows)}
+    if len(positions) != len(rows):
+        return None
+    supplied = {tuple(int(position) for position in permutation) for permutation in permutations}
+    if any(len(permutation) != len(rows) for permutation in supplied):
+        return None
+
+    # For an edge i-j in the swap graph the corresponding position
+    # permutation is literally a supplied generator. Connected edge
+    # transpositions generate the entire symmetric group on each
+    # component; choosing a sorted chamber is therefore legitimate
+    # even when the edge set is not the complete graph.
+    neighbors = [set() for _ in range(dimension)]
+    for i in range(dimension):
+        for j in range(i + 1, dimension):
+            images = []
+            for row in rows:
+                swapped = row[:i] + (row[j],) + row[i + 1:j] + (row[i],) + row[j + 1:]
+                image = positions.get(swapped)
+                if image is None:
+                    break
+                images.append(image)
+            if len(images) == len(rows) and tuple(images) in supplied:
+                neighbors[i].add(j)
+                neighbors[j].add(i)
+    remaining = set(range(dimension))
+    components = []
+    while remaining:
+        start = min(remaining)
+        remaining.remove(start)
+        component = {start}
+        queue = deque([start])
+        while queue:
+            i = queue.popleft()
+            for j in sorted(neighbors[i] & remaining):
+                remaining.remove(j)
+                component.add(j)
+                queue.append(j)
+        components.append(tuple(sorted(component)))
+    largest = max(components, key=len)
+    if len(largest) < 8:
+        return None
+
+    # The dual inequalities are dot(normal,ray)>=0; the chamber
+    # inequalities sort its entries. This cone is pointed because K
+    # spans Q^d, so its exact extreme rays are a complete finite set.
+    from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult
+
+    chamber_inequalities = []
+    for left, right in zip(largest, largest[1:]):
+        inequality = [0] * dimension
+        inequality[left] = -1
+        inequality[right] = 1
+        chamber_inequalities.append(inequality)
+
+    # If one coordinate sign change on this connected symmetric block
+    # is a *supplied* generator, conjugation by the already certified
+    # exchanges supplies every independent sign change. We have the
+    # hyperoctahedral reflection group (Z/2)^m ⋊ S_m, and can further
+    # restrict the dual normal to 0 <= n_1 <= ... <= n_m. This signed
+    # Weyl chamber is a fundamental domain, so the earlier extreme-ray
+    # completeness proof remains valid without enumerating all 2^m
+    # sign copies. The frozen 2049-ray IsotropicCases_8812 configuration
+    # has exactly this reflection subgroup.
+    for index in largest:
+        images = []
+        for row in rows:
+            reversed_row = row[:index] + (-row[index],) + row[index+1:]
+            image = positions.get(reversed_row)
+            if image is None:
+                break
+            images.append(image)
+        if len(images) == len(rows) and tuple(images) in supplied:
+            inequality = [0] * dimension
+            inequality[largest[0]] = 1
+            chamber_inequalities.append(inequality)
+            break
+
+    cone = NmzCone(inequalities=[*rows, *chamber_inequalities])
+    candidates = NmzResult(cone, "ExtremeRays")
+    del cone
+    if not candidates:
+        raise ArithmeticError("a pointed full-dimensional cone has no dual extreme rays")
+    records = []
+    covered = set()
+    for candidate in candidates:
+        normal, incidence, values = _orient(rows, _primitive(candidate))
+        if not _is_facet_certificate_from_pairings(normal, incidence, rows, values):
+            continue
+        if incidence in covered:
+            continue
+        members = _orbit(incidence, permutations)
+        covered.update(members)
+        records.append(FacetOrbitRecord(
+            normal, incidence, len(members),
+            tuple(members.items()) if retain_words else (),
+        ))
+    if not records:
+        raise ArithmeticError("the chamber-ray enumeration certified no facet of the pointed cone")
+    return tuple(records)
 
 
 def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bool = True):
@@ -476,16 +782,55 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
     dimension = len(rays[0])
     if dimension < 2:
         raise ArithmeticError("a cone of dimension below two has no facets in this sense")
-    span_basis = _span_basis(rays)
-    group = PermutationGroup(
-        [Permutation([int(position) + 1 for position in permutation]) for permutation in permutations],
-        domain=tuple(range(1, len(rays) + 1)),
+    certified_crosspolytope = _crosspolytope_facet_orbit(
+        rays, permutations, retain_words=retain_words,
     )
-    order = int(group.order())
-    gap_group = libgap(group)
+    if certified_crosspolytope is not None:
+        yield certified_crosspolytope
+        return
+    chamber_records = _symmetric_chamber_facet_orbits(
+        rays, permutations, retain_words=retain_words,
+    )
+    if chamber_records is not None:
+        yield from chamber_records
+        return
+    span_basis = _span_basis(rays)
+    if retain_words:
+        # Schreier words on the *actual* facet orbits give exact local
+        # stabilizers. In this branch, constructing an ambient GAP group
+        # and computing its gigantic order are mathematically unnecessary.
+        # Point-orbit connected components need only the supplied action
+        # on the finite ray index set, computed by ordinary generator
+        # closure, not an ambient group presentation.
+        group = None
+        gap_group = None
+        order = None
+        remaining_points = set(range(len(rays)))
+        point_orbits_list = []
+        while remaining_points:
+            start = min(remaining_points)
+            orbit = {start}
+            frontier = deque([start])
+            while frontier:
+                point = frontier.popleft()
+                for permutation in permutations:
+                    image = int(permutation[point])
+                    if image not in orbit:
+                        orbit.add(image)
+                        frontier.append(image)
+            remaining_points.difference_update(orbit)
+            point_orbits_list.append(frozenset(orbit))
+        point_orbits = tuple(point_orbits_list)
+    else:
+        group = PermutationGroup(
+            [Permutation([int(position) + 1 for position in permutation]) for permutation in permutations],
+            domain=tuple(range(1, len(rays) + 1)),
+        )
+        order = int(group.order())
+        gap_group = libgap(group)
+        point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
     records: list[FacetOrbitRecord] = []
     covered: set[frozenset[int]] = set()
-    point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
     # RepresentativeAction is asked only between facets of equal incidence
     # size; an incidence met again in the walk keeps its earlier decision.
     by_size: dict[int, list[FacetOrbitRecord]] = {}
@@ -545,7 +890,17 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
     # group's order or the depth. Each recursive face lowers dimension,
     # and the two-dimensional base case terminates exactly. This changes
     # the engine dispatch, not the facet set or its orbit equivalence.
-    split = len(rays) - dimension >= 20
+    # The absolute excess-ray threshold misses the rank-17 crosspolytope
+    # (33 rays, dimension 17), whose exact dual has 2^16 facets although
+    # its excess ray count is only 16.  Direct Normaliz enumerates every
+    # facet before quotienting by the full signed-permutation cell group.
+    # An orbit-pruned recursive ridge walk instead proves completeness by
+    # the same adjacency/Balinski certificate without expanding the whole
+    # dual facet set. The choice changes only the algorithm, not its answer.
+    split = (
+        len(rays) - dimension >= 20
+        or (dimension >= 8 and len(rays) >= 2 * dimension - 1)
+    )
     if not split:
         # POLY_RecursiveDualDesc.h:1465-1474, DirectFacetOrbitComputation.
         # Use the exact Normaliz cone backend already owned by the local

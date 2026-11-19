@@ -1290,6 +1290,243 @@ class LorentzianPerfectLocalBackend:
             base_normal = _source_remove_fraction(flipped_normal)
         return LorentzianPerfectCell(lattice, critical, allowed_squares)
 
+    def _diagonal_moment_stabilizer(
+        self, cell: LorentzianPerfectCell,
+    ) -> tuple[LatticeIsometryMethods, ...] | None:
+        r"""Certify the *entire* cell stabilizer from an integral diagonalization of its moment.
+
+        For the configuration row matrix X put M=X^t X, which is positive
+        definite because the configuration spans the rational ambient space.
+        Every integral row isometry A permuting X satisfies A^t M A=M.
+        This is an exact necessary condition for *every* cell symmetry.
+
+        A unimodular column frame P with P^t M P=diag(a,c,...,c), a>c>0,
+        identifies O(M) with C2 x (C2 wr S_(r-1)). Indeed, the minimal
+        vectors of the diagonal definite lattice are precisely the pairs
+        +/-e_i (i>0). Every automorphism permutes them, hence preserves
+        their orthogonal complement Q*e_0 and acts by an independent sign
+        on it. Conversely all these signed permutations preserve M.
+
+        We discover P either directly or from the full exact PARI
+        qfminim(c) family. The latter is used only to *find* a candidate;
+        unimodularity and the displayed diagonal congruence are verified
+        independently. If none exists, fall through to the general
+        complete cell-transporter algorithm.
+
+        Each spatial sign and adjacent transposition is verified against
+        both the original Gram form and *every* row of X. If all pass,
+        their group K lies in the cell stabilizer, and the latter lies in
+        K x <time sign>. The time sign either also preserves the form and
+        configuration, or its entire coset fails (multiplying a supposed
+        stabilizer by the inverse of an element of K proves this).
+        Thus the resulting generators describe exactly the full group,
+        with no bounded search and no unproved stabilizer restriction.
+
+        This certificate applies to the initial cells of both frozen
+        high-rank isotropic cases: diag(-1,1^16) has moment
+        diag(33,2^16); diag(-3,1^12) has a *unimodularly congruent*
+        moment diag(2049,486^12), despite its non-diagonal presentation.
+        """
+        gram = _gram_matrix(cell.lattice)
+        rank = int(gram.nrows())
+        if rank < 2 or gram.ncols() != rank or gram != gram.transpose():
+            return None
+        # Both source signature conventions occur in the public pipeline:
+        # AttackProfile twists (n,1) to (1,n) before perfect-cell induction.
+        # The moment certificate itself is independent of this twist.
+        positive = tuple(i for i in range(rank) if gram[i, i] > 0)
+        negative = tuple(i for i in range(rank) if gram[i, i] < 0)
+        if len(positive) == 1 and len(negative) == rank - 1:
+            time, spatial = positive[0], negative
+        elif len(negative) == 1 and len(positive) == rank - 1:
+            time, spatial = negative[0], positive
+        else:
+            return None
+        spatial_norm = gram[spatial[0], spatial[0]]
+        if any(gram[i, i] != spatial_norm for i in spatial):
+            return None
+        if any(gram[i, j] != 0 for i in range(rank) for j in range(i + 1, rank)):
+            return None
+
+        rows = cell.rows
+        if len(set(rows)) != len(rows):
+            # The position certificate is a set only for distinct rows.
+            return None
+        integral_rows = matrix(SageZZ, rows)
+        moment = integral_rows.transpose() * integral_rows
+
+        direct_diagonal = (
+            moment[time, time] > 0
+            and moment[spatial[0], spatial[0]] > 0
+            and moment[time, time] != moment[spatial[0], spatial[0]]
+            and all(moment[i, i] == moment[spatial[0], spatial[0]] for i in spatial)
+            and all(moment[i, j] == 0 for i in range(rank) for j in range(i + 1, rank))
+        )
+        if direct_diagonal:
+            column_frame = identity_matrix(SageZZ, rank)
+        else:
+            # PARI's shortest-vector enumeration is exact but potentially
+            # expensive on a generic high-rank moment. Reserve the frame
+            # search for configurations with enough rows to amortize it;
+            # smaller cells retain the complete general transporter route.
+            # This is a dispatch choice, never a rejection of any symmetry.
+            if len(rows) < 4 * rank:
+                return None
+            from sage.libs.pari import pari
+            from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+
+            # All minimum vectors of a diagonal (a,cI) with a>c have
+            # norm c and consist of r-1 independent signed pairs. Check
+            # their number and orthogonality before an integral completion.
+            upper = min(int(moment[i, i]) for i in range(rank))
+            try:
+                minima = pari(moment).qfminim(upper)
+                if int(minima[0]) != 2 * (rank - 1):
+                    return None
+                short = minima[2].sage().transpose().change_ring(SageZZ)
+                if short.nrows() != rank - 1 or short.ncols() != rank:
+                    return None
+                norm = int((short * moment * short.transpose())[0, 0])
+                if norm <= 0 or short * moment * short.transpose() != norm * identity_matrix(SageZZ, rank - 1):
+                    return None
+                if any(int(divisor) != 1 for divisor in short.elementary_divisors()):
+                    return None
+                completion = _source_subspace_completion_int(short, rank)
+                if completion.nrows() != 1:
+                    return None
+                old = completion.row(0)
+                pairings = (matrix(SageZZ, [list(old)]) * moment * short.transpose()).row(0)
+                if any(int(value) % norm for value in pairings):
+                    return None
+                corrected = old - sum(
+                    (int(value) // norm * point for value, point in zip(pairings, short.rows(), strict=True)),
+                    vector(SageZZ, [0] * rank),
+                )
+                basis_rows = matrix(SageZZ, [list(corrected), *[list(point) for point in short.rows()]])
+                if abs(basis_rows.det()) != 1:
+                    return None
+                transformed = basis_rows * moment * basis_rows.transpose()
+                if transformed != diagonal_matrix(SageZZ, [int(transformed[0, 0]), *([norm] * (rank - 1))]):
+                    return None
+                if transformed[0, 0] <= norm:
+                    return None
+            except (PariError, ValueError):
+                return None
+            column_frame = basis_rows.transpose()
+            time = 0
+            spatial = tuple(range(1, rank))
+
+        inverse_frame = column_frame.inverse().change_ring(SageZZ)
+        framed_rows = tuple(
+            tuple(int(entry) for entry in row)
+            for row in (integral_rows * column_frame).rows()
+        )
+        positions = set(framed_rows)
+        actions = []
+
+        def admit(signed_action, coordinate_action) -> bool:
+            # If a proposed O(M) generator fails either the indefinite
+            # Gram test or full configuration membership, only the
+            # general algorithm can determine the stabilizer.
+            action = column_frame * signed_action * inverse_frame
+            if abs(action.det()) != 1:
+                raise ArithmeticError("an integral moment-frame action is not unimodular")
+            if action.transpose() * moment * action != moment:
+                raise ArithmeticError("a moment-frame action failed its positive-definite certificate")
+            if action * gram * action.transpose() != gram:
+                return False
+            if not all(coordinate_action(row) in positions for row in framed_rows):
+                return False
+            actions.append(action)
+            return True
+
+        for index in spatial:
+            sign = identity_matrix(SageZZ, rank)
+            sign[index, index] = -1
+            if not admit(sign, lambda row, i=index: row[:i] + (-row[i],) + row[i+1:]):
+                return None
+        for first, second in zip(spatial, spatial[1:]):
+            swap = identity_matrix(SageZZ, rank)
+            swap[first, first] = swap[second, second] = 0
+            swap[first, second] = swap[second, first] = 1
+            if not admit(
+                swap,
+                lambda row, i=first, j=second: (
+                    row[:i] + (row[j],) + row[i+1:j] + (row[i],) + row[j+1:]
+                    if i < j
+                    else row[:j] + (row[i],) + row[j+1:i] + (row[j],) + row[i+1:]
+                ),
+            ):
+                return None
+        time_sign = identity_matrix(SageZZ, rank)
+        time_sign[time, time] = -1
+        admit(time_sign, lambda row: row[:time] + (-row[time],) + row[time+1:])
+
+        self.__dict__.setdefault("_stabilizer_actions", {})[cell] = tuple(actions)
+        return tuple(_owned_isometry_from_row_matrix(cell.lattice, action) for action in actions)
+
+    def _reduce_coordinate_exchange_generators(
+        self,
+        cell: LorentzianPerfectCell,
+        generators: tuple[LatticeIsometryMethods, ...],
+    ) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Replace a complete graph of pure coordinate swaps by a spanning forest.
+
+        A row-action matrix that exchanges exactly the two coordinate basis
+        vectors e_i,e_j and fixes the others is a transposition (ij).
+        A family of such transpositions generates the direct product of
+        symmetric groups on the connected components of its edge graph.
+        Any spanning forest generates the *same* group, because transposing
+        endpoints of a path is a product of edge transpositions and their
+        inverses. Retain every non-transposition generator unchanged, so the
+        complete generated arithmetic subgroup remains exactly the same.
+
+        The cached actual row actions are reduced together with their
+        owned isometries. This is an equality of generated groups, not
+        choosing an arbitrary subset or dropping a generator on the
+        assumption that the cell has more symmetry.
+        """
+        actions = self._stabilizer_actions[cell]
+        if len(actions) != len(generators):
+            raise ArithmeticError("the cell's owned generators are not paired with their exact row actions")
+        if len(actions) <= 2:
+            return generators
+        rank = int(cell.lattice.rank())
+        parent = list(range(rank))
+
+        def root(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+
+        kept_isometries = []
+        kept_actions = []
+        for isometry, action in zip(generators, actions, strict=True):
+            if action.nrows() != rank or action.ncols() != rank:
+                raise ArithmeticError("cell-generator action has incorrect ambient rank")
+            moved = [
+                i for i in range(rank)
+                if any(action[i,j] != int(i == j) for j in range(rank))
+            ]
+            if len(moved) == 2:
+                first, second = moved
+                exchange = all(
+                    action[first,j] == int(j == second)
+                    and action[second,j] == int(j == first)
+                    for j in range(rank)
+                )
+                if exchange:
+                    left, right = root(first), root(second)
+                    if left == right:
+                        continue
+                    parent[left] = right
+            kept_isometries.append(isometry)
+            kept_actions.append(action)
+
+        self._stabilizer_actions[cell] = tuple(kept_actions)
+        return tuple(kept_isometries)
+
     @cached_method
     def cell_stabilizer(self, cell: LorentzianPerfectCell) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of the finite stabilizer of a spanning perfect cell.
@@ -1301,7 +1538,11 @@ class LorentzianPerfectLocalBackend:
         pointwise stabilizer of the already assigned images. This returns
         generators without first materializing the full stabilizer group.
         """
-        return self.cell_transporter(cell, cell, all_images=True, generators_only=True)
+        certified = self._diagonal_moment_stabilizer(cell)
+        if certified is not None:
+            return certified
+        generators = self.cell_transporter(cell, cell, all_images=True, generators_only=True)
+        return self._reduce_coordinate_exchange_generators(cell, generators)
 
     @cached_method
     def cell_stabilizer_permutations(self, cell: LorentzianPerfectCell) -> tuple[tuple[int, ...], ...]:
@@ -2824,7 +3065,10 @@ class LorentzianPerfectLocalBackend:
             return None
 
         backtrack({}, (), ())
-        if generators_only:
+        if generators_only and not self.cell_stabilizer.is_in_cache(source):
+            # A direct all-image query after the cell stabilizer was cached
+            # must not replace the row actions associated with its retained
+            # (possibly Schreier-reduced) generating family.
             self.__dict__.setdefault("_stabilizer_actions", {})[source] = tuple(stabilizer_actions)
         return first_witness if first_only else tuple(stabilizer_elements)
 

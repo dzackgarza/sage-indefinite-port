@@ -2521,7 +2521,10 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
                 reduction = indefinite_reduced_presentation(profile.signed_view)
                 vectors = tuple(
                     _transfer(lattice, reduction.isometry(orbit[0]))
-                    for orbit in MarkedCellOrbitAlgorithm(perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES), signed_square).global_orbits()
+                    for orbit in MarkedCellOrbitAlgorithm(
+                        perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES, retain_facet_orbits=False),
+                        signed_square,
+                    ).global_orbits()
                 )
             case _:
                 vectors = tuple(vector_class.representative for vector_class in RECURSION.primitive_vector_classes(lattice, square))

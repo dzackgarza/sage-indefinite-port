@@ -183,7 +183,15 @@ class IsotropicInduction:
                 # this is -L; isotropic vectors have the same coordinates,
                 # but must be returned as elements of the original L.
                 reduction = indefinite_reduced_presentation(profile.signed_view)
-                orbits = MarkedCellOrbitAlgorithm(perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES), 0).global_orbits()
+                # Null-mark orbit gluing uses one facet representative per stabilizer
+                # orbit and its exact neighboring-cell transporter. It never
+                # reads the other facets' Schreier words; those belong to the
+                # richer public perfect-domain traversal. The group owner
+                # already uses this complete non-retaining quotient route.
+                orbits = MarkedCellOrbitAlgorithm(
+                    perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES, retain_facet_orbits=False),
+                    0,
+                ).global_orbits()
                 representatives = tuple(reduction.isometry(orbit[0]) for orbit in orbits)
                 if profile.sign == 1:
                     return representatives
