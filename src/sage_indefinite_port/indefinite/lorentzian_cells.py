@@ -1227,7 +1227,13 @@ class LorentzianPerfectLocalBackend:
         If ``square`` is specified, filter in integer coordinates before
         constructing owned lattice elements.
         """
-        if len(cell.rows) < 1_000:
+        # A high-rank cell with very few rays can nevertheless have an
+        # exponential number of facets: the 33-vector rank-17 source
+        # crosspolytope has 65,536. Building a PPL cone forces that dual
+        # description merely to extract its 32 primitive extreme rays.
+        # Use Normaliz's direct primal ExtremeRays query in high rank,
+        # just as for large configurations; its output is still exact.
+        if len(cell.rows) < 1_000 and int(cell.lattice.module_rank()) < 8:
             rays = tuple(self.cell_cone(cell).primitive_rays())
             return rays if square is None else tuple(ray for ray in rays if int(ray.q()) == square)
         from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult

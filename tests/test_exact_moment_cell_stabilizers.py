@@ -368,3 +368,24 @@ def test_marked_null_orbits_are_identical_with_or_without_full_facet_transversal
         ) for orbit in orbits))
     assert results[0] == results[1]
     assert len(results[0]) == 1
+
+
+def test_rank_seventeen_primal_extreme_rays_do_not_construct_exponential_dual(monkeypatch):
+    """The 33-ray crosspolytope has 32 primitive extreme rays and 2^16 facets."""
+    ambient = Lattices(ZZ)([
+        [int(i == j) * (1 if i == 0 else -1) for j in range(17)]
+        for i in range(17)
+    ])
+    backend = LorentzianPerfectLocalBackend()
+    cell = backend.initial_cell(ambient, NONNEGATIVE_SQUARES)
+    assert len(cell.rows) == 33
+    monkeypatch.setattr(
+        backend, "cell_cone",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("primitive null rays must not build the dual PPL cone")
+        ),
+    )
+    rays = tuple(backend.cell_primitive_rays(cell, square=0))
+    assert len(rays) == 32
+    assert len(set(rays)) == 32
+    assert all(int(ray.q()) == 0 and int(ray.content()) == 1 for ray in rays)
