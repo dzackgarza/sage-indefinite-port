@@ -436,3 +436,17 @@ def test_joint_discriminant_preimage_membership_and_witness():
         assert image.image(witness) == key
         assert image.preimage_membership(witness, (key, image.identity))
     assert image.preimage_membership(image.one, (image.identity,))
+
+
+def test_joint_discriminant_subgroup_generator_and_membership_presentations_agree():
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2], [2, 0]])
+    image = EichlerRecursion().joint_discriminant_character_image(ambient, determinant=True, real_spinor=True)
+    determinant_kernel = image.subgroup_from_membership(lambda key: key[1] == 1)
+    chosen = image.subgroup_from_generators(tuple(key for key in image.image_keys() if key[1] == 1))
+    assert chosen == determinant_kernel
+    index, generators = image.preimage_generators(chosen)
+    assert index * len(chosen) == len(image.image_keys())
+    assert all(image.image(g)[1] == 1 for g in generators)

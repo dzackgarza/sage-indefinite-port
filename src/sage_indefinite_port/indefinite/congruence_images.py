@@ -639,6 +639,31 @@ class JointDiscriminantCharacterImage:
     def section_word(self, key):
         return self._words[key]
 
+    def subgroup_from_generators(self, generators):
+        r"""Exact finite subgroup generated inside the computed joint image."""
+        generators = tuple(generators)
+        if any(g not in self._lifts for g in generators):
+            raise ValueError("subgroup generator is outside the actual image")
+        elements = {self.identity}
+        queue = deque([self.identity])
+        while queue:
+            current = queue.popleft()
+            for generator in generators:
+                moved = self._multiply(current, generator)
+                if moved not in elements:
+                    elements.add(moved)
+                    queue.append(moved)
+        return frozenset(elements)
+
+    def subgroup_from_membership(self, predicate):
+        r"""Exact subgroup of the actual joint image selected by a predicate."""
+        elements = frozenset(key for key in self._lifts if predicate(key))
+        if self.identity not in elements:
+            raise ValueError("subgroup membership must contain identity")
+        if any(self._multiply(a, b) not in elements for a in elements for b in elements):
+            raise ValueError("membership criterion does not define a subgroup")
+        return elements
+
     def preimage_membership(self, matrix_value, allowed):
         r"""Exact membership in the preimage of a subgroup of the actual image."""
         subgroup = set(allowed)
