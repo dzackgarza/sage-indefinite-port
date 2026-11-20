@@ -341,6 +341,11 @@ def setwise_transporter(lattice, fixed, left, right):
     `S`, restriction sends the setwise stabilizer into the finite group `O(S)`, so running over
     `O(S)` decides. For indefinite `S`, the decision splits along `S + S^\perp`.
     """
+    fixed = tuple(fixed)
+    if not fixed or all(point == lattice.zero() for point in fixed):
+        # The zero submodule is invariant under every integral isometry.
+        # There is no nondegenerate marked lattice to construct here.
+        return marked_transporter(lattice, (left,), (right,))
     gram = [[int(lattice.b(x, y)) for y in fixed] for x in fixed]
     source = Lattices(lattice.base_ring())(gram)
     if not source.is_nondegenerate():
