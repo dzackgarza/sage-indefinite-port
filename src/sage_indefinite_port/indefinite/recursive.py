@@ -1260,6 +1260,11 @@ class EichlerRecursion:
         """
         from math import lcm
         from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+        # The selected generators are consumed by two distinct joint images:
+        # one at the common level and one at the unreduced character level.
+        # Preserve a one-shot generator family exactly once, or the second
+        # image is falsely computed from the trivial subgroup.
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
         constraints = tuple(constraints)
         modulus = 1
         for level, _ in constraints:
