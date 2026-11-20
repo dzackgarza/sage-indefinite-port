@@ -36,3 +36,11 @@ The coordinate swap transports all three simultaneously to (0,1),
 {(1,0)} makes simultaneous transport impossible: the unique one of
 the four isometries sending (1,0) to (0,1) is S, and S sends the red
 singleton to {(0,1)}.
+
+For simultaneous *different-level* transport, consider a source vector
+(1,0) modulo 2 and a source vector (1,0) modulo 4. Requiring targets
+(0,1) at both levels is achieved by S. Requiring (0,1) modulo 2 but
+(1,0) modulo 4 is impossible: the latter condition forces I as the
+unique isometry among I,-I,S,-S, whereas I does not swap the vector
+modulo 2. This proves a nonempty local transporter set at each level
+can have empty intersection in the integral group.
