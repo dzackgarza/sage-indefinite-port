@@ -37,23 +37,27 @@ def isometry_box_bound(left, right, constant, anisotropic=False):
     r"""Return an integer strictly above the bound of Theorem 1 for `\gamma^t B \gamma = A`.
 
     With `A` = ``left``, `B` = ``right`` and `n` the rank, equation (3) is
-    `C_n |\det B|^{-(13n^3 - 39n^2 + 36n + 52)/(20n)} \|A\|^{(13n^3 - 13n^2 + 52n + 20)/40}
+    `C_n |\det B|^{+(13n^3 - 39n^2 + 36n + 52)/(20n)} \|A\|^{(13n^3 - 13n^2 + 52n + 20)/40}
     \|B\|^{(13n^3 - 13n^2 + 72n - 20)/40}`, and equation (4), for anisotropic `Q_B`, is
     `C_n |\det B|^{(13n^2 + 8n - 26)/(10n)} \|A\|^{1/2} \|B\|^{(n-1)/2}`. Each integer base
-    is at least one, so raising it to the ceiling of its exponent is an upper bound, and the
-    negative determinant power in (3) is at most one.
+    is at least one, so raising it to the ceiling of its exponent is an upper bound.
+    **The determinant exponent in equation (3) is positive**, as printed
+    on page 2 of Li--Margulis (GAFA 26, 2016), Theorem 1. It may not be
+    discarded: doing so invalidates negative integral-isometry decisions.
     """
     left, right = matrix(ZZ, left), matrix(ZZ, right)
     n = right.nrows()
-    if n < 3 or left.det() == 0 or right.det() == 0:
-        raise ValueError("Theorem 1 needs nonsingular forms of rank at least three")
+    if n < 3 or left.dimensions() != right.dimensions() or left.det() == 0 or right.det() == 0:
+        raise ValueError("Theorem 1 needs nonsingular forms of the same rank at least three")
     norm_left = max(abs(entry) for entry in left.list())
     norm_right = max(abs(entry) for entry in right.list())
     determinant = abs(right.det())
     if anisotropic:
         exponents = QQ(13 * n**2 + 8 * n - 26) / (10 * n), QQ(1) / 2, QQ(n - 1) / 2
     else:
-        exponents = QQ(0), QQ(13 * n**3 - 13 * n**2 + 52 * n + 20) / 40, QQ(13 * n**3 - 13 * n**2 + 72 * n - 20) / 40
+        exponents = (QQ(13 * n**3 - 39 * n**2 + 36 * n + 52) / (20 * n),
+                     QQ(13 * n**3 - 13 * n**2 + 52 * n + 20) / 40,
+                     QQ(13 * n**3 - 13 * n**2 + 72 * n - 20) / 40)
     return ceil(
         constant
         * determinant ** ceil(exponents[0])
@@ -579,19 +583,36 @@ def theorem_two_constant(constants):
     r"""Return a majorant of `C_n` in Theorem 2, from the proof in section 9.5.
 
     With `a, b` the exponents of `\|A\|, \|B\|` in (3) and `e_{30} = (13n^3-13n^2+62n)/20`:
-    `\|\tau_i\| \le C_1 \|B\|^a K_{C3}^{b} |\det B|^{(n+1)b}` (Theorem 1 for `\tau_i^t A_i \tau_i = B`
-    and Corollary 3 for `A_i`; the negative power of `|\det A_i| = |\det B|` is at most one),
+    `\|\tau_i\| \le C_1 \|B\|^a K_{C3}^{b} |\det B|^{d+(n+1)b}` (Theorem 1 for `\tau_i^t A_i \tau_i = B`
+    and Corollary 3 for `A_i`; here `d=(13n^3-39n^2+36n+52)/(20n)` is the
+    **positive** determinant exponent in Theorem 1, not zero),
     `\|\sigma_j\| \le K_{30} \|B\|^{e_{30}}` by (30), `G = n \|\tau_i\| \|\sigma_j\|` bounds `\gamma_l`,
     `\|\xi\| \le n^2 (n-1)! K_{C2} G^n` by Corollary 2 and Cramer, and each generator
     `\sigma_j \xi` has norm at most `n K_{30} \|B\|^{e_{30}} \|\xi\|`. The resulting exponents
-    `n(n+1)b \le n^6` and `e_{30} + n(a + e_{30}) \le 3n^4` are checked, so the bound has the form
+    `n(d+(n+1)b) \le n^6` and `e_{30} + n(a + e_{30}) \le 3n^4` are checked, so the bound has the form
     of Theorem 2 with constant `n^3 (n-1)! K_{C2} K_{30} (n C_1 K_{C3}^{b} K_{30})^n`.
+
+    These inequalities hold in **every rank n >= 3**, not just tested
+    ranks. The first difference times 40 is
+
+        40n^6 - 13n^5 - 85n^3 + 26n^2 - 52n - 104,
+
+    which is positive because `40n^6 - 13n^5 >= 27n^5 >=
+    243n^3`, whereas `85n^3+52n+104 < 95n^3`. The second
+    difference times 40 is
+
+        n(81n^3 + 13n^2 - 150n - 144) > 0,
+
+    since `81n^3 >= 729n` when `n>=3`. Thus the additional *positive*
+    determinant exponent of equation (3) is genuinely absorbed by the
+    published `n^6`, rather than being erroneously discarded.
     """
     n = constants.rank
     a = QQ(13 * n**3 - 13 * n**2 + 52 * n + 20) / 40
     b = QQ(13 * n**3 - 13 * n**2 + 72 * n - 20) / 40
+    d = QQ(13 * n**3 - 39 * n**2 + 36 * n + 52) / (20 * n)
     e30 = QQ(13 * n**3 - 13 * n**2 + 62 * n) / 20
-    assert n * (n + 1) * b <= n**6
+    assert n * (d + (n + 1) * b) <= n**6
     assert e30 + n * (a + e30) <= 3 * n**4
     inner = n * theorem_one_constant(constants) * _power_majorant(constants.corollary3, b) * QQ(constants.lemma18)
     return n**3 * factorial(n - 1) * QQ(constants.corollary2) * QQ(constants.lemma18) * inner**n
@@ -664,7 +685,12 @@ def embedding_orbit_bound(gram_b, gram_a, constants):
     completed = QQ(constants.lemma20) * (abs(gram_a.det()) ** (n - m) * abs(gram_b.det()) + norm_a)
     a = QQ(13 * n**3 - 13 * n**2 + 52 * n + 20) / 40
     b = QQ(13 * n**3 - 13 * n**2 + 72 * n - 20) / 40
-    return ceil(theorem_one_constant(constants) * _power_majorant(completed, a) * _power_majorant(norm_b, b)) + 1
+    d = QQ(13 * n**3 - 39 * n**2 + 36 * n + 52) / (20 * n)
+    # This is the same Theorem 1 (3) used in isometry_box_bound, applied
+    # after Lemma 20's integral completion. The target Gram determinant
+    # does not disappear when the source marking has rank < n.
+    return ceil(theorem_one_constant(constants) * abs(gram_b.det()) ** ceil(d)
+                * _power_majorant(completed, a) * _power_majorant(norm_b, b)) + 1
 
 
 def embedding_orbits(lattice, gram, constants):
