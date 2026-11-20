@@ -184,6 +184,15 @@ def orthogonal_transporter(gram, marking, target):
         return identity_matrix(ZZ, gram.nrows())
     if target.transpose() * gram * target != marking.transpose() * gram * marking:
         return None
+    if gram.nrows() <= 1:
+        # The zero-dimensional group is trivial; for a nonzero rank-one
+        # form O([d],Z)={+1,-1}. Enumerate these exact integral isometries
+        # instead of applying Li--Margulis, whose hypotheses require n>=3.
+        identity = identity_matrix(ZZ, gram.nrows())
+        for candidate in (identity, -identity):
+            if candidate * marking == target:
+                return candidate
+        return None
     if marking.rank() != target.rank():
         # An invertible isometry preserves the rank of every marked frame,
         # even when its restricted Gram form is degenerate.
