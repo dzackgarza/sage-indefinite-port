@@ -2148,7 +2148,7 @@ class EichlerRecursion:
         # outside a supplied proper subgroup G. Use the provider's owned
         # subgroup membership; only the full O(L) uses the ambient predicate.
         ambient_group = lattice.O() if ambient_generators is None else lattice.O().subgroup(generators)
-        cyclic_exact_generator = None
+        exact_ambient_membership = False
         if ambient_generators is not None and ambient_group.is_finite() is True:
             # A generated subgroup's generic owned membership predicate may
             # recognize only supplied generators and certified words, even
@@ -2248,7 +2248,7 @@ class EichlerRecursion:
                     return False
 
                 ambient_contains = unipotent_contains
-                cyclic_exact_generator = generator_matrix
+                exact_ambient_membership = True
             elif (rank == 2 and generator_matrix.det() == 1
                   and abs(generator_matrix.trace()) > 2):
                 # For A in SL_2(Z) with |tr(A)|>2, its eigenvalues are
@@ -2277,7 +2277,50 @@ class EichlerRecursion:
                     return candidate == power_matrix or candidate == power_matrix.inverse()
 
                 ambient_contains = hyperbolic_contains
-                cyclic_exact_generator = generator_matrix
+                exact_ambient_membership = True
+            else:
+                ambient_contains = lambda g: as_isometry(g) in ambient_group
+        elif ambient_generators is not None and len(generators) == 2 and int(lattice.rank()) == 2:
+            # If A is hyperbolic in SL_2(Z), R is an integral involution,
+            # and RAR=A^-1, then <A,R> is the infinite dihedral group:
+            # each word reduces to A^k or A^k R. The absolute trace of
+            # A^k strictly increases with |k|, so both normal forms have
+            # exact finite membership decisions by binary search.
+            from sage.matrix.constructor import identity_matrix
+
+            matrices = tuple(_column_matrix(g) for g in generators)
+            one = identity_matrix(SageZZ, 2)
+            choices = ((matrices[0], matrices[1]), (matrices[1], matrices[0]))
+            normal_form = next(((a, r) for a, r in choices
+                                if a.det() == 1 and abs(a.trace()) > 2
+                                and r*r == one and r*a*r == a.inverse()), None)
+            if normal_form is not None:
+                hyperbolic, reflection = normal_form
+
+                def dihedral_contains(g):
+                    candidate = matrix(SageZZ, g)
+                    for tested in (candidate, candidate*reflection):
+                        if tested == one:
+                            return True
+                        trace = abs(tested.trace())
+                        if trace <= 2:
+                            continue
+                        lower, upper = 0, 1
+                        while abs((hyperbolic**upper).trace()) < trace:
+                            lower, upper = upper, 2*upper
+                        while lower + 1 < upper:
+                            middle = (lower+upper)//2
+                            if abs((hyperbolic**middle).trace()) < trace:
+                                lower = middle
+                            else:
+                                upper = middle
+                        power = hyperbolic**upper
+                        if tested == power or tested == power.inverse():
+                            return True
+                    return False
+
+                ambient_contains = dihedral_contains
+                exact_ambient_membership = True
             else:
                 ambient_contains = lambda g: as_isometry(g) in ambient_group
         else:
@@ -2292,8 +2335,8 @@ class EichlerRecursion:
         )
         if ambient_generators is not None and ambient_group.is_finite() is True:
             image._finite_ambient_lifts = tuple(finite_lifts)
-        if cyclic_exact_generator is not None:
-            image._cyclic_exact_generator = cyclic_exact_generator
+        if exact_ambient_membership:
+            image._exact_ambient_membership = True
         return image
 
     def joint_discriminant_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
@@ -2375,7 +2418,7 @@ class EichlerRecursion:
                     _isometry_from_column_matrix(lattice, lattice, m)
                     for m in image._finite_ambient_lifts),
             )
-        elif generators is not None and hasattr(image, "_cyclic_exact_generator"):
+        elif generators is not None and hasattr(image, "_exact_ambient_membership"):
             # The cyclic matrix membership predicate is an exact
             # integral equation, so the owned preimage must use it rather
             # than the provider's undecided generic generated-subgroup
