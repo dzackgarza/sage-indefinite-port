@@ -21,3 +21,10 @@ The swap S transports F to F'. By contrast the flag
 fixed by all four integral orthogonal matrices and is distinct from
 <(2,0)>. This remains an obstruction even though the corresponding
 stages have equal cardinalities two and four.
+
+For labelled finite subsets at level four, the same swap carries the
+red singleton {(1,0)} and blue singleton {(2,0)} to the red singleton
+{(0,1)} and blue singleton {(0,2)}. It cannot carry the red singleton
+{(1,0)} to {(1,1)} because the four integral isometries send (1,0)
+only to (1,0), (3,0), (0,1), (0,3) modulo four. Colour labels cannot
+be permuted.
