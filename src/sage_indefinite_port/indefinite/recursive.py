@@ -1848,18 +1848,22 @@ class EichlerRecursion:
     def congruence_right_cosets(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Owned coset transporters and finite right action of an actual level image.
 
-        The returned action takes an integral automorphism *with a reduction
-        in the computed image*. It deliberately makes no claim to decide
-        membership in a separately specified infinite ambient subgroup:
-        finite reduction cannot certify such membership.
+        The action accepts only integral automorphisms of the specified
+        ambient group. A matching finite reduction does not certify
+        membership in a proper generated integral subgroup.
         """
         image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators)
         cosets, finite_action = image.right_coset_action(allowed)
 
         def act(index, isometry):
             if isometry.domain() is not lattice or isometry.codomain() is not lattice:
                 raise ValueError("coset action requires an automorphism of the supplied lattice")
-            return finite_action(index, image.reduce(_column_matrix(isometry)))
+            columns = _column_matrix(isometry)
+            if not joint.ambient_contains(columns):
+                raise ValueError("coset action requires an element of the specified ambient group")
+            return finite_action(index, image.reduce(columns))
 
         def transporter(source_index, target_index):
             lift = image.right_coset_transporter(allowed, source_index, target_index)
