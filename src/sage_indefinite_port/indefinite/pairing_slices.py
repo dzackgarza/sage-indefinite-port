@@ -452,6 +452,80 @@ def setwise_transporter(lattice, fixed, left, right):
     if int(lattice.rank()) == 2:
         frame = tuple(lattice.module_generators())
         B = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        if B.rank() == 0:
+            # The full group is GL_2(Z). Given nonzero v,w of equal
+            # content, unimodular Bezout completions P_v,P_w identify
+            # every transporter as P_w [[1,k],[0,delta]] P_v^-1,
+            # k in Z, delta=+/-1. Preserve the *actual* marked module
+            # by solving the resulting affine linear/congruence equations.
+            from math import gcd
+            from sage.arith.misc import xgcd
+
+            v, w = vector(ZZ, left), vector(ZZ, right)
+            if not v:
+                return lattice.O().identity() if not w else None
+            dv, sv, tv = xgcd(v[0], v[1])
+            dw, sw, tw = xgcd(w[0], w[1])
+            if dv != dw:
+                return None
+            Pv = matrix(ZZ, [[v[0]//dv, -tv], [v[1]//dv, sv]])
+            Pw = matrix(ZZ, [[w[0]//dw, -tw], [w[1]//dw, sw]])
+            inverse = Pv.inverse()
+            H = matrix(ZZ, [list(z) for z in fixed]).row_module().basis_matrix()
+            for delta in (1, -1):
+                G0 = Pw*matrix(ZZ, [[1, 0], [0, delta]])*inverse
+                K = Pw*matrix(ZZ, [[0, 1], [0, 0]])*inverse
+                if H.nrows() == 1:
+                    h = H.row(0).column()
+                    candidates = []
+                    for sign in (1, -1):
+                        alpha = K*h
+                        beta = sign*h-G0*h
+                        pivot = next((j for j in range(2) if alpha[j, 0]), None)
+                        if pivot is None:
+                            if not beta:
+                                candidates.append(ZZ(0))
+                        else:
+                            value = QQ(beta[pivot, 0])/alpha[pivot, 0]
+                            if value.denominator() == 1 and alpha*ZZ(value) == beta:
+                                candidates.append(ZZ(value))
+                else:
+                    inverse_H = H.change_ring(QQ).inverse()
+                    C0 = H*G0.transpose()*inverse_H
+                    C1 = H*K.transpose()*inverse_H
+                    residue, modulus = 0, 1
+                    feasible = True
+                    for alpha, beta in zip(C1.list(), C0.list(), strict=True):
+                        D = int(alpha.denominator().lcm(beta.denominator()))
+                        a, c = int(D*alpha), int(-D*beta)
+                        divisor = gcd(a, D)
+                        if c % divisor:
+                            feasible = False
+                            break
+                        n = D//divisor
+                        if n == 1:
+                            continue
+                        target_residue = ((c//divisor)*pow(a//divisor, -1, n)) % n
+                        overlap = gcd(modulus, n)
+                        if (target_residue-residue) % overlap:
+                            feasible = False
+                            break
+                        quotient = n//overlap
+                        step = (((target_residue-residue)//overlap)
+                                * pow(modulus//overlap, -1, quotient)) % quotient if quotient > 1 else 0
+                        residue = (residue+modulus*step) % (modulus*quotient)
+                        modulus *= quotient
+                    candidates = (ZZ(residue),) if feasible else ()
+                for k in candidates:
+                    G = G0+k*K
+                    moved = matrix(ZZ, [[int(c) for c in G*vector(ZZ, z)] for z in fixed])
+                    if moved.row_module() != H.row_module():
+                        continue
+                    images = tuple(sum((lattice.scalar_multiple(int(G[j, i]), frame[j])
+                                        for j in range(2) if G[j, i]), lattice.zero())
+                                   for i in range(2))
+                    return lattice.O()(images)
+            return None
         if B.rank() == 1:
             # In a unimodular frame (u,r), r spanning the radical,
             # O(diag(a,0),ZZ) consists of [[eps,0],[b,delta]].
