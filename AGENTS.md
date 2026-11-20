@@ -337,6 +337,48 @@ count, subgroup equality, integral obstruction, termination condition or
 transporter property as applicable. A passing test checks that example; it
 does **not** substitute for a proof of the routine's full advertised domain.
 
+**MANDATORY ORACLE BEFORE EVERY NEW OR CHANGED MATHEMATICAL TEST.** No agent
+may invent a test's expected answer from the implementation it is changing,
+from its own proposed formula, or from an unverified recollection of a paper.
+An existing test or a test written by the same agent is *not* an independent
+oracle. Each new mathematical test, and each existing test whose mathematical
+assertions are modified, must carry in its own docstring:
+
+    ORACLE-FILE: references/vendor/<committed-source-or-exact-extraction>
+    ORACLE-LOCATOR: <theorem/equation/table/line and exact hypotheses>
+    ORACLE-EXCERPT: <literal, independently checked passage from that file>
+    ORACLE-HYPOTHESES: <the source hypotheses verified on this test input>
+    ORACLE-EXPECTED: <the exact claim and value this test checks>
+    ORACLE-DERIVATION: <independent steps connecting the source to that value>
+
+The `ORACLE-FILE` must already be committed *before* the test is introduced
+(and must not be implementation code or another test). The excerpt must be
+found verbatim in that committed source. A separately established proof is
+allowed as a committed `references/oracles/` source with its independently
+cited inputs, explicit argument and exact claim. An oracle extracted from a
+published table must point to the frozen source/fixture in the committed
+oracle manifest. A URL, paper title, theorem number, or citation without
+the checked **statement itself** is insufficient. If the source contains
+apparently inconsistent statements, the test is blocked until the discrepancy
+is resolved, not selected according to which version fits the new code.
+
+`ci/check_test_oracles.py` is a required fail-closed new/changed-test gate
+in the named inner loop, commit checks and outgoing checks. It checks the
+source pre-exists and the excerpt occurs in that source; this necessary
+mechanical gate does **not** certify that the mathematics inferred from the
+excerpt is correct. Before accepting a test, independently check the source's
+hypotheses, signs, domain, normalization and resulting expected value, and
+record the derivation in the test. No passing self-consistency assertion can
+replace this oracle. A missing/unverified oracle is a **blocked mathematical
+test**, not a warning, test-skip, xfail or reason to relax the acceptance
+standard. Do not push a test that fails this gate. The local repository
+`.githooks` preserve the existing global fast syntax checks, and the
+automatic `oracle-provenance` GitHub workflow checks each pushed commit. Do
+not bypass hooks with `--no-verify`. Previously committed mathematical tests
+without a verified oracle are **not** retrospectively certified: the next
+completion claim depending on any such test requires correcting its oracle
+first, not counting its earlier pass as acceptance evidence.
+
 Run one explicitly named pytest node with
 `just test-node 'tests/path.py::test_exact_mathematical_claim'`. The recipe
 rejects bare files and selections expanding to more than one collected test,

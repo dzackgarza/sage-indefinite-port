@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+# Preserve the existing syntax gate; add the per-commit mathematical oracle gate.
+prior="$(git config --global --get core.hooksPath || true)"
+if [ -n "$prior" ] && [ -x "$prior/pre-push" ]; then
+    "$prior/pre-push" "$@"
+fi
+remote_main="$(git rev-parse --verify refs/remotes/origin/main)"
+python3 ci/check_test_oracles.py --range "${remote_main}..HEAD"

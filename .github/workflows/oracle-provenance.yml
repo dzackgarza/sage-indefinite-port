@@ -1,0 +1,30 @@
+name: Mathematical oracle provenance
+# Lightweight independent-source provenance is mandatory for every new or
+# modified mathematical test. No Sage installation or expensive corpus run.
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  oracle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify each changed test against a pre-existing oracle
+        env:
+          BEFORE_PUSH: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            base="${PR_BASE}"
+          else
+            base="${BEFORE_PUSH}"
+          fi
+          if [[ -z "${base}" || "${base}" == "0000000000000000000000000000000000000000" ]]; then
+            base="$(git rev-parse HEAD^)"
+          fi
+          python3 ci/check_test_oracles.py --range "${base}..HEAD"
