@@ -156,9 +156,11 @@ def marked_transporter(lattice, source, target):
     gram = lambda vectors: [[lattice.b(x, y) for y in vectors] for x in vectors]
     if gram(source) != gram(target):
         return None
-    if len(source) == int(lattice.rank()) or int(lattice.rank()) <= 2:
+    frame = tuple(lattice.module_generators())
+    zero_form = all(int(lattice.b(x, y)) == 0 for x in frame for y in frame)
+    if len(source) == int(lattice.rank()) or int(lattice.rank()) <= 2 or zero_form:
         columns = matrix(ZZ, [[int(c) for c in v] for v in source]).transpose()
-        if (int(lattice.rank()) <= 2
+        if (int(lattice.rank()) <= 2 or zero_form
                 or (columns.ncols() == columns.nrows() and columns.det() != 0)):
             # A full-rank marking, including a nonprimitive one, fixes a
             # unique rational ambient map. Decide its integrality and
@@ -169,7 +171,6 @@ def marked_transporter(lattice, source, target):
             from sage_indefinite_port.indefinite.effective_reduction import orthogonal_transporter
 
             target_columns = matrix(ZZ, [[int(c) for c in v] for v in target]).transpose()
-            frame = tuple(lattice.module_generators())
             ambient_gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
             witness = orthogonal_transporter(ambient_gram, columns, target_columns)
             if witness is None:

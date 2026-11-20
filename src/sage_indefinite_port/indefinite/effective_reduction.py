@@ -230,6 +230,18 @@ def orthogonal_transporter(gram, marking, target):
         # An invertible isometry preserves the rank of every marked frame,
         # even when its restricted Gram form is degenerate.
         return None
+    if gram.rank() == 0:
+        # For the zero quadratic form, O(0_n,Z)=GL_n(Z). Left integral
+        # row operations preserve the row Hermite normal form of the
+        # marked matrix, and equality of those forms is sufficient:
+        # U_X X=H=U_Y Y implies (U_Y^-1 U_X) X=Y. Both U's are
+        # unimodular, giving a complete decision and integral witness
+        # for arbitrary rank, nonprimitive and dependent markings.
+        source_hnf, source_change = marking.hermite_form(transformation=True)
+        target_hnf, target_change = target.hermite_form(transformation=True)
+        if source_hnf != target_hnf:
+            return None
+        return target_change.inverse()*source_change
     if marking.transpose().elementary_divisors() != target.transpose().elementary_divisors():
         # Smith invariants of the marking are unchanged by left
         # multiplication with GL_n(Z). In particular a primitive null
@@ -304,24 +316,6 @@ def orthogonal_transporter(gram, marking, target):
                 if candidate*marking == target:
                     return candidate
         return None
-    if gram.nrows() == 2 and gram.rank() == 0:
-        # O(0_2,Z)=GL_2(Z). The full-rank case was handled above;
-        # for a rank-one marking, equality of contents is necessary and
-        # sufficient. Complete both primitive vectors by Bezout.
-        from sage.arith.misc import xgcd
-
-        first = next((j for j in range(marking.ncols()) if marking.column(j)), None)
-        if first is None:
-            return identity_matrix(ZZ, 2)
-        v, w = marking.column(first), target.column(first)
-        dv, sv, tv = xgcd(ZZ(v[0]), ZZ(v[1]))
-        dw, sw, tw = xgcd(ZZ(w[0]), ZZ(w[1]))
-        if dv != dw:
-            return None
-        source_frame = matrix(ZZ, [[v[0]//dv, -tv], [v[1]//dv, sv]])
-        target_frame = matrix(ZZ, [[w[0]//dw, -tw], [w[1]//dw, sw]])
-        candidate = target_frame*source_frame.inverse()
-        return candidate if candidate*marking == target else None
     if gram.nrows() == 2 and gram.det() < 0 and ZZ(gram[0, 1]**2 - gram[0, 0]*gram[1, 1]).is_square():
         # Every rationally split indefinite binary form has precisely two
         # rational isotropic lines. A unimodular integral isometry permutes
