@@ -148,6 +148,22 @@ class IntegralCongruenceImage:
                    if self.reduce(lift) * point == point)
         return self.preimage_generators(allowed)
 
+    def residue_vector_transporter(self, source, target):
+        r"""Integral lift carrying one residue vector to another, or ``None``.
+
+        A negative answer is certified by exhaustive search in the actual
+        finite reduction image, not in the full general linear group.
+        """
+        from sage.modules.free_module_element import vector
+
+        left, right = vector(self.ring, source), vector(self.ring, target)
+        if len(left) != self.rank or len(right) != self.rank:
+            raise ValueError("residue vector has the wrong rank")
+        for lift in self._lifts.values():
+            if self.reduce(lift) * left == right:
+                return lift
+        return None
+
     def residue_colouring_stabilizer(self, colour_classes):
         r"""Preimage preserving every named colour class of residue vectors.
 

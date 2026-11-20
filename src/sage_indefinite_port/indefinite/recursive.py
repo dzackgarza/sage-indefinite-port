@@ -1178,6 +1178,11 @@ class EichlerRecursion:
         index, matrices = image.residue_vector_stabilizer(residue)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def congruence_vector_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+        r"""Integral orthogonal transporter between residue vectors, or ``None``."""
+        lift = self.congruence_image(lattice, modulus).residue_vector_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
     def congruence_submodule_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, generators):
         r"""Integral setwise stabilizer of a submodule of ``L / modulus L``."""
         image = self.congruence_image(lattice, modulus)

@@ -118,6 +118,27 @@ def test_actual_image_nonfree_residue_submodule_transporter():
     assert engine.congruence_submodule_transporter(ambient, 4, ((2, 2),), ((2, 0),)) is None
 
 
+def test_public_residue_vector_transporter_and_actual_image_obstruction():
+    r"""The integral orthogonal group of U is exactly its four sign/swap maps.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Gram preservation equations and modulo-4 cyclic submodules
+    ORACLE-EXCERPT: Thus O(U) consists exactly of I, -I, the coordinate swap S, and -S.
+    ORACLE-HYPOTHESES: U has Gram [[0,1],[1,0]] and reduction modulo 4
+    ORACLE-EXPECTED: (1,0) transports to (0,1) but not (1,1), although both have additive order four
+    ORACLE-DERIVATION: The four matrices send (1,0) only to (1,0),(3,0),(0,1),(0,3), never (1,1)
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    g = engine.congruence_vector_transporter(ambient, 4, (1, 0), (0, 1))
+    assert g is not None and g.domain() is ambient and g.codomain() is ambient
+    assert tuple(int(x) % 4 for x in g(ambient.module_generators()[0]).to_vector()) == (0, 1)
+    assert engine.congruence_vector_transporter(ambient, 4, (1, 0), (1, 1)) is None
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
