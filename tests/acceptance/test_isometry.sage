@@ -1,6 +1,6 @@
 """Isometry decisions and witnesses between indefinite lattices.
 
-Verdicts come from certified corpus pairs (Indefinite.jl and Hecke tests, polyhedral_common's
+Verdicts come from certified corpus pairs (Hecke tests, polyhedral_common's
 145 equivalent Lorentzian pairs, the Conway--Sloane same-genus pair). A returned witness is
 accepted when it carries one Gram matrix to the other. polyhedral_common's 19_IndefiniteComp
 suite is adapted as it is: a lattice and its image under a unimodular change of basis are
