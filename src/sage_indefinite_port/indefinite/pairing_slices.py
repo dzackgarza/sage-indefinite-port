@@ -669,6 +669,21 @@ class PointwiseStabilizerOrbits:
             )
 
     def __iter__(self):
+        if (int(self.lattice.rank()) == 2 and self.lattice.is_nondegenerate()
+                and not self.lattice.is_definite() and int(self.square) != 0
+                and all(v == self.lattice.zero() for v in self.fixed)):
+            # The pointwise stabilizer of the zero marking is the whole
+            # O(L). Its exact binary quadratic-form class set is finite
+            # even for Pell-type norm fibres containing infinitely many
+            # vectors. Do not leave this finite quotient as an infinite
+            # coordinate search.
+            classes = self.lattice.binary_fixed_norm_representatives(int(self.square))
+            section = classes.section()
+            for orbit in classes:
+                representative = section(orbit)
+                if int(representative.content()) == 1:
+                    yield representative
+            return
         known = []
         frame = tuple(self.lattice.module_generators())
         for coordinates in _fixed_norm_candidate_coordinates(self.lattice, self.square):
@@ -716,6 +731,16 @@ class SubgroupVectorOrbits:
         return self.transporter(left, right) is not None
 
     def __iter__(self):
+        if (self.group is self.lattice.O() and int(self.lattice.rank()) == 2
+                and self.lattice.is_nondegenerate() and not self.lattice.is_definite()
+                and int(self.square) != 0):
+            classes = self.lattice.binary_fixed_norm_representatives(int(self.square))
+            section = classes.section()
+            for orbit in classes:
+                representative = section(orbit)
+                if int(representative.content()) == 1:
+                    yield representative
+            return
         frame = tuple(self.lattice.module_generators())
         known = []
         for coordinates in _fixed_norm_candidate_coordinates(self.lattice, self.square):
