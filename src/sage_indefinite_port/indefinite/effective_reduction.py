@@ -26,8 +26,6 @@ generators of `O(G_X)` with entries below `N_2` (:func:`li_margulis.generator_bo
 `g` has entries at most `n^2 \|(Y|K_Y)\|_\infty \max(1, \|h\|_\infty) \|(X|K_X)^{-1}\|_\infty`.
 """
 
-from itertools import product
-
 from sage.matrix.constructor import block_matrix, matrix
 from sage.matrix.special import identity_matrix
 from sage.rings.integer_ring import ZZ
@@ -73,12 +71,26 @@ def centralizer_transporter_in_box(gram, actions, marking, target, bound):
     n = gram.nrows()
     assert gram.det() != 0, "the form must be nondegenerate"
     bound = int(bound)
-    span = range(-bound, bound + 1)
-    box = [matrix(ZZ, n, 1, list(c)) for c in product(span, repeat=n)]
-    norms = {}
-    for c in box:
-        norms.setdefault(int((c.transpose() * gram * c)[0, 0]), []).append(c)
-    candidates = [norms.get(int(gram[j, j]), []) for j in range(n)]
+    if bound < 0:
+        raise ValueError("the integral coordinate bound must be nonnegative")
+
+    def candidates(column):
+        # The effective Li--Margulis bound can exceed machine-sized range
+        # lengths. Enumerate each finite coordinate box with an unbounded
+        # integer odometer, without materializing its exponentially many
+        # vectors or a dictionary of norm shells.
+        coordinates = [-bound] * n
+        while True:
+            c = matrix(ZZ, n, 1, coordinates)
+            if (c.transpose() * gram * c)[0, 0] == gram[column, column]:
+                yield c
+            for position in range(n - 1, -1, -1):
+                if coordinates[position] < bound:
+                    coordinates[position] += 1
+                    coordinates[position + 1:] = [-bound] * (n - position - 1)
+                    break
+            else:
+                return
 
     def extend(columns):
         j = len(columns)
@@ -87,7 +99,7 @@ def centralizer_transporter_in_box(gram, actions, marking, target, bound):
             if g * marking == target and all(g * F == F * g for F in actions):
                 return g
             return None
-        for c in candidates[j]:
+        for c in candidates(j):
             if all((columns[i].transpose() * gram * c)[0, 0] == gram[i, j] for i in range(j)):
                 found = extend([*columns, c])
                 if found is not None:
