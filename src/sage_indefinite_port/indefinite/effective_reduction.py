@@ -73,6 +73,14 @@ def centralizer_transporter_in_box(gram, actions, marking, target, bound):
     bound = int(bound)
     if bound < 0:
         raise ValueError("the integral coordinate bound must be nonnegative")
+    if marking.rank() != target.rank():
+        return None
+    relations = marking.change_ring(QQ).right_kernel_matrix()
+    if target.change_ring(QQ) * relations.transpose() != 0:
+        # An invertible integral transporter preserves every rational
+        # linear relation among the marked columns. Reject impossible
+        # dependent markings before enumerating the coefficient box.
+        return None
     if marking.nrows() == n and marking.ncols() == n and marking.det() != 0:
         # A full-rank marking determines the transporter uniquely over Q:
         # g X = Y implies g = Y X^-1. This applies equally to a
