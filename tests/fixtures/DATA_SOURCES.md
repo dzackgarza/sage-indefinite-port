@@ -219,9 +219,9 @@ This document records the exact provenance, source files, authors, publications,
 
 - **File**: `tests/fixtures/enriques_classical_indices.json`
 
-- **Source**: arXiv:2302.01679, subsection "Classical cases" (vendored TeX). The paper derives $[O^+(N):\Gamma_h]$ from Barth--Peters's counts of projective models for degree 2 (Case 1), 6 (Case 4) and 10 (Case 7), and then $[\Gamma_h:\tilde O^+(N)] = |O^+(\mathbb F_2^{10})|/[O^+(N):\Gamma_h]$.
+- **Source**: Barth--Peters, *Automorphisms of Enriques Surfaces*, Invent. Math. **73** (1983), Theorem 3.9, p. 398 (author-hosted primary PDF `https://www-fourier.univ-grenoble-alpes.fr/~peters/Articles/pub11.pdf`), and Dutour Sikirić--Hulek, *Moduli of polarised Enriques surfaces — Computational aspects*, J. London Math. Soc. **109** (2024), §3.7.1 (`https://doi.org/10.1112/jlms.12828`). The vendored arXiv:2302.01679 prepublication TeX is independently checked for its mismatch. The final publication derives $[O^+(N):\Gamma_h]$ from counts of projective models for degrees 2 (Case 1), 6 (Case 4), and 10 (Case 7), and then $[\Gamma_h:\tilde O^+(N)] = |O^+(\mathbb F_2^{10})|/[O^+(N):\Gamma_h]$.
 
-- **Consistency**: for degrees 6 and 10 the displayed quotient, its stated value and Table 1's $|\bar\Gamma_h|$ agree; the script asserts this. For degree 2 the text is not consistent. It states $[O^+(N):\Gamma_h] = 2^7\cdot7\cdot31$ and $[\Gamma_h:\tilde O^+(N)] = 2^{14}\cdot3^5\cdot5^2\cdot7\cdot31$, while the quotient of the displayed numbers is $2^{14}\cdot3^5\cdot5^2\cdot17$. Table 1 gives $2^{14}\cdot3^5\cdot5^2\cdot7$, i.e. index $2^7\cdot17\cdot31$. The record (`inconsistent_with_table`) carries the table-derived values unprefixed and the stated ones as `stated_*`.
+- **Resolved prepublication misprint**: the old arXiv TeX incorrectly gives degree-two index $2^7\cdot7\cdot31$ and also miscomputes its quotient. Barth--Peters's original Theorem 3.9 and Dutour Sikirić--Hulek's **final published version** both give the correct index $2^7\cdot17\cdot31$, with quotient $2^{14}\cdot3^5\cdot5^2\cdot7$ agreeing with Table 1. All three degree 2/6/10 records are now `consistent_with_table`; the degree-two record retains an explicit `prepublication_erratum` locator so that the old source discrepancy is not hidden or reused as an oracle.
 
 - **Extraction**: `uv run references/extract/dh23_classical.py`.
 
