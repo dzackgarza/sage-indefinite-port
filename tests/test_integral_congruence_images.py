@@ -1260,6 +1260,93 @@ def test_owned_positive_cone_congruence_subgroup():
     assert all(g in subgroup for g in generators)
 
 
+def test_actual_joint_component_determinant_real_spinor_discriminant_and_level_preimage():
+    r"""O(U)=C2 x C2, with independent determinant and positive-cone signs.
+
+    The axis swap has determinant -1 and preserves the future cone;
+    minus the identity has determinant +1 and exchanges cone components.
+    Thus the simultaneous determinant-one and cone-preserving subgroup is
+    exactly the identity, *even though both individual kernels have index 2*.
+    A joint finite-image preimage must retain the actual correlations with
+    the discriminant and mod-2 factors and return owned Schreier generators.
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    swap = ambient.O()((f, e))
+    negative = ambient.O()((-e, -f))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, determinant=True, real_spinor=True,
+        positive_cone=True, level_modulus=2,
+    )
+    assert len(image.image_keys()) == 4
+    keys = {image.image(matrix(ZZ, [[int(g(v).to_vector()(label))
+                for v in (e, f)] for label in ambient.module_generating_set()])): g
+            for g in (ambient.O().one(), swap, negative, swap * negative)}
+    assert len(keys) == 4
+    for key, g in keys.items():
+        assert key[2] == int(g.determinant())
+        assert key[-1] == (1 if g.preserves_positive_cone() else -1)
+
+    allowed = image.subgroup_from_membership(lambda key: key[2] == 1 and key[-1] == 1)
+    assert allowed == frozenset((image.identity,))
+    subgroup = engine.joint_discriminant_character_preimage_subgroup(
+        ambient, allowed, determinant=True, real_spinor=True,
+        positive_cone=True, level_modulus=2,
+    )
+    assert int(subgroup.index()) == 4
+    assert ambient.O().one() in subgroup
+    assert all(g not in subgroup for g in (swap, negative, swap * negative))
+    assert all(g.determinant() == 1 and g.preserves_positive_cone()
+               for g in subgroup.group_generators())
+
+    certificate = engine.joint_discriminant_character_preimage_factorization(
+        ambient, ambient.O().one(), allowed, determinant=True,
+        real_spinor=True, positive_cone=True, level_modulus=2,
+    )
+    assert certificate is not None and certificate[0] * certificate[1] == ambient.O().one()
+    assert engine.joint_discriminant_character_preimage_factorization(
+        ambient, negative, allowed, determinant=True, real_spinor=True,
+        positive_cone=True, level_modulus=2,
+    ) is None
+
+    # The two index-two kernels together generate all of O(U), so there is
+    # exactly one double coset of H_cone \ O(U) / H_det. This invokes the
+    # *same* joint representation and returns an actual integral witness.
+    cone = image.subgroup_from_membership(lambda key: key[-1] == 1)
+    det = image.subgroup_from_membership(lambda key: key[2] == 1)
+    double_cosets = engine.joint_discriminant_double_coset_representatives(
+        ambient, cone, det, determinant=True, real_spinor=True,
+        positive_cone=True, level_modulus=2,
+    )
+    assert len(double_cosets) == 1
+    assert double_cosets[0][1].domain() is ambient
+    stabilizers = engine.joint_discriminant_double_coset_stabilizers(
+        ambient, cone, det, determinant=True, real_spinor=True,
+        positive_cone=True, level_modulus=2,
+    )
+    assert len(stabilizers) == 1 and stabilizers[0][1] == 4
+
+    # A multilevel vector condition and the two characters must be imposed
+    # in one actual image, not as an independent product of quotient groups.
+    characters = engine.joint_discriminant_character_image(
+        ambient, determinant=True, positive_cone=True,
+    )
+    allowed_characters = characters.subgroup_from_membership(
+        lambda key: key[1] == 1 and key[-1] == 1
+    )
+    multilevel = engine.multilevel_joint_character_preimage_subgroup(
+        ambient, ((2, {"vectors": ((1, 0),)}),), allowed_characters,
+        determinant=True, positive_cone=True,
+    )
+    assert int(multilevel.index()) == 4
+    assert ambient.O().one() in multilevel
+    assert all(g not in multilevel for g in (swap, negative, swap * negative))
+
+
 def test_owned_determinant_kernel_distinguishes_reflection_from_negative_identity():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion

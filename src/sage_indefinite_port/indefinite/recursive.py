@@ -1250,7 +1250,7 @@ class EichlerRecursion:
             lattice, target_modulus, ambient_generators=ambient_generators,
         )
 
-    def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, ambient_generators=None):
+    def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Exact joint preimage of multilevel residues and finite characters.
 
         ``allowed_characters`` is a subgroup of the actual joint character
@@ -1268,7 +1268,7 @@ class EichlerRecursion:
             modulus = lcm(modulus, int(level))
         joint = self.joint_discriminant_character_image(
             lattice, determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier,
             level_modulus=modulus if constraints else None,
             ambient_generators=ambient_generators,
@@ -1276,7 +1276,7 @@ class EichlerRecursion:
         allowed_characters = frozenset(allowed_characters)
         character_image = self.joint_discriminant_character_image(
             lattice, determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier,
             ambient_generators=ambient_generators,
         )
@@ -1297,7 +1297,7 @@ class EichlerRecursion:
         index, matrices = joint.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def multilevel_joint_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, ambient_generators=None):
+    def multilevel_joint_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Owned subgroup realizing all multilevel and character restrictions.
 
         The subgroup is formed inside the explicitly generated ambient group
@@ -1307,7 +1307,7 @@ class EichlerRecursion:
         _, generators = self.multilevel_joint_character_preimage_generators(
             lattice, constraints, allowed_characters,
             determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier, ambient_generators=ambient_generators,
         )
         ambient = (lattice.O() if ambient_generators is None
@@ -1570,8 +1570,8 @@ class EichlerRecursion:
         )
         return lattice.O().subgroup(generators)
 
-    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
-        r"""Actual joint discriminant/determinant/real- and field-spinor image.
+    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Actual joint discriminant, determinant, spinor, component and level image.
 
         Uses the original discriminant-form action (quadratic if L is even,
         bilinear otherwise) supplied by the provider. The real-spinor
@@ -1580,6 +1580,10 @@ class EichlerRecursion:
         form multiplier; only its *generated* square-class image is finite,
         not necessarily its full square-class target. All factors are
         enumerated jointly, preserving correlations in the actual image.
+        The positive-cone component sign is defined only in signature (1,n);
+        it is a distinct character from determinant and normalized real
+        spinor, and is appended after the field-spinor factor. The provider
+        selects its own positive-cone convention and enforces the signature.
         """
         from sage_indefinite_port.indefinite.congruence_images import JointDiscriminantCharacterImage
 
@@ -1599,6 +1603,10 @@ class EichlerRecursion:
             spinor_field = lattice.spinor_norm(field_map, form_multiplier)
             signs.append(lambda g: spinor_field(g))
             identities.append(spinor_field.codomain().one())
+        if positive_cone:
+            lattice.O_component()  # Provider's exact signature (1,n) hypothesis.
+            signs.append(lambda g: 1 if g.preserves_positive_cone() else -1)
+            identities.append(1)
 
         def as_isometry(columns):
             return _isometry_from_column_matrix(lattice, lattice, columns)
@@ -1620,7 +1628,7 @@ class EichlerRecursion:
             ambient_contains=lambda g: as_isometry(g) in ambient_group,
         )
 
-    def joint_discriminant_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+    def joint_discriminant_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Owned kernel/section witnesses and exact word for preimage membership.
 
         Returns ``None`` for a nonmember of the arithmetic preimage; a
@@ -1631,7 +1639,7 @@ class EichlerRecursion:
             raise ValueError("factorization requires an automorphism of the supplied lattice")
         image = self.joint_discriminant_character_image(
             lattice, determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier, level_modulus=level_modulus,
             ambient_generators=ambient_generators,
         )
@@ -1642,13 +1650,13 @@ class EichlerRecursion:
         return (_isometry_from_column_matrix(lattice, lattice, kernel),
                 _isometry_from_column_matrix(lattice, lattice, section), word)
 
-    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Integral preimage generators for an actual joint discriminant subgroup."""
-        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, field_spinor=field_spinor, field_map=field_map, form_multiplier=form_multiplier, level_modulus=level_modulus, ambient_generators=ambient_generators)
+        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map, form_multiplier=form_multiplier, level_modulus=level_modulus, ambient_generators=ambient_generators)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_discriminant_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+    def joint_discriminant_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Return an *owned group* realizing the exact joint finite-image inverse image.
 
         The actual finite joint image is represented faithfully by its left
@@ -1670,7 +1678,7 @@ class EichlerRecursion:
         ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
         image = self.joint_discriminant_character_image(
             lattice, determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier, level_modulus=level_modulus,
             ambient_generators=ambient_generators,
         )
@@ -1700,7 +1708,7 @@ class EichlerRecursion:
             generating_morphism=ambient.free_cover(generators),
         )
 
-    def joint_discriminant_double_coset_representatives(self, lattice: Lattices.ParentMethods, left_subgroup, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+    def joint_discriminant_double_coset_representatives(self, lattice: Lattices.ParentMethods, left_subgroup, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Actual joint-character double cosets, with integral isometry witnesses.
 
         The two subgroups are given as collections of keys in the generated
@@ -1709,7 +1717,7 @@ class EichlerRecursion:
         """
         image = self.joint_discriminant_character_image(
             lattice, determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier, level_modulus=level_modulus,
             ambient_generators=ambient_generators,
         )
@@ -1717,7 +1725,7 @@ class EichlerRecursion:
                       image.double_coset_intersection(left_subgroup, right_subgroup, key))
                      for key, witness in image.double_coset_representatives(left_subgroup, right_subgroup))
 
-    def joint_discriminant_double_coset_stabilizers(self, lattice: Lattices.ParentMethods, left_subgroup, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+    def joint_discriminant_double_coset_stabilizers(self, lattice: Lattices.ParentMethods, left_subgroup, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Double-coset witnesses and full integral stabilizer generators.
 
         Each entry is ``(representative, index, generators)`` with owned
@@ -1725,7 +1733,7 @@ class EichlerRecursion:
         """
         image = self.joint_discriminant_character_image(
             lattice, determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier, level_modulus=level_modulus,
             ambient_generators=ambient_generators,
         )
@@ -1740,7 +1748,7 @@ class EichlerRecursion:
             ))
         return tuple(result)
 
-    def joint_discriminant_marked_stabilizer_generators(self, lattice: Lattices.ParentMethods, left_subgroup, stabilizer_generators, representative, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+    def joint_discriminant_marked_stabilizer_generators(self, lattice: Lattices.ParentMethods, left_subgroup, stabilizer_generators, representative, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Generators of the *actual* marked stabilizer ``Gamma intersect gPg^-1``.
 
         The supplied ``stabilizer_generators`` must generate the ambient
@@ -1750,7 +1758,7 @@ class EichlerRecursion:
         """
         image = self.joint_discriminant_character_image(
             lattice, determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier, level_modulus=level_modulus,
             ambient_generators=ambient_generators,
         )
@@ -1761,7 +1769,7 @@ class EichlerRecursion:
         )
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_discriminant_restricted_transporter(self, lattice: Lattices.ParentMethods, allowed, ambient_transporter, stabilizer_generators, *, determinant=False, real_spinor=False, field_spinor=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+    def joint_discriminant_restricted_transporter(self, lattice: Lattices.ParentMethods, allowed, ambient_transporter, stabilizer_generators, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Correct an ambient marked transporter to an exact subgroup witness.
 
         The stabilizer is the *right correction group* for the supplied
@@ -1770,7 +1778,7 @@ class EichlerRecursion:
         """
         image = self.joint_discriminant_character_image(
             lattice, determinant=determinant, real_spinor=real_spinor,
-            field_spinor=field_spinor, field_map=field_map,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier, level_modulus=level_modulus,
             ambient_generators=ambient_generators,
         )
