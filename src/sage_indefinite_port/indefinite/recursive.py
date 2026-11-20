@@ -2148,7 +2148,7 @@ class EichlerRecursion:
         # outside a supplied proper subgroup G. Use the provider's owned
         # subgroup membership; only the full O(L) uses the ambient predicate.
         ambient_group = lattice.O() if ambient_generators is None else lattice.O().subgroup(generators)
-        cyclic_unipotent = None
+        cyclic_quasi_unipotent = None
         if ambient_generators is not None and ambient_group.is_finite() is True:
             # A generated subgroup's generic owned membership predicate may
             # recognize only supplied generators and certified words, even
@@ -2177,8 +2177,9 @@ class EichlerRecursion:
                         queue.append(product)
             ambient_contains = lambda g: matrix_key(g) in finite_members
         elif ambient_generators is not None and len(generators) == 1:
-            # For a cyclic unipotent A=I+N with N^r=0, the binomial
-            # theorem gives A^k=I+sum_j binom(k,j)N^j for every k in Z.
+            # For a cyclic quasi-unipotent A with U=A^m=I+N and N^r=0,
+            # every A^k is A^s U^t for 0<=s<m and t in Z. The binomial
+            # theorem gives U^t=I+sum_j binom(t,j)N^j for every t in Z.
             # The nonzero powers N,...,N^(r-1) are Q-linearly independent
             # (otherwise the minimal polynomial of N has degree < r).
             # Thus the coefficient of N recovers k uniquely; checking
@@ -2187,9 +2188,28 @@ class EichlerRecursion:
             generator_matrix = _column_matrix(generators[0])
             from sage.matrix.constructor import identity_matrix
             from sage.rings.rational_field import QQ as SageQQ
+            from sage.all import cyclotomic_polynomial
+            from math import lcm
 
             one = identity_matrix(SageZZ, generator_matrix.nrows())
-            nilpotent = generator_matrix - one
+            # Every eigenvalue of a quasi-unipotent integer matrix is a
+            # root of unity. An eigenvalue of order m contributes Phi_m
+            # of degree phi(m)<=n, hence m<=4*n*n+2. Factor the exact
+            # characteristic polynomial and take the lcm of the orders
+            # of all cyclotomic irreducible factors. Unlike an arbitrary
+            # power cutoff, this detects every quasi-unipotent matrix.
+            rank = generator_matrix.nrows()
+            factors = tuple(f for f, _ in generator_matrix.charpoly().factor())
+            orders = []
+            for factor in factors:
+                order = next((m for m in range(1, 4*rank*rank+3)
+                              if cyclotomic_polynomial(m) == factor), None)
+                if order is None:
+                    break
+                orders.append(order)
+            period = lcm(*orders) if len(orders) == len(factors) else None
+            nilpotent = (generator_matrix**period - one if period is not None
+                         else generator_matrix - one)
             powers = []
             power = nilpotent
             for _ in range(generator_matrix.nrows()):
@@ -2197,28 +2217,38 @@ class EichlerRecursion:
                     break
                 powers.append(power)
                 power = power*nilpotent
-            if powers and not power:
-                basis = matrix(SageQQ, [p.list() for p in powers]).transpose()
+            if period is not None and not power:
+                basis = (matrix(SageQQ, [p.list() for p in powers]).transpose()
+                         if powers else None)
+                residue_inverses = tuple(generator_matrix**(-s) for s in range(period))
 
                 def unipotent_contains(g):
-                    difference = matrix(SageZZ, g) - one
-                    try:
-                        coefficients = basis.solve_right(vector(SageQQ, difference.list()))
-                    except ValueError:
-                        return False
-                    exponent = coefficients[0]
-                    if exponent.denominator() != 1:
-                        return False
-                    exponent = SageZZ(exponent)
-                    expected = matrix(SageZZ, one)
-                    coefficient = SageZZ(1)
-                    for j, power_j in enumerate(powers, 1):
-                        coefficient = coefficient*(exponent-j+1)//j
-                        expected += coefficient*power_j
-                    return expected == matrix(SageZZ, g)
+                    candidate = matrix(SageZZ, g)
+                    for inverse_residue in residue_inverses:
+                        difference = candidate*inverse_residue - one
+                        if not powers:
+                            if not difference:
+                                return True
+                            continue
+                        try:
+                            coefficients = basis.solve_right(vector(SageQQ, difference.list()))
+                        except ValueError:
+                            continue
+                        exponent = coefficients[0]
+                        if exponent.denominator() != 1:
+                            continue
+                        exponent = SageZZ(exponent)
+                        expected = matrix(SageZZ, one)
+                        coefficient = SageZZ(1)
+                        for j, power_j in enumerate(powers, 1):
+                            coefficient = coefficient*(exponent-j+1)//j
+                            expected += coefficient*power_j
+                        if expected == candidate*inverse_residue:
+                            return True
+                    return False
 
                 ambient_contains = unipotent_contains
-                cyclic_unipotent = generator_matrix
+                cyclic_quasi_unipotent = generator_matrix
             else:
                 ambient_contains = lambda g: as_isometry(g) in ambient_group
         else:
@@ -2233,8 +2263,8 @@ class EichlerRecursion:
         )
         if ambient_generators is not None and ambient_group.is_finite() is True:
             image._finite_ambient_lifts = tuple(finite_lifts)
-        if cyclic_unipotent is not None:
-            image._cyclic_unipotent_generator = cyclic_unipotent
+        if cyclic_quasi_unipotent is not None:
+            image._cyclic_quasi_unipotent_generator = cyclic_quasi_unipotent
         return image
 
     def joint_discriminant_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
@@ -2316,14 +2346,14 @@ class EichlerRecursion:
                     _isometry_from_column_matrix(lattice, lattice, m)
                     for m in image._finite_ambient_lifts),
             )
-        elif generators is not None and hasattr(image, "_cyclic_unipotent_generator"):
-            # The cyclic unipotent membership predicate is an exact
+        elif generators is not None and hasattr(image, "_cyclic_quasi_unipotent_generator"):
+            # The cyclic quasi-unipotent membership predicate is an exact
             # integral equation, so the owned preimage must use it rather
             # than the provider's undecided generic generated-subgroup
             # membership. The supplied free cover certifies generation.
             ambient = lattice.O().predicate_subgroup(
                 lambda g: image.ambient_contains(_column_matrix(g)),
-                lambda: "the specified infinite cyclic unipotent subgroup",
+                lambda: "the specified cyclic quasi-unipotent subgroup",
                 generating_morphism=lattice.O().free_cover(generators),
             )
         else:
