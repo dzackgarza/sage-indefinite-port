@@ -28,3 +28,11 @@ red singleton {(1,0)} and blue singleton {(2,0)} to the red singleton
 {(1,0)} to {(1,1)} because the four integral isometries send (1,0)
 only to (1,0), (3,0), (0,1), (0,3) modulo four. Colour labels cannot
 be permuted.
+
+For simultaneous marked data at level four, take the source vector
+(1,0), source cyclic submodule <(2,0)>, and red singleton {(1,0)}.
+The coordinate swap transports all three simultaneously to (0,1),
+<(0,2)> and {(0,1)}. Replacing only the target red singleton by
+{(1,0)} makes simultaneous transport impossible: the unique one of
+the four isometries sending (1,0) to (0,1) is S, and S sends the red
+singleton to {(0,1)}.
