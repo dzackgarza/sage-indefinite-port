@@ -1417,6 +1417,45 @@ class EichlerRecursion:
             raise ValueError("multilevel and character conditions do not define a subgroup")
         return joint, allowed
 
+    def multilevel_joint_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Exact kernel/section word for simultaneous level and character constraints.
+
+        Return ``(kernel, section, word)`` for a member, with the kernel
+        trivial in the *whole actual joint image* at the least common
+        multiple level, and ``None`` for a nonmember. All constraints and
+        characters are checked in one correlated finite image.
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("factorization requires an automorphism of the supplied lattice")
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        result = joint.preimage_factorization(_column_matrix(isometry), allowed)
+        if result is None:
+            return None
+        kernel, section, word = result
+        return (_isometry_from_column_matrix(lattice, lattice, kernel),
+                _isometry_from_column_matrix(lattice, lattice, section), word)
+
+    def multilevel_joint_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Owned integral membership in the correlated multilevel preimage.
+
+        A finite quotient alone does not decide membership in a proper
+        explicitly generated ambient group; delegate that decision to the
+        owned integral preimage rather than inspecting only the reduction.
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("membership requires an automorphism of the supplied lattice")
+        return isometry in self.multilevel_joint_character_preimage_subgroup(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+
     def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Complete integral generators for the exact multilevel/character preimage.
 
