@@ -78,6 +78,25 @@ def marked_transporter(lattice, source, target):
     gram = lambda vectors: [[lattice.b(x, y) for y in vectors] for x in vectors]
     if gram(source) != gram(target):
         return None
+    if len(source) == int(lattice.rank()):
+        columns = matrix(ZZ, [[int(c) for c in v] for v in source]).transpose()
+        if columns.det() != 0:
+            # A full-rank marking, including a nonprimitive one, fixes a
+            # unique rational ambient map. Decide its integrality and
+            # isometry identities directly rather than invoking a marked
+            # category isomorphism search on a finite-index submodule.
+            from sage_indefinite_port.indefinite.effective_reduction import orthogonal_transporter
+
+            target_columns = matrix(ZZ, [[int(c) for c in v] for v in target]).transpose()
+            frame = tuple(lattice.module_generators())
+            ambient_gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+            witness = orthogonal_transporter(ambient_gram, columns, target_columns)
+            if witness is None:
+                return None
+            images = tuple(sum(
+                (lattice.scalar_multiple(int(witness[j, i]), frame[j]) for j in range(len(frame))
+                 if witness[j, i]), lattice.zero()) for i in range(len(frame)))
+            return lattice.O()(images)
     bases = _saturated_bases(lattice, source, target)
     if bases is None:
         return None
