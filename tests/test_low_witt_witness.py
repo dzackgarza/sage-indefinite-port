@@ -797,6 +797,37 @@ def test_witt_zero_pointed_vector_transporter_swaps_positive_coordinates():
                for x in (e, f, u, v) for y in (e, f, u, v))
 
 
+def test_witt_zero_public_primitive_vector_classes_use_full_quaternion_action():
+    """For 2 Nrd on Z<1,i,j,ij>, primitive norm ±2 has one O(L)-orbit.
+
+    If Nrd x=1, left multiplication by the integral norm-one unit x
+    takes 1 to x. For Nrd x=-1, fix an integral unit e with Nrd e=-1;
+    x e^{-1} has norm one, hence takes e to x. These prove completeness
+    independently of the finite Voronoi enumeration of candidate vectors.
+
+    This must work in the *public* primitive class API, rather than only
+    a standalone QuaternionNormLattice helper. An independent integral
+    change of basis must transport the same whole group action.
+    """
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    B = matrix(SageZZ, [[2, 0, 0, 0], [0, 2, 0, 0],
+                        [0, 0, -6, 0], [0, 0, 0, -6]])
+    change = matrix(SageZZ, [[1, 1, 0, 0], [0, 1, 0, 0],
+                             [0, 0, 1, 1], [0, 0, 0, 1]])
+    for gram in (B, change * B * change.transpose()):
+        ambient = lattice([[int(v) for v in row] for row in gram.rows()])
+        for norm in (2, -2):
+            classes = RECURSION.primitive_vector_classes(ambient, norm)
+            assert len(classes) == 1
+            representative = classes[0].representative
+            assert representative.parent() is ambient
+            assert int(representative.q()) == norm
+            assert int(representative.content()) == 1
+
+
 def test_low_witt_public_lazy_fixed_norm_orbit_iterator_returns_exact_vector():
     from sage_extensions.all import Lattices, ZZ
 

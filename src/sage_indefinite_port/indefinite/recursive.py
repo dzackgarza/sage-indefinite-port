@@ -4157,6 +4157,36 @@ class EichlerRecursion:
         if _norm_fibre_has_local_obstruction(gram, square, primitive=True):
             return ()
 
+        # At rational Witt index zero there is *no* isotropic vector to
+        # initialize the Eichler two-plane envelope. The recognized (-1,3)
+        # quaternion norm lattice has a complete Voronoi reduction under
+        # its full integral orthogonal group (left/right order units,
+        # normalizer classes and conjugation). Transport its representative
+        # vectors to the supplied *original lattice* with an actual integral
+        # isometry. All other nonsingular rank>=3 Witt-zero forms are
+        # handled by the full Li--Margulis Theorems 1/2/4 finite bounds,
+        # rather than calling an inapplicable two-plane source model.
+        if int(lattice.witt_index()) == 0:
+            from sage_indefinite_port.indefinite.li_margulis import (
+                is_isometric_in_box, primitive_vector_orbits,
+            )
+            from sage_indefinite_port.indefinite.quaternion_lattices import QuaternionNormLattice
+            from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi
+            from sage_indefinite_port.indefinite.fixed_norm_classes import fixed_norm_vector_classes
+
+            model = QuaternionNormLattice(-1, 3, 2) if int(lattice.module_rank()) == 4 else None
+            transport = None if model is None else is_isometric_in_box(model.lattice(), lattice, 3)
+            if transport is not None:
+                vectors = tuple(
+                    transport(point) for point in fixed_norm_vector_classes(
+                        model, QuaternionVoronoi(-1, 3),
+                        model.normalizer_classes_in_box(3), int(square), True,
+                    )
+                )
+            else:
+                vectors = primitive_vector_orbits(lattice, int(square))
+            return tuple(VectorClass(v, ()) for v in vectors)
+
         # Rational Witt index one has no second hyperbolic pair for the
         # Eichler envelope (#40). A recognized rank-four Hilbert model decides
         # its classes, isotropic ones included, by the cusps of SL_2(O); every
