@@ -815,8 +815,10 @@ def test_witt_zero_public_primitive_vector_classes_use_full_quaternion_action():
 
     B = matrix(SageZZ, [[2, 0, 0, 0], [0, 2, 0, 0],
                         [0, 0, -6, 0], [0, 0, 0, -6]])
-    change = matrix(SageZZ, [[1, 1, 0, 0], [0, 1, 0, 0],
-                             [0, 0, 1, 1], [0, 0, 0, 1]])
+    # A basis with entries well beyond the old radius-three recognition box
+    # must be carried back by the exact integral reduced-presentation map.
+    change = matrix(SageZZ, [[1, 15, 0, 0], [0, 1, 0, 0],
+                             [0, 0, 1, 17], [0, 0, 0, 1]])
     for gram in (B, change * B * change.transpose()):
         ambient = lattice([[int(v) for v in row] for row in gram.rows()])
         for norm in (2, -2):
@@ -826,6 +828,54 @@ def test_witt_zero_public_primitive_vector_classes_use_full_quaternion_action():
             assert representative.parent() is ambient
             assert int(representative.q()) == norm
             assert int(representative.content()) == 1
+            owned_orbits = ambient.O().vector_orbit_representatives(norm, content=1)
+            assert int(owned_orbits.cardinality()) == 1
+            assert next(iter(owned_orbits)) == representative
+
+        # Nrd=4 has exactly one primitive norm-eight orbit in this order;
+        # the nonprimitive vectors 2u (Nrd u=1) form a distinct orbit.
+        primitive = ambient.O().vector_orbit_representatives(8, content=1)
+        nonprimitive = ambient.O().vector_orbit_representatives(8, content=2)
+        assert int(primitive.cardinality()) == int(nonprimitive.cardinality()) == 1
+        assert int(next(iter(primitive)).content()) == 1
+        assert int(next(iter(nonprimitive)).content()) == 2
+
+
+def test_witt_zero_original_basis_element_stream_uses_complete_quaternion_group(monkeypatch):
+    r"""Full quaternion arithmetic generators, not an arbitrary GL4 prefix.
+
+    The norm lattice of (-1,3) has a complete order-normalizer quotient
+    of order 12, and the Voronoi reduction gives its full order units;
+    together with quaternion conjugation they generate O(L). An integral
+    change of basis of arbitrary height conjugates that entire group.
+    The iterator should therefore enumerate words in those generators,
+    including inverses, without calling the generic unimodular stream.
+    """
+    from itertools import islice
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+    from sage_indefinite_port.indefinite import recursive
+
+    B = matrix(SageZZ, [[2, 0, 0, 0], [0, 2, 0, 0],
+                        [0, 0, -6, 0], [0, 0, 0, -6]])
+    P = matrix(SageZZ, [[1, 15, 0, 0], [0, 1, 0, 0],
+                        [0, 0, 1, 17], [0, 0, 0, 1]])
+    moved = P * B * P.transpose()
+    ambient = lattice([[int(entry) for entry in row] for row in moved.rows()])
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("the quaternion arithmetic group is complete; do not enumerate GL4")
+
+    monkeypatch.setattr(recursive, "_fair_unimodular_matrices", forbidden)
+    generators = recursive._witt_zero_generators(ambient)
+    assert generators is not None and len(generators) > 12
+    sample = tuple(islice(recursive.iter_exact_integral_orthogonal_isometries(ambient), 7))
+    assert len({tuple(recursive._column_matrix(g).list()) for g in sample}) == 7
+    assert all(g.parent() is ambient.O() and abs(recursive._column_matrix(g).det()) == 1
+               for g in sample)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in sample for x in ambient.module_generators()
+               for y in ambient.module_generators())
 
 
 def test_low_witt_public_lazy_fixed_norm_orbit_iterator_returns_exact_vector():

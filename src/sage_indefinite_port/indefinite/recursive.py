@@ -606,7 +606,24 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
         yield from _binary_split_automorphisms(lattice)
         return
     signature = tuple(map(int, lattice.signature_pair()))
+    # A recognized rationally anisotropic quaternion norm lattice has
+    # *complete* integral group generators (Voronoi units, the exactly
+    # computed order-normalizer quotient, and conjugation). Reuse that
+    # arithmetic presentation for the public element stream. This avoids
+    # the generic GL_4(Z) walk which can emit a few elements but never
+    # notices the group generators and loses the exact Cayley words.
+    # The determinant prefilter is an invariant of its Gram presentation;
+    # all other Witt-zero forms retain the fair general GL(Z) fallback.
+    quaternion_generators = (
+        _witt_zero_generators(lattice)
+        if (lattice.is_nondegenerate() and not lattice.is_definite()
+            and int(lattice.rank()) == 4 and int(lattice.witt_index()) == 0
+            and abs(gram.det()) == 144)
+        else None
+    )
     if lattice.is_nondegenerate() and not lattice.is_definite() and (
+        quaternion_generators is not None
+        or
         int(lattice.rank()) == 2
         or (int(lattice.witt_index()) > 0 and (min(signature) == 1 or int(lattice.witt_index()) >= 2))
     ):
@@ -622,7 +639,9 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
         # generating family.  In particular an infinite-order Pell period
         # and its negative powers must both occur in the enumeration.
         # Include inverse matrices explicitly before traversing words.
-        if int(lattice.rank()) == 2:
+        if quaternion_generators is not None:
+            forward = tuple(_column_matrix(g) for g in quaternion_generators)
+        elif int(lattice.rank()) == 2:
             # The rank-two arithmetic edgewalk is the exact provider for
             # both split and anisotropic indefinite binary forms; the
             # higher-rank Eichler generation step requires a rational
@@ -765,15 +784,13 @@ def _witt_zero_generators(lattice):
     r"""Return ``O(L)`` generators for ``L`` isometric to the norm lattice of ``ZZ<1,i,j,k>`` of ``(-1, 3)``, or ``None``."""
     from sage.matrix.constructor import matrix as sage_matrix
 
-    from sage_indefinite_port.indefinite.li_margulis import is_isometric_in_box
-    from sage_indefinite_port.indefinite.quaternion_lattices import QuaternionNormLattice
     from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi, orthogonal_group_generators
 
-    model = QuaternionNormLattice(-1, 3, 2)
-    source = model.lattice()
-    transport = is_isometric_in_box(source, lattice, 3)
-    if transport is None:
+    recognized = _witt_zero_model_isometry(lattice)
+    if recognized is None:
         return None
+    model, transport = recognized
+    source = model.lattice()
     frame = tuple(source.module_generators())
     columns = sage_matrix([[int(c) for c in transport(v)] for v in frame]).transpose()
     inverse = columns.inverse()
@@ -795,6 +812,33 @@ def _witt_zero_generators(lattice):
             )
         )
     return tuple(result)
+
+
+def _witt_zero_model_isometry(lattice):
+    r"""Recognize the ``(-1,3)`` quaternion norm lattice in *any* integral basis.
+
+    A bounded coordinate-box test is not an isometry decision: a unimodular
+    change of basis can have arbitrarily large entries. Reduce the supplied
+    lattice integrally, decide whether its reduced form is isometric to the
+    model, and only on a certified positive verdict search for a full
+    integral transporter. The first small box is an optimization; if it
+    fails, fair GL_r(ZZ) enumeration terminates by the positive decision.
+    The returned morphism is always ``model.lattice() -> lattice``.
+    """
+    from sage_indefinite_port.indefinite.li_margulis import is_isometric_in_box
+    from sage_indefinite_port.indefinite.quaternion_lattices import QuaternionNormLattice
+
+    if int(lattice.module_rank()) != 4 or int(lattice.witt_index()) != 0:
+        return None
+    model = QuaternionNormLattice(-1, 3, 2)
+    source = model.lattice()
+    reduced = indefinite_reduced_presentation(lattice)
+    if source.Isom(reduced.reduced).is_empty() is not False:
+        return None
+    short = is_isometric_in_box(source, reduced.reduced, 3)
+    if short is None:
+        short = _fair_unimodular_isometry_witness(source, reduced.reduced)
+    return model, reduced.isometry * short
 
 
 def _witt_one_generators(lattice):
@@ -4167,16 +4211,13 @@ class EichlerRecursion:
         # handled by the full Li--Margulis Theorems 1/2/4 finite bounds,
         # rather than calling an inapplicable two-plane source model.
         if int(lattice.witt_index()) == 0:
-            from sage_indefinite_port.indefinite.li_margulis import (
-                is_isometric_in_box, primitive_vector_orbits,
-            )
-            from sage_indefinite_port.indefinite.quaternion_lattices import QuaternionNormLattice
+            from sage_indefinite_port.indefinite.li_margulis import primitive_vector_orbits
             from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi
             from sage_indefinite_port.indefinite.fixed_norm_classes import fixed_norm_vector_classes
 
-            model = QuaternionNormLattice(-1, 3, 2) if int(lattice.module_rank()) == 4 else None
-            transport = None if model is None else is_isometric_in_box(model.lattice(), lattice, 3)
-            if transport is not None:
+            recognized = _witt_zero_model_isometry(lattice)
+            if recognized is not None:
+                model, transport = recognized
                 vectors = tuple(
                     transport(point) for point in fixed_norm_vector_classes(
                         model, QuaternionVoronoi(-1, 3),
