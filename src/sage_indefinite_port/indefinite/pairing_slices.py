@@ -795,8 +795,9 @@ class PointwiseStabilizerOrbits:
 
     def __iter__(self):
         frame = tuple(self.lattice.module_generators())
-        zero_form = all(int(self.lattice.b(x, y)) == 0 for x in frame for y in frame)
-        if ((zero_form or (int(self.lattice.rank()) <= 2 and not self.lattice.is_nondegenerate()))
+        gram_rank = matrix(ZZ, [[int(self.lattice.b(x, y)) for y in frame] for x in frame]).rank()
+        if ((not self.lattice.is_nondegenerate()
+             and (gram_rank <= 1 or int(self.lattice.rank()) <= 2))
                 and all(v == self.lattice.zero() for v in self.fixed)):
             # The complete radical GL/shear classification already
             # computes primitive full-group orbits for binary degenerate
@@ -874,9 +875,10 @@ class SubgroupVectorOrbits:
 
     def __iter__(self):
         frame = tuple(self.lattice.module_generators())
-        zero_form = all(int(self.lattice.b(x, y)) == 0 for x in frame for y in frame)
+        gram_rank = matrix(ZZ, [[int(self.lattice.b(x, y)) for y in frame] for x in frame]).rank()
         if (self.group is self.lattice.O()
-                and (zero_form or (int(self.lattice.rank()) <= 2 and not self.lattice.is_nondegenerate()))):
+                and not self.lattice.is_nondegenerate()
+                and (gram_rank <= 1 or int(self.lattice.rank()) <= 2)):
             from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 
             yield from EichlerRecursion().exact_vector_orbit_iterator(
