@@ -1653,6 +1653,28 @@ class EichlerRecursion:
             lattice, allowed, real_spinor=True, ambient_generators=ambient_generators,
         )
 
+    def congruence_right_cosets(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Owned coset transporters and finite right action of an actual level image.
+
+        The returned action takes an integral automorphism *with a reduction
+        in the computed image*. It deliberately makes no claim to decide
+        membership in a separately specified infinite ambient subgroup:
+        finite reduction cannot certify such membership.
+        """
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        cosets, finite_action = image.right_coset_action(allowed)
+
+        def act(index, isometry):
+            if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+                raise ValueError("coset action requires an automorphism of the supplied lattice")
+            return finite_action(index, image.reduce(_column_matrix(isometry)))
+
+        def transporter(source_index, target_index):
+            lift = image.right_coset_transporter(allowed, source_index, target_index)
+            return _isometry_from_column_matrix(lattice, lattice, lift)
+
+        return cosets, act, transporter
+
     def congruence_preimage_factorization(self, lattice: Lattices.ParentMethods, modulus: int, isometry, allowed, *, ambient_generators=None):
         r"""Exact kernel/section factorization and word in a level preimage.
 

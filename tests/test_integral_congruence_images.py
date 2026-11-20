@@ -349,6 +349,38 @@ def test_public_nonnormal_congruence_preimage_section_word():
         ambient, 3, second, allowed, ambient_generators=(first, second)) is None
 
 
+def test_public_congruence_right_cosets_and_owned_transporters():
+    r"""Three finite-image cosets with integral orthogonal witnesses.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraphs, coordinate permutation subgroup S3
+    ORACLE-EXCERPT: Its reduction modulo three is also injective, and the same transposition
+    ORACLE-HYPOTHESES: Standard rank-three lattice, coordinate-permutation ambient S3, modulus three, transposition subgroup
+    ORACLE-EXPECTED: Three cosets, exact right action, and integral transporter for each ordered pair
+    ORACLE-DERIVATION: S3 has order six and the transposition subgroup order two; right multiplication by a^-1*b sends Ha to Hb
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    e, f, h = ambient.module_generators()
+    first, second = ambient.O()((f, e, h)), ambient.O()((e, h, f))
+    engine = EichlerRecursion()
+    image = engine.congruence_image(ambient, 3, ambient_generators=(first, second))
+    swap = matrix(ZZ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    allowed = (image.image_one, image.reduce(swap))
+    cosets, act, transporter = engine.congruence_right_cosets(
+        ambient, 3, allowed, ambient_generators=(first, second))
+    assert len(cosets) == 3
+    for i in range(3):
+        assert act(i, ambient.O().identity()) == i
+        assert act(act(i, first), first) == i
+        for j in range(3):
+            g = transporter(i, j)
+            assert g.domain() is ambient and g.codomain() is ambient
+            assert act(i, g) == j
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
