@@ -449,6 +449,49 @@ def setwise_transporter(lattice, fixed, left, right):
         # The zero submodule is invariant under every integral isometry.
         # There is no nondegenerate marked lattice to construct here.
         return marked_transporter(lattice, (left,), (right,))
+    if int(lattice.rank()) == 2:
+        frame = tuple(lattice.module_generators())
+        B = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        if B.rank() == 1:
+            # In a unimodular frame (u,r), r spanning the radical,
+            # O(diag(a,0),ZZ) consists of [[eps,0],[b,delta]].
+            # If the pointed vector is radical, its only images are +/-
+            # itself; +/-I preserve *every* submodule. Otherwise its
+            # nonzero quotient coordinate uniquely determines b for each
+            # of the four sign pairs. Check the actual, possibly
+            # nonprimitive, submodule for those finitely many candidates.
+            from sage.arith.misc import xgcd
+
+            radical = B.right_kernel_matrix().row(0)
+            d, s, t = xgcd(ZZ(radical[0]), ZZ(radical[1]))
+            radical = radical/d
+            P = matrix(ZZ, [[t, radical[0]], [-s, radical[1]]])
+            inverse = P.inverse()
+            x = inverse*vector(ZZ, left)
+            y = inverse*vector(ZZ, right)
+            if not x[0]:
+                if right == left:
+                    return lattice.O().identity()
+                if right == -left:
+                    return lattice.O()(tuple(-v for v in frame))
+                return None
+            source_module = matrix(ZZ, [list(v) for v in fixed]).row_module()
+            for epsilon in (1, -1):
+                if y[0] != epsilon*x[0]:
+                    continue
+                for delta in (1, -1):
+                    quotient = QQ(y[1]-delta*x[1])/x[0]
+                    if quotient.denominator() != 1:
+                        continue
+                    g = P*matrix(ZZ, [[epsilon, 0], [ZZ(quotient), delta]])*inverse
+                    moved = matrix(ZZ, [[int(c) for c in g*vector(ZZ, v)] for v in fixed])
+                    if moved.row_module() != source_module:
+                        continue
+                    images = tuple(sum((lattice.scalar_multiple(int(g[j, i]), frame[j])
+                                        for j in range(2) if g[j, i]), lattice.zero())
+                                   for i in range(2))
+                    return lattice.O()(images)
+            return None
     if int(lattice.rank()) == 2 and lattice.is_nondegenerate():
         # A binary nonisotropic pointed transporter has at most two
         # rational candidates, independently of the size/index of the
