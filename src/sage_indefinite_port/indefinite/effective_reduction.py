@@ -327,6 +327,35 @@ def orthogonal_transporter(gram, marking, target):
                 if abs(candidate.det()) == 1 and candidate.transpose()*gram*candidate == gram:
                     return candidate
         return None
+    if (gram.det() != 0 and marking.ncols() == gram.nrows()-2
+            and (marking.transpose()*gram*marking).det() != 0):
+        # A nondegenerate codimension-two marking splits the rational
+        # space into its marked span and a binary orthogonal complement.
+        # If that complement is definite, its entire integral isometry
+        # torsor is finite. Enumerate the exact complement isometries
+        # and check the induced rational ambient maps for integrality;
+        # the latter is precisely the finite-index gluing obstruction.
+        basis_x, gram_x = _complement(gram, marking)
+        basis_y, gram_y = _complement(gram, target)
+        if gram_x.is_positive_definite() or (-gram_x).is_positive_definite():
+            from sage_extensions.all import Lattices, ZZ as OwnedZZ
+
+            category = Lattices(OwnedZZ)
+            Kx = category([[int(c) for c in row] for row in gram_x.rows()])
+            Ky = category([[int(c) for c in row] for row in gram_y.rows()])
+            torsor = Kx.Isom(Ky)
+            if torsor.is_empty():
+                return None
+            source_frame = marking.augment(basis_x).change_ring(QQ)
+            for h in torsor:
+                H = matrix(ZZ, [[int(c) for c in h(v)] for v in Kx.module_generators()]).transpose()
+                target_frame = target.augment(basis_y*H).change_ring(QQ)
+                candidate = target_frame*source_frame.inverse()
+                if candidate.denominator() == 1:
+                    candidate = candidate.change_ring(ZZ)
+                    if abs(candidate.det()) == 1 and candidate.transpose()*gram*candidate == gram:
+                        return candidate
+            return None
     if gram.nrows() == 2 and gram.rank() == 1:
         # A primitive radical vector r extends to a unimodular basis
         # (u,r), in which B=diag(a,0), a != 0. Its entire integral
