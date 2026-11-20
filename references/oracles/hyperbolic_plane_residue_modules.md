@@ -53,3 +53,13 @@ sign changes and swapping coordinates preserve the congruence
 description P = {(x,y): x,y even and x=y modulo 4}.
 Consequently P cannot transport to M, since (2,0) belongs to M
 but not P. All three sublattices contain 4Z^2.
+
+For the positive definite standard rank-three lattice I_3, an integral
+orthogonal matrix has columns of Euclidean norm one, hence each column
+is a signed coordinate vector. Orthogonality forces distinct positions:
+O(I_3) is the signed permutation group of order 2^3 * 3! = 48.
+Reduction modulo 3 is injective on this group. The subgroup H generated
+by the transposition of the first two coordinates has order two and
+index 24. It is nonnormal, since conjugating by the transposition of
+coordinates two and three gives a different transposition. The preimage
+of its level-three reduction is exactly H, with no additional elements.
