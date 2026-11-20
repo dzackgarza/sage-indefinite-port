@@ -1235,6 +1235,40 @@ class EichlerRecursion:
         )
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def multilevel_congruence_transporter(self, lattice: Lattices.ParentMethods, constraints, *, ambient_generators=None):
+        r"""Integral transporter satisfying correlated markings at several levels.
+
+        Each constraint is ``(level, source_data, target_data)``. A local
+        transporter coset is computed inside the actual image at that level;
+        its pullback to the common level is intersected with every other
+        transporter coset. This yields an exact positive lift or negative
+        finite-image certificate, including nonnormal stabilizers.
+        """
+        from math import lcm
+
+        constraints = tuple(constraints)
+        if not constraints:
+            raise ValueError("at least one congruence level is required")
+        if any(int(level) < 2 for level, _, _ in constraints):
+            raise ValueError("each congruence level must be at least two")
+        modulus = lcm(*(int(level) for level, _, _ in constraints))
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        compatible = set(image.image_keys())
+        for level, source, target_data in constraints:
+            reduced, projection = image.project_to_level(int(level))
+            transporter = reduced.simultaneous_residue_transporter(source, target_data)
+            if transporter is None:
+                return None
+            stabilizer = reduced.simultaneous_residue_stabilizer_keys(**source)
+            permitted = {reduced._key(reduced.reduce(transporter) * reduced.reduce(reduced._lifts[key]))
+                         for key in stabilizer}
+            compatible = {key for key in compatible
+                          if reduced._key(projection(image.reduce(image._lifts[key]))) in permitted}
+            if not compatible:
+                return None
+        lift = image._lifts[min(compatible)]
+        return _isometry_from_column_matrix(lattice, lattice, lift)
+
     def multilevel_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, constraints, *, ambient_generators=None):
         r"""Exact simultaneous stabilizer of residue constraints at several levels.
 

@@ -213,6 +213,30 @@ def test_public_simultaneous_residue_transporter_preserves_correlations():
     assert engine.simultaneous_congruence_transporter(ambient, 4, source, inconsistent) is None
 
 
+def test_public_multilevel_residue_transporter_intersects_actual_cosets():
+    r"""Independent two-level obstruction in the four-element O(U).
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraph, different-level transport
+    ORACLE-EXCERPT: This proves a nonempty local transporter set at each level
+    ORACLE-HYPOTHESES: U has Gram [[0,1],[1,0]], level 2 and level 4 vector markings
+    ORACLE-EXPECTED: The simultaneous swaps are attainable, while a level-two swap and level-four identity are incompatible
+    ORACLE-DERIVATION: The integral group is I,-I,S,-S; only I maps (1,0) to itself mod 4, and I does not swap coordinates mod 2
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    source = {"vectors": ((1, 0),)}
+    swap = {"vectors": ((0, 1),)}
+    identity = {"vectors": ((1, 0),)}
+    g = engine.multilevel_congruence_transporter(ambient, ((2, source, swap), (4, source, swap)))
+    assert g is not None and g.domain() is ambient and g.codomain() is ambient
+    assert tuple(int(x) % 4 for x in g(ambient.module_generators()[0]).to_vector()) == (0, 1)
+    assert engine.multilevel_congruence_transporter(ambient, ((2, source, swap), (4, source, identity))) is None
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
