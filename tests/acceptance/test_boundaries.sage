@@ -171,11 +171,22 @@ def test_dtower_boundary_component_counts(case) -> None:
 
 @pytest.mark.parametrize("picture", _DTOWER["boundary_pictures"], ids=lambda picture: picture["id"])
 def test_dtower_boundary_pictures(picture) -> None:
+    r"""Source: Laza--O'Grady, arXiv:1801.04845, §BB, lines 4624--4633.
+
+    The authors explicitly define an incidence as a Type III boundary
+    point lying in the closure of a Type II curve. Thus the published
+    diagrams for N=9,10,11 encode distinct *point--curve pairs*, not
+    orbits of the additional choice of an integral flag embedding.
+    Their explicit diagrams have, respectively, (1,1,1), (2,2,3),
+    (1,2,2) points, curves and distinct incidences. The public
+    Tits-building incidence operator computes exactly these pairs;
+    comparing raw flag-orbit counts would assert a different statement.
+    """
     require(MARKED_CLASSES)
 
     group = _gamma(lattice(picture["gram"]))
 
-    assert _counts(group) == (picture["type_iii_points"], picture["type_ii_curves"], len(picture["incidences"]))
+    assert _building_counts(group) == (picture["type_iii_points"], picture["type_ii_curves"], len(picture["incidences"]))
 
 
 _K3 = load_k3_modular_strata()
