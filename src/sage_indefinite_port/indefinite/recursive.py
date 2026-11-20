@@ -1746,27 +1746,31 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_determinant_field_spinor_image(self, lattice: Lattices.ParentMethods, modulus: int, field_map=None, form_multiplier=None):
+    def joint_determinant_field_spinor_image(self, lattice: Lattices.ParentMethods, modulus: int, field_map=None, form_multiplier=None, *, ambient_generators=None):
         r"""Actual joint level, determinant and field-spinor image."""
         from sage_indefinite_port.indefinite.congruence_images import JointDeterminantFieldSpinorImage
 
         character = lattice.spinor_norm(field_map, form_multiplier)
         def spinor(columns):
             return character(_isometry_from_column_matrix(lattice, lattice, columns))
-        generators = self.orthogonal_group_generators(lattice)
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
         return JointDeterminantFieldSpinorImage(
             tuple(_column_matrix(g) for g in generators), modulus, spinor,
             character.codomain().one(), rank=len(tuple(lattice.module_generating_set())),
         )
 
-    def field_spinor_kernel_generators(self, lattice: Lattices.ParentMethods, field_map=None, form_multiplier=None):
+    def field_spinor_kernel_generators(self, lattice: Lattices.ParentMethods, field_map=None, form_multiplier=None, *, ambient_generators=None):
         r"""Exact integral generators of the field-spinor kernel.
 
         The finite generated spinor image is computed using the joint level
         model at modulus two and then *all* reduction classes with trivial
         spinor are retained. Thus no level-two restriction is imposed.
         """
-        image = self.joint_field_spinor_congruence_image(lattice, 2, field_map, form_multiplier)
+        image = self.joint_field_spinor_congruence_image(
+            lattice, 2, field_map, form_multiplier, ambient_generators=ambient_generators)
         one = image.identity[1]
         allowed = (key for key in image.image_keys() if key[1] == one)
         index, matrices = image.preimage_generators(allowed)
