@@ -1479,7 +1479,9 @@ class EichlerRecursion:
             field_spinor=field_spinor, positive_cone=positive_cone,
             field_map=field_map, form_multiplier=form_multiplier,
             ambient_generators=ambient_generators)
-        right = joint.subgroup_from_generators(tuple(right_subgroup))
+        right = frozenset(right_subgroup)
+        if right != joint.subgroup_from_generators(right):
+            raise ValueError("right_subgroup must be a subgroup of the actual joint image")
         result = []
         for key, lift in joint.double_coset_representatives(allowed, right):
             index, generators = joint.double_coset_stabilizer_preimage(allowed, right, key)
