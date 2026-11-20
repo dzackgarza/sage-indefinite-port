@@ -1467,6 +1467,11 @@ class EichlerRecursion:
             generating_morphism=ambient.free_cover(generators),
         )
 
+    def finite_index_sublattice_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+        r"""Owned integral transporter of full-rank sublattices containing mL."""
+        lift = self.congruence_image(lattice, modulus).finite_index_sublattice_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
     def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
         r"""Integral isometries preserving the specified finite-index sublattice.
 

@@ -237,6 +237,30 @@ def test_public_multilevel_residue_transporter_intersects_actual_cosets():
     assert engine.multilevel_congruence_transporter(ambient, ((2, source, swap), (4, source, identity))) is None
 
 
+def test_public_finite_index_sublattice_transporter_at_composite_level():
+    r"""Exact integral transport of finite-index sublattices of U.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraph, full-rank sublattices containing 4Z^2
+    ORACLE-EXCERPT: The coordinate swap transports M to N.
+    ORACLE-HYPOTHESES: U has Gram [[0,1],[1,0]], modulus 4, index-eight full-rank sublattices containing 4Z^2
+    ORACLE-EXPECTED: Coordinate sublattices transport, while the diagonal congruence sublattice P does not transport to M
+    ORACLE-DERIVATION: O(U)={I,-I,S,-S}; all four preserve P and none sends P to M, whereas S exchanges M and N
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    source = ((2, 0), (0, 4))
+    target = ((4, 0), (0, 2))
+    diagonal = ((2, 2), (0, 4))
+    g = engine.finite_index_sublattice_transporter(ambient, 4, source, target)
+    assert g is not None and g.domain() is ambient and g.codomain() is ambient
+    assert tuple(int(x) % 4 for x in g(2 * ambient.module_generators()[0]).to_vector()) == (0, 2)
+    assert engine.finite_index_sublattice_transporter(ambient, 4, diagonal, source) is None
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion

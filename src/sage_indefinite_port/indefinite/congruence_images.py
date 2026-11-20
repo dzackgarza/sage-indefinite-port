@@ -398,6 +398,23 @@ class IntegralCongruenceImage:
             allowed.append(image)
         return frozenset(self._key(g) for g in allowed)
 
+    def finite_index_sublattice_transporter(self, source, target):
+        r"""Integral lift carrying one finite-index sublattice to another.
+
+        Both full-rank row bases must contain ``modulus * Z^rank``. Their
+        reductions therefore determine the integral sublattices exactly.
+        """
+        def validated(basis):
+            rows = matrix(ZZ, basis)
+            if rows.dimensions() != (self.rank, self.rank) or rows.det() == 0:
+                raise ValueError("sublattice basis must be square and full rank")
+            if any(x not in ZZ for x in (self.modulus * rows.inverse()).list()):
+                raise ValueError("modulus times the ambient lattice must lie in the sublattice")
+            return rows
+
+        left, right = validated(source), validated(target)
+        return self.residue_submodule_transporter(left.rows(), right.rows())
+
     def finite_index_sublattice_stabilizer(self, basis):
         r"""Preimage stabilizing a full-rank sublattice ``M`` of ``Z^rank``.
 
