@@ -188,19 +188,19 @@ def marked_transporter(lattice, source, target):
     codim_one = (lattice.is_nondegenerate() and len(source) == int(lattice.rank())-1
                  and bool(source) and matrix(ZZ, [[int(lattice.b(x, y)) for y in source]
                                              for x in source]).det() != 0)
-    codim_two_definite = False
-    if (lattice.is_nondegenerate() and len(source) == int(lattice.rank())-2
+    definite_complement = False
+    if (lattice.is_nondegenerate() and 0 < len(source) <= int(lattice.rank())-2
             and source):
         B = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
         X = matrix(ZZ, [[int(c) for c in v] for v in source]).transpose()
         if (X.transpose()*B*X).det() != 0:
             normal = (X.transpose()*B).right_kernel_matrix()
             C = normal*B*normal.transpose()
-            codim_two_definite = C.is_positive_definite() or (-C).is_positive_definite()
+            definite_complement = C.is_positive_definite() or (-C).is_positive_definite()
     if (len(source) == int(lattice.rank()) or int(lattice.rank()) <= 2
-            or zero_form or lattice.is_definite() or codim_one or codim_two_definite):
+            or zero_form or lattice.is_definite() or codim_one or definite_complement):
         columns = matrix(ZZ, [[int(c) for c in v] for v in source]).transpose()
-        if (int(lattice.rank()) <= 2 or zero_form or lattice.is_definite() or codim_one or codim_two_definite
+        if (int(lattice.rank()) <= 2 or zero_form or lattice.is_definite() or codim_one or definite_complement
                 or (columns.ncols() == columns.nrows() and columns.det() != 0)):
             # A full-rank marking, including a nonprimitive one, fixes a
             # unique rational ambient map. Decide its integrality and
