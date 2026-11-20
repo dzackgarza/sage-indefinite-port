@@ -78,13 +78,16 @@ def marked_transporter(lattice, source, target):
     gram = lambda vectors: [[lattice.b(x, y) for y in vectors] for x in vectors]
     if gram(source) != gram(target):
         return None
-    if len(source) == int(lattice.rank()):
+    if len(source) == int(lattice.rank()) or (int(lattice.rank()) <= 2 and lattice.is_nondegenerate()):
         columns = matrix(ZZ, [[int(c) for c in v] for v in source]).transpose()
-        if columns.det() != 0:
+        if ((int(lattice.rank()) <= 2 and lattice.is_nondegenerate())
+                or (columns.ncols() == columns.nrows() and columns.det() != 0)):
             # A full-rank marking, including a nonprimitive one, fixes a
             # unique rational ambient map. Decide its integrality and
             # isometry identities directly rather than invoking a marked
             # category isomorphism search on a finite-index submodule.
+            # For ranks one and two, the complete low-rank arithmetic
+            # classification also decides non-full-rank markings.
             from sage_indefinite_port.indefinite.effective_reduction import orthogonal_transporter
 
             target_columns = matrix(ZZ, [[int(c) for c in v] for v in target]).transpose()
