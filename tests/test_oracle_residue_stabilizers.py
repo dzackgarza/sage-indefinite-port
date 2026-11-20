@@ -74,3 +74,18 @@ def test_composite_modulus_submodule_transporters_are_exact():
     assert recursion.congruence_submodule_transporter(
         lattice, 4, ((1, 0),), ((1, 1),)
     ) is None
+
+
+def test_nonfree_composite_level_flag_transporter():
+    # In (Z/4)^2, the flag <2e> subset <e> is nonfree at its first
+    # stage. The exchange maps it to <2f> subset <f>. No O(U) element
+    # maps it to <2(e+f)> subset <e+f>, since all images of e are ±e,±f.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    recursion = EichlerRecursion()
+    source = (((2, 0),), ((1, 0),))
+    target = (((0, 2),), ((0, 1),))
+    witness = recursion.congruence_flag_transporter(lattice, 4, source, target)
+    assert witness is not None
+    assert tuple(int(c) % 4 for c in witness(lattice.module_generators()[0])) in ((0, 1), (0, 3))
+    impossible = (((2, 2),), ((1, 1),))
+    assert recursion.congruence_flag_transporter(lattice, 4, source, impossible) is None
