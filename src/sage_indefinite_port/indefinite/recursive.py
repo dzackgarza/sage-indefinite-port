@@ -2177,25 +2177,45 @@ class EichlerRecursion:
                         queue.append(product)
             ambient_contains = lambda g: matrix_key(g) in finite_members
         elif ambient_generators is not None and len(generators) == 1:
-            # For a cyclic square-zero unipotent A=I+N, N^2=0, the
-            # entire integral subgroup is {I+kN : k in Z}. This is an
-            # exact membership decision, not a finite-image proxy. The
-            # generic generated-group predicate cannot decide whether
-            # A^2 belongs to <A> without a supplied word.
+            # For a cyclic unipotent A=I+N with N^r=0, the binomial
+            # theorem gives A^k=I+sum_j binom(k,j)N^j for every k in Z.
+            # The nonzero powers N,...,N^(r-1) are Q-linearly independent
+            # (otherwise the minimal polynomial of N has degree < r).
+            # Thus the coefficient of N recovers k uniquely; checking
+            # the whole polynomial decides exact integral membership.
+            # This is not a finite-image proxy or a word-search cutoff.
             generator_matrix = _column_matrix(generators[0])
             from sage.matrix.constructor import identity_matrix
             from sage.rings.rational_field import QQ as SageQQ
 
             one = identity_matrix(SageZZ, generator_matrix.nrows())
             nilpotent = generator_matrix - one
-            if nilpotent and nilpotent*nilpotent == 0:
-                position = next((i, j) for i in range(nilpotent.nrows())
-                                for j in range(nilpotent.ncols()) if nilpotent[i, j])
+            powers = []
+            power = nilpotent
+            for _ in range(generator_matrix.nrows()):
+                if not power:
+                    break
+                powers.append(power)
+                power = power*nilpotent
+            if powers and not power:
+                basis = matrix(SageQQ, [p.list() for p in powers]).transpose()
 
                 def unipotent_contains(g):
                     difference = matrix(SageZZ, g) - one
-                    exponent = SageQQ(difference[position]) / nilpotent[position]
-                    return exponent.denominator() == 1 and difference == SageZZ(exponent)*nilpotent
+                    try:
+                        coefficients = basis.solve_right(vector(SageQQ, difference.list()))
+                    except ValueError:
+                        return False
+                    exponent = coefficients[0]
+                    if exponent.denominator() != 1:
+                        return False
+                    exponent = SageZZ(exponent)
+                    expected = matrix(SageZZ, one)
+                    coefficient = SageZZ(1)
+                    for j, power_j in enumerate(powers, 1):
+                        coefficient = coefficient*(exponent-j+1)//j
+                        expected += coefficient*power_j
+                    return expected == matrix(SageZZ, g)
 
                 ambient_contains = unipotent_contains
                 cyclic_unipotent = generator_matrix
