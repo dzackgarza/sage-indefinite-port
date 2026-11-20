@@ -998,6 +998,18 @@ class CentralizerSubgroup:
 
         return iter_exact_integral_orthogonal_isometries(self.lattice)
 
+    def _whole_generators(self):
+        r"""Exact integral generators of the entire simultaneous centralizer."""
+        if not self.matrices:
+            from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+            return EichlerRecursion().orthogonal_group_generators(self.lattice)
+        from sage_indefinite_port.indefinite.commutant_groups import centralizer_generators
+        from sage_extensions.algebras.isometry_commutant import IsometryCommutant
+
+        return tuple(self._element(g) for g in centralizer_generators(
+            IsometryCommutant(self.gram, self.matrices)))
+
     def tuple_equivalence_witness(self, left, right):
         r"""Return `g \in C` with `g(left_i) = right_i`, or ``None`` as a proof that none exists."""
         left, right = tuple(left), tuple(right)
@@ -1036,21 +1048,27 @@ class CentralizerSubgroup:
         return self.tuple_equivalence_witness((left,), (right,))
 
     def vector_stabilizer_generators(self, vector):
+        if vector == self.lattice.zero():
+            return self._whole_generators()
         if self.lattice.O().is_finite() is True:
             return tuple(g for g in self._finite_elements() if g in self and g(vector) == vector)
         return tuple(self._element(g) for g in self._orbit((vector,)).stabilizer_generators())
 
     def pointwise_stabilizer_generators(self, vectors):
+        vectors = tuple(vectors)
+        if all(v == self.lattice.zero() for v in vectors):
+            return self._whole_generators()
         if self.lattice.O().is_finite() is True:
-            vectors = tuple(vectors)
             return tuple(g for g in self._finite_elements()
                          if g in self and all(g(v) == v for v in vectors))
         return tuple(self._element(g) for g in self._orbit(tuple(vectors)).stabilizer_generators())
 
     def setwise_stabilizer_generators(self, basis):
         r"""Return generators of `\{g \in C : g \Lambda = \Lambda\}` for the sublattice `\Lambda` with ``basis``."""
+        basis = tuple(basis)
+        if all(v == self.lattice.zero() for v in basis):
+            return self._whole_generators()
         if self.lattice.O().is_finite() is True:
-            basis = tuple(basis)
             source = matrix(ZZ, [[int(c) for c in v] for v in basis]) if basis else matrix(ZZ, 0, len(self.frame))
             module = source.row_module()
             return tuple(g for g in self._finite_elements() if g in self and
