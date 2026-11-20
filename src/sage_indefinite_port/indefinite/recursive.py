@@ -621,8 +621,19 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
             and abs(gram.det()) == 144)
         else None
     )
+    # For an integral Hilbert model of rational Witt index one, Vaserstein's
+    # generators, the full integral cusp stabilizer and the exact cusp links
+    # generate O(L). The preceding recognized_model is now an *exact*
+    # integral isometry decision, not merely a bounded coordinate heuristic.
+    hilbert_generators = (
+        _witt_one_generators(lattice)
+        if (lattice.is_nondegenerate() and not lattice.is_definite()
+            and int(lattice.rank()) == 4 and int(lattice.witt_index()) == 1)
+        else None
+    )
     if lattice.is_nondegenerate() and not lattice.is_definite() and (
         quaternion_generators is not None
+        or hilbert_generators is not None
         or
         int(lattice.rank()) == 2
         or (int(lattice.witt_index()) > 0 and (min(signature) == 1 or int(lattice.witt_index()) >= 2))
@@ -641,6 +652,8 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
         # Include inverse matrices explicitly before traversing words.
         if quaternion_generators is not None:
             forward = tuple(_column_matrix(g) for g in quaternion_generators)
+        elif hilbert_generators is not None:
+            forward = tuple(_column_matrix(g) for g in hilbert_generators)
         elif int(lattice.rank()) == 2:
             # The rank-two arithmetic edgewalk is the exact provider for
             # both split and anisotropic indefinite binary forms; the

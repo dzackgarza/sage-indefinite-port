@@ -936,7 +936,7 @@ def test_low_witt_one_primitive_null_line_moving_transporter_and_inverse():
     assert (~witness)(witness(e)) == e
 
 
-def test_witt_one_hilbert_recognition_recovers_original_high_basis_and_full_cusps():
+def test_witt_one_hilbert_recognition_recovers_original_high_basis_and_full_cusps(monkeypatch):
     r"""A large integral change of basis must not defeat the Hilbert model.
 
     The old radius-three model recognition was only a *sufficient* test,
@@ -975,3 +975,15 @@ def test_witt_one_hilbert_recognition_recovers_original_high_basis_and_full_cusp
     assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
                for g in generators for x in ambient.module_generators()
                for y in ambient.module_generators())
+    # Complete integral Hilbert modular generators give a word-enumeration
+    # of the original O(L). No arbitrary-height GL4 search is needed.
+    from itertools import islice
+    from sage_indefinite_port.indefinite import recursive
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("full Hilbert arithmetic group must bypass ambient GL4")
+
+    monkeypatch.setattr(recursive, "_fair_unimodular_matrices", forbidden)
+    sample = tuple(islice(recursive.iter_exact_integral_orthogonal_isometries(ambient), 7))
+    assert len({tuple(recursive._column_matrix(g).list()) for g in sample}) == 7
+    assert all(g in ambient.O() and abs(recursive._column_matrix(g).det()) == 1 for g in sample)
