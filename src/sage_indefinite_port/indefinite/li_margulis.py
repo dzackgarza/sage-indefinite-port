@@ -654,9 +654,16 @@ def orthogonal_group_generators(lattice, constants):
 def isometry_decision(source, target, constants):
     r"""Return an isometry ``source -> target``, or ``None`` when none exists, by Theorem 1, (3)."""
     left, right = _gram(source), _gram(target)
+    if left.dimensions() != right.dimensions():
+        return None
     _check_rank(right, constants)
     _require_indefinite(right)
-    if left.nrows() != right.nrows():
+    # An integral unimodular equivalence preserves the determinant and
+    # real inertia. These exact obstructions must be decided before the
+    # astronomical but finite Li--Margulis coefficient-box search.
+    if left.det() != right.det():
+        return None
+    if QuadraticForm(QQ, 2 * left.change_ring(QQ)).signature_vector() != QuadraticForm(QQ, 2 * right.change_ring(QQ)).signature_vector():
         return None
     return is_isometric_in_box(source, target, isometry_box_bound(left, right, theorem_one_constant(constants)))
 
