@@ -1088,4 +1088,13 @@ class CentralizerSubgroup:
             return tuple(g for g in self._finite_elements() if g in self and
                          (matrix(ZZ, [[int(c) for c in g(v)] for v in basis])
                           if basis else matrix(ZZ, 0, len(self.frame))).row_module() == module)
+        if not self.matrices and self.lattice.is_nondegenerate():
+            X = self._columns(basis)
+            if X.rank() and (X.transpose()*self.gram*X).rank() == X.rank():
+                from sage_indefinite_port.indefinite.effective_reduction import (
+                    orthogonal_marking_setwise_stabilizer_generators,
+                )
+
+                return tuple(self._element(g) for g in
+                             orthogonal_marking_setwise_stabilizer_generators(self.gram, X))
         return tuple(self._element(g) for g in self._orbit(tuple(basis)).setwise_stabilizer_generators())
