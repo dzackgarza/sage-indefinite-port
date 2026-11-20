@@ -1564,11 +1564,25 @@ class EichlerRecursion:
 
         The component sign is independent of determinant and normalized
         real spinor; retain the actual joint level/component correlations.
+        The legacy two-factor keys ``(mod-m reduction, cone sign)`` select
+        the same subgroup inside the *actual* joint image, with all
+        discriminant classes unrestricted. Return the owned finite-quotient
+        preimage, not a bare subgroup of matrix generators: the former
+        carries the finite representation required for marked orbit
+        splitting, stabilizer intersections and exact transporters.
         """
-        _, generators = self.joint_positive_cone_congruence_preimage_generators(
-            lattice, modulus, allowed,
+        allowed = frozenset(allowed)
+        legacy = self.joint_positive_cone_congruence_image(lattice, modulus)
+        legacy.preimage_generators(allowed)  # Exact subgroup validation.
+        joint = self.joint_discriminant_character_image(
+            lattice, positive_cone=True, level_modulus=modulus,
         )
-        return lattice.O().subgroup(generators)
+        selected = joint.subgroup_from_membership(
+            lambda key: (key[0], key[-1]) in allowed
+        )
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, selected, positive_cone=True, level_modulus=modulus,
+        )
 
     def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Actual joint discriminant, determinant, spinor, component and level image.

@@ -1244,6 +1244,8 @@ def test_owned_field_spinor_kernel_preserves_actual_character_not_level():
 
 
 def test_owned_positive_cone_congruence_subgroup():
+    from sage_extensions.all import Lattices, ZZ as OwnedZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 
@@ -1258,6 +1260,14 @@ def test_owned_positive_cone_congruence_subgroup():
         ambient, 2, allowed,
     )
     assert all(g in subgroup for g in generators)
+    # A bare subgroup of generated matrices cannot supply the finite quotient
+    # required by actual marked-orbit splitting and subgroup transporters.
+    assert subgroup.preimage_morphism().codomain().is_finite() is True
+    e, _ = ambient.module_generators()
+    source = lattice([[0]])
+    category = CosliceCategory(Lattices(OwnedZZ), source)
+    marked = category(source.hom([e], codomain=ambient))
+    assert len(tuple(ambient.O().split_orbit(marked, subgroup))) == 2
 
 
 def test_actual_joint_component_determinant_real_spinor_discriminant_and_level_preimage():
