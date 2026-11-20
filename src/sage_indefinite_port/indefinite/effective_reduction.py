@@ -179,6 +179,10 @@ def orthogonal_transporter(gram, marking, target):
     gram, marking, target = matrix(ZZ, gram), matrix(ZZ, marking), matrix(ZZ, target)
     if target.transpose() * gram * target != marking.transpose() * gram * marking:
         return None
+    if marking.rank() != target.rank():
+        # An invertible isometry preserves the rank of every marked frame,
+        # even when its restricted Gram form is degenerate.
+        return None
     if marking.rank() < marking.ncols():
         # Dependent markings have a unique rational relation matrix on
         # their independent columns. Every linear isometry preserves those
