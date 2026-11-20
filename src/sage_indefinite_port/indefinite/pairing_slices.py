@@ -650,7 +650,9 @@ class PointwiseStabilizerOrbits:
         # Owned ZZ elements deliberately do not compare equal to bare
         # Python integers. Compare exact integral values, as in the
         # SubgroupVectorOrbits membership contract below.
-        return int(self.lattice.q(vector)) == int(self.square) and int(vector.content()) == 1
+        return (vector.parent() is self.lattice
+                and int(self.lattice.q(vector)) == int(self.square)
+                and int(vector.content()) == 1)
 
     def equivalent(self, left, right):
         return pointwise_transporter(self.lattice, self.fixed, left, right) is not None
@@ -722,9 +724,15 @@ class SubgroupVectorOrbits:
         self.square = square
 
     def __contains__(self, vector):
-        return int(self.lattice.q(vector)) == int(self.square) and int(vector.content()) == 1
+        return (vector.parent() is self.lattice
+                and int(self.lattice.q(vector)) == int(self.square)
+                and int(vector.content()) == 1)
 
     def transporter(self, left, right):
+        if (left.parent() is not self.lattice or right.parent() is not self.lattice
+                or int(left.q()) != int(right.q())
+                or int(left.content()) != int(right.content())):
+            return None
         if hasattr(self.group, "vector_equivalence_witness"):
             return self.group.vector_equivalence_witness(left, right)
         if self.group.is_finite() is True:
