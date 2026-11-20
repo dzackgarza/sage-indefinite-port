@@ -49,3 +49,19 @@ def test_full_rank_nonprimitive_marking_has_full_orthogonal_stabilizer():
     actual = {tuple(matrix(ZZ, [[int(c) for c in g(v)] for v in (e, f)]).list())
               for g in generators}
     assert actual == expected
+
+
+def test_index_two_full_rank_marking_excludes_exchange():
+    # M=2Ze+Zf is characterized by the parity of the e-coordinate.
+    # Among O(U)={I,-I,S,-S}, precisely I and -I preserve M.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    e, f = lattice.module_generators()
+    subgroup = CentralizerSubgroup(lattice, ())
+    generators = subgroup.setwise_stabilizer_generators((2 * e, f))
+    assert len(generators) == 2
+    actual = {tuple(matrix(ZZ, [[int(c) for c in g(v)] for v in (e, f)]).list())
+              for g in generators}
+    assert actual == {
+        tuple(matrix(ZZ, ((1, 0), (0, 1))).list()),
+        tuple(matrix(ZZ, ((-1, 0), (0, -1))).list()),
+    }
