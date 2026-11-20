@@ -2148,7 +2148,7 @@ class EichlerRecursion:
         # outside a supplied proper subgroup G. Use the provider's owned
         # subgroup membership; only the full O(L) uses the ambient predicate.
         ambient_group = lattice.O() if ambient_generators is None else lattice.O().subgroup(generators)
-        cyclic_quasi_unipotent = None
+        cyclic_exact_generator = None
         if ambient_generators is not None and ambient_group.is_finite() is True:
             # A generated subgroup's generic owned membership predicate may
             # recognize only supplied generators and certified words, even
@@ -2248,7 +2248,36 @@ class EichlerRecursion:
                     return False
 
                 ambient_contains = unipotent_contains
-                cyclic_quasi_unipotent = generator_matrix
+                cyclic_exact_generator = generator_matrix
+            elif (rank == 2 and generator_matrix.det() == 1
+                  and abs(generator_matrix.trace()) > 2):
+                # For A in SL_2(Z) with |tr(A)|>2, its eigenvalues are
+                # real reciprocal numbers of absolute value >1 and <1.
+                # Consequently |tr(A^k)| is strictly increasing for
+                # k>=0. This gives an exact logarithmic search for |k|;
+                # equality to A^k or A^-k decides membership in <A>.
+                # No finite congruence quotient can replace this test.
+                def hyperbolic_contains(g):
+                    candidate = matrix(SageZZ, g)
+                    target_trace = abs(candidate.trace())
+                    if candidate == one:
+                        return True
+                    if target_trace <= 2:
+                        return False
+                    lower, upper = 0, 1
+                    while abs((generator_matrix**upper).trace()) < target_trace:
+                        lower, upper = upper, 2*upper
+                    while lower + 1 < upper:
+                        middle = (lower+upper)//2
+                        if abs((generator_matrix**middle).trace()) < target_trace:
+                            lower = middle
+                        else:
+                            upper = middle
+                    power_matrix = generator_matrix**upper
+                    return candidate == power_matrix or candidate == power_matrix.inverse()
+
+                ambient_contains = hyperbolic_contains
+                cyclic_exact_generator = generator_matrix
             else:
                 ambient_contains = lambda g: as_isometry(g) in ambient_group
         else:
@@ -2263,8 +2292,8 @@ class EichlerRecursion:
         )
         if ambient_generators is not None and ambient_group.is_finite() is True:
             image._finite_ambient_lifts = tuple(finite_lifts)
-        if cyclic_quasi_unipotent is not None:
-            image._cyclic_quasi_unipotent_generator = cyclic_quasi_unipotent
+        if cyclic_exact_generator is not None:
+            image._cyclic_exact_generator = cyclic_exact_generator
         return image
 
     def joint_discriminant_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
@@ -2346,14 +2375,14 @@ class EichlerRecursion:
                     _isometry_from_column_matrix(lattice, lattice, m)
                     for m in image._finite_ambient_lifts),
             )
-        elif generators is not None and hasattr(image, "_cyclic_quasi_unipotent_generator"):
-            # The cyclic quasi-unipotent membership predicate is an exact
+        elif generators is not None and hasattr(image, "_cyclic_exact_generator"):
+            # The cyclic matrix membership predicate is an exact
             # integral equation, so the owned preimage must use it rather
             # than the provider's undecided generic generated-subgroup
             # membership. The supplied free cover certifies generation.
             ambient = lattice.O().predicate_subgroup(
                 lambda g: image.ambient_contains(_column_matrix(g)),
-                lambda: "the specified cyclic quasi-unipotent subgroup",
+                lambda: "the specified exact cyclic integral subgroup",
                 generating_morphism=lattice.O().free_cover(generators),
             )
         else:
