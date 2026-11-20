@@ -2323,6 +2323,28 @@ class EichlerRecursion:
                 exact_ambient_membership = True
             else:
                 ambient_contains = lambda g: as_isometry(g) in ambient_group
+        elif ambient_generators is not None and len(generators) > 1:
+            # If A_i=I+N_i and N_i*N_j=0 for all ordered pairs, then
+            # every integral word is I+sum k_i N_i and conversely each
+            # such integer combination is a product of powers of the
+            # supplied generators. Membership is therefore exactly a
+            # row-lattice membership problem over ZZ, not a word search.
+            from sage.matrix.constructor import identity_matrix
+
+            one = identity_matrix(SageZZ, int(lattice.rank()))
+            nilpotents = tuple(_column_matrix(g)-one for g in generators)
+            if all(a*b == 0 for a in nilpotents for b in nilpotents):
+                module = matrix(SageZZ, [n.list() for n in nilpotents]).row_module()
+
+                def abelian_unipotent_contains(g):
+                    candidate = matrix(SageZZ, g)
+                    return (candidate.dimensions() == one.dimensions()
+                            and vector(SageZZ, (candidate-one).list()) in module)
+
+                ambient_contains = abelian_unipotent_contains
+                exact_ambient_membership = True
+            else:
+                ambient_contains = lambda g: as_isometry(g) in ambient_group
         else:
             ambient_contains = lambda g: as_isometry(g) in ambient_group
         image = JointDiscriminantCharacterImage(
