@@ -272,6 +272,14 @@ def lemma11_constant(n):
     `1 \le \|\gamma - 1\| \le n^2 \|g^{-1}\| \|M\| \|g\| \le n^2 (n-1)! \|g\|^n \|M\|` (Cramer,
     `\|g^{-1}\| \le (n-1)! \|g\|^{n-1}` for `\det g = 1`). For `g_1, g_2 \in B_G(\delta)` with
     `g_1.[g] = g_2.[g]`, `M = g_2^{-1} g_1 - 1` has `\|M\| < 4 n \delta` (as in :func:`lemma10_radius`).
+    The latter estimate requires a small-radius hypothesis; it does *not*
+    follow from the false claim `\|g\| >= 1`. Instead the Leibniz formula
+    gives `1 = |\det g| <= n! \|g\|^n`, so with
+    `\kappa = 8n^3(n-1)!` we have
+    `\delta = 1/(\kappa \|g\|^n) <= n! / \kappa = 1/(8n^2) < 1/(2n)`.
+    Thus the Neumann-series inverse estimate applies. Substitution yields
+    `\|\gamma-1\| < 4n^3(n-1)!/\kappa = 1/2`, contradicting the
+    nonzero integral entry of `\gamma-1`.
     """
     return 8 * n**3 * factorial(n - 1)
 
