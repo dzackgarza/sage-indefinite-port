@@ -300,6 +300,33 @@ def orthogonal_transporter(gram, marking, target):
             if candidate*marking == target:
                 return candidate
         return None
+    if (gram.det() != 0 and marking.ncols() == gram.nrows()-1
+            and (marking.transpose()*gram*marking).det() != 0):
+        # A nondegenerate codimension-one marking has a rational
+        # orthogonal complement of dimension one. An extension is
+        # determined by the marked images and the sign of the image of
+        # a normal vector. If u,v are nonzero integral normals, that
+        # image is +/-sqrt(q(u)/q(v))*v. Test both unique rational
+        # candidates for integral unimodularity and the full Gram
+        # identity. This is complete in every signature and Witt index.
+        normal_x = (marking.transpose()*gram).right_kernel_matrix().transpose()
+        normal_y = (target.transpose()*gram).right_kernel_matrix().transpose()
+        norm_x = (normal_x.transpose()*gram*normal_x)[0, 0]
+        norm_y = (normal_y.transpose()*gram*normal_y)[0, 0]
+        ratio = QQ(norm_x)/norm_y
+        if ratio < 0 or not ratio.is_square():
+            return None
+        scale = ratio.sqrt()
+        source_frame = marking.augment(normal_x).change_ring(QQ)
+        for sign in (1, -1):
+            target_frame = target.augment(normal_y).change_ring(QQ)
+            target_frame.set_column(target_frame.ncols()-1, sign*scale*normal_y.column(0))
+            candidate = target_frame*source_frame.inverse()
+            if candidate.denominator() == 1:
+                candidate = candidate.change_ring(ZZ)
+                if abs(candidate.det()) == 1 and candidate.transpose()*gram*candidate == gram:
+                    return candidate
+        return None
     if gram.nrows() == 2 and gram.rank() == 1:
         # A primitive radical vector r extends to a unimodular basis
         # (u,r), in which B=diag(a,0), a != 0. Its entire integral
