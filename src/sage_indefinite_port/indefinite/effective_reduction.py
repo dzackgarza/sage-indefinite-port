@@ -171,6 +171,20 @@ def orthogonal_transporter(gram, marking, target):
     gram, marking, target = matrix(ZZ, gram), matrix(ZZ, marking), matrix(ZZ, target)
     if target.transpose() * gram * target != marking.transpose() * gram * marking:
         return None
+    if marking.rank() < marking.ncols():
+        # Dependent markings have a unique rational relation matrix on
+        # their independent columns. Every linear isometry preserves those
+        # relations, so discard dependent columns only after verifying the
+        # target satisfies exactly the same relations.
+        pivots = tuple(marking.pivots())
+        if not pivots:
+            return identity_matrix(ZZ, gram.nrows()) if not target else None
+        independent = marking.matrix_from_columns(pivots)
+        moved = target.matrix_from_columns(pivots)
+        relations = independent.change_ring(QQ).solve_right(marking.change_ring(QQ))
+        if moved.change_ring(QQ) * relations != target.change_ring(QQ):
+            return None
+        return orthogonal_transporter(gram, independent, moved)
     if marking.rank() == marking.ncols() and marking.ncols() < gram.nrows() and any(
         abs(d) != 1 for d in marking.transpose().elementary_divisors()
     ):
