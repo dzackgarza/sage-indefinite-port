@@ -156,9 +156,9 @@ def marked_transporter(lattice, source, target):
     gram = lambda vectors: [[lattice.b(x, y) for y in vectors] for x in vectors]
     if gram(source) != gram(target):
         return None
-    if len(source) == int(lattice.rank()) or (int(lattice.rank()) <= 2 and lattice.is_nondegenerate()):
+    if len(source) == int(lattice.rank()) or int(lattice.rank()) <= 2:
         columns = matrix(ZZ, [[int(c) for c in v] for v in source]).transpose()
-        if ((int(lattice.rank()) <= 2 and lattice.is_nondegenerate())
+        if (int(lattice.rank()) <= 2
                 or (columns.ncols() == columns.nrows() and columns.det() != 0)):
             # A full-rank marking, including a nonprimitive one, fixes a
             # unique rational ambient map. Decide its integrality and
