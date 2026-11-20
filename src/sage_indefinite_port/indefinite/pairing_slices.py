@@ -141,6 +141,33 @@ def _fixed_norm_candidate_coordinates(lattice, square):
             yield from _coordinate_box(lattice, height)
 
 
+def _anisotropic_quotient_primitive_radical(lattice):
+    r"""One primitive null representative when the nondegenerate quotient is anisotropic.
+
+    If `L=C (+) R` has anisotropic `C` over QQ, every null vector lies in
+    `R`. The integral radical is a primitive direct summand, and the full
+    orthogonal group contains GL(R), transitive on primitive radical
+    vectors. Return ``None`` when the quotient is isotropic or rank zero.
+    """
+    if lattice.is_nondegenerate() or int(lattice.rank()) == 0:
+        return None
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    frame = tuple(reduced.module_generators())
+    gram = matrix(ZZ, [[int(reduced.b(x, y)) for y in frame] for x in frame])
+    quotient_rank = gram.rank()
+    if quotient_rank:
+        complement = Lattices(lattice.base_ring())(
+            [[int(gram[i, j]) for j in range(quotient_rank)]
+             for i in range(quotient_rank)]
+        )
+        if complement.is_isotropic():
+            return None
+    return reduction.isometry(frame[quotient_rank])
+
+
 def marked_transporter(lattice, source, target):
     r"""Return `g \in O(L)` with `g(source_i) = target_i` for tuples, or ``None``."""
     source, target = tuple(source), tuple(target)
@@ -794,6 +821,11 @@ class PointwiseStabilizerOrbits:
             )
 
     def __iter__(self):
+        if int(self.square) == 0 and all(v == self.lattice.zero() for v in self.fixed):
+            radical = _anisotropic_quotient_primitive_radical(self.lattice)
+            if radical is not None:
+                yield radical
+                return
         frame = tuple(self.lattice.module_generators())
         gram_rank = matrix(ZZ, [[int(self.lattice.b(x, y)) for y in frame] for x in frame]).rank()
         if ((not self.lattice.is_nondegenerate()
@@ -874,6 +906,11 @@ class SubgroupVectorOrbits:
         return self.transporter(left, right) is not None
 
     def __iter__(self):
+        if self.group is self.lattice.O() and int(self.square) == 0:
+            radical = _anisotropic_quotient_primitive_radical(self.lattice)
+            if radical is not None:
+                yield radical
+                return
         frame = tuple(self.lattice.module_generators())
         gram_rank = matrix(ZZ, [[int(self.lattice.b(x, y)) for y in frame] for x in frame]).rank()
         if (self.group is self.lattice.O()
