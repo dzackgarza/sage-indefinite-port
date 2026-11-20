@@ -789,6 +789,26 @@ def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
             return
 
 
+def _rectangular_coordinate_box(bounds):
+    r"""Lexicographic integer points in an arbitrary finite coordinate box, streamed."""
+    bounds = tuple(int(bound) for bound in bounds)
+    if any(bound < 0 for bound in bounds):
+        return
+    if not bounds:
+        yield ()
+        return
+    coordinates = [-bound for bound in bounds]
+    while True:
+        yield tuple(coordinates)
+        for position in range(len(bounds) - 1, -1, -1):
+            if coordinates[position] < bounds[position]:
+                coordinates[position] += 1
+                coordinates[position + 1:] = [-b for b in bounds[position + 1:]]
+                break
+        else:
+            return
+
+
 def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:
     r"""The generators ``h`` of O(R) carried to L by ``transport: R -> L``, each built once from ``P H P^-1``.
 
@@ -4672,7 +4692,7 @@ class EichlerRecursion:
 
             generators = tuple(_column_matrix(g) for g in lattice.O().group_generators())
             seen: set[tuple[int, ...]] = set()
-            for coordinates in itertools.product(*(range(-b, b + 1) for b in bounds)):
+            for coordinates in _rectangular_coordinate_box(bounds):
                 if coordinates in seen:
                     continue
                 point = _from_column(lattice, coordinates)
