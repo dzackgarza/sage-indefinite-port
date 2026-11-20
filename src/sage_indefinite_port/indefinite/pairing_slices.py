@@ -70,6 +70,31 @@ def _fixed_norm_candidate_coordinates(lattice, square):
     r"""Exhaustive coordinates of a norm fibre; finite and terminating for definite forms."""
     from sage_indefinite_port.indefinite.recursive import _coordinate_box, _rectangular_coordinate_box
 
+    if int(square) == 0 and int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
+        # An indefinite rational binary form is isotropic exactly when
+        # b^2-ac is a rational square. Its two rational isotropic lines
+        # contain only four primitive integral vectors: the signed
+        # primitive generators of the two lines. For an anisotropic form
+        # there are none. Thus the primitive null fibre is *finite*.
+        from math import gcd
+
+        frame = tuple(lattice.module_generators())
+        gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        a, b, c = ZZ(gram[0, 0]), ZZ(gram[0, 1]), ZZ(gram[1, 1])
+        discriminant = b*b-a*c
+        if not discriminant.is_square():
+            return
+        root = discriminant.sqrt()
+        rays = ((-b+root, a), (-b-root, a)) if a else ((1, 0), (-c, 2*b))
+        seen = set()
+        for x, y in rays:
+            d = gcd(int(x), int(y))
+            primitive = (int(x)//d, int(y)//d)
+            for coordinates in (primitive, tuple(-z for z in primitive)):
+                if coordinates not in seen:
+                    seen.add(coordinates)
+                    yield coordinates
+        return
     if lattice.is_definite():
         frame = tuple(lattice.module_generators())
         if not frame:
