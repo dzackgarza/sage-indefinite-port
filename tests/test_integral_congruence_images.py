@@ -513,6 +513,32 @@ def test_public_joint_discriminant_cosets_have_owned_integral_transporters():
             assert act(i, image.image(matrix(ZZ, [g(x).to_vector() for x in ambient.module_generators()]).transpose())) == j
 
 
+def test_public_joint_discriminant_owned_membership_nonnormal():
+    r"""Joint discriminant and level membership in a proper S3 ambient group.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraphs, S3 and transposition subgroup H
+    ORACLE-EXCERPT: Its reduction modulo three is also injective, and the same transposition
+    ORACLE-HYPOTHESES: Unimodular I3, ambient coordinate permutation group S3, level three, transposition subgroup H
+    ORACLE-EXPECTED: The first transposition belongs to the joint-image preimage of H, the second does not
+    ORACLE-DERIVATION: Discriminant group is trivial; reduction modulo three is injective on S3 and H has order two
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    e, f, h = ambient.module_generators()
+    first, second = ambient.O()((f, e, h)), ambient.O()((e, h, f))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, level_modulus=3, ambient_generators=(first, second))
+    subgroup = image.subgroup_from_generators((image.image(matrix(ZZ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])),))
+    assert engine.joint_discriminant_character_preimage_membership(
+        ambient, first, subgroup, level_modulus=3, ambient_generators=(first, second))
+    assert not engine.joint_discriminant_character_preimage_membership(
+        ambient, second, subgroup, level_modulus=3, ambient_generators=(first, second))
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion

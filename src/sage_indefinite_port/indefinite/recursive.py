@@ -1915,6 +1915,23 @@ class EichlerRecursion:
             ambient_contains=lambda g: as_isometry(g) in ambient_group,
         )
 
+    def joint_discriminant_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Exact owned integral membership in an actual joint-image preimage.
+
+        All character and congruence factors are evaluated jointly, while
+        the owned ambient subgroup enforces membership beyond the finite
+        image. In particular, a proper generated ambient subgroup is not
+        replaced by the full inverse image of its finite reduction.
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("membership requires an automorphism of the supplied lattice")
+        subgroup = self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            level_modulus=level_modulus, ambient_generators=ambient_generators)
+        return isometry in subgroup
+
     def joint_discriminant_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Owned kernel/section witnesses and exact word for preimage membership.
 
