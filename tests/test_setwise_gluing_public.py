@@ -32,3 +32,20 @@ def test_infinite_ambient_dependent_nonprimitive_marking():
     assert generators
     for g in generators:
         assert matrix(ZZ, [list(g(v)) for v in vectors]).row_module() == module
+
+
+def test_full_rank_nonprimitive_marking_has_full_orthogonal_stabilizer():
+    # For M=2L, every integral automorphism of L preserves M. In U the
+    # complete orthogonal group has the four matrices proved above.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    e, f = lattice.module_generators()
+    group = CentralizerSubgroup(lattice, ())
+    generators = group.setwise_stabilizer_generators((2 * e, 2 * f))
+    assert len(generators) == 4
+    expected = {tuple(matrix(ZZ, rows).list()) for rows in (
+        ((1, 0), (0, 1)), ((-1, 0), (0, -1)),
+        ((0, 1), (1, 0)), ((0, -1), (-1, 0)),
+    )}
+    actual = {tuple(matrix(ZZ, [[int(c) for c in g(v)] for v in (e, f)]).list())
+              for g in generators}
+    assert actual == expected
