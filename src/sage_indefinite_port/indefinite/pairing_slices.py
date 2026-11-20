@@ -11,6 +11,7 @@ equivariant marked transporter of `(L, F, v)` (:class:`CentralizerTupleOrbit`, o
 """
 
 from itertools import count
+from math import isqrt
 
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.modules.free_module_element import vector
@@ -63,6 +64,29 @@ def _saturated_bases(lattice, source, target):
 def slice_invariant(lattice, fixed, vector):
     r"""Return the pairings with the fixed tuple and the square of ``vector``."""
     return tuple(lattice.b(s, vector) for s in fixed), lattice.q(vector)
+
+
+def _fixed_norm_candidate_coordinates(lattice, square):
+    r"""Exhaustive coordinates of a norm fibre; finite and terminating for definite forms."""
+    from sage_indefinite_port.indefinite.recursive import _coordinate_box, _rectangular_coordinate_box
+
+    if lattice.is_definite():
+        frame = tuple(lattice.module_generators())
+        if not frame:
+            if square == 0:
+                yield ()
+            return
+        gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        sign = 1 if gram[0, 0] > 0 else -1
+        if sign * int(square) < 0:
+            return
+        inverse = (sign*gram).inverse()
+        bounds = tuple(isqrt(int((abs(int(square))*inverse[i, i]).floor()))
+                       for i in range(len(frame)))
+        yield from _rectangular_coordinate_box(bounds)
+    else:
+        for height in count(0):
+            yield from _coordinate_box(lattice, height)
 
 
 def marked_transporter(lattice, source, target):
@@ -571,7 +595,10 @@ class PointwiseStabilizerOrbits:
         self.square = square
 
     def __contains__(self, vector):
-        return self.lattice.q(vector) == self.square and vector.content() == 1
+        # Owned ZZ elements deliberately do not compare equal to bare
+        # Python integers. Compare exact integral values, as in the
+        # SubgroupVectorOrbits membership contract below.
+        return int(self.lattice.q(vector)) == int(self.square) and int(vector.content()) == 1
 
     def equivalent(self, left, right):
         return pointwise_transporter(self.lattice, self.fixed, left, right) is not None
@@ -591,13 +618,17 @@ class PointwiseStabilizerOrbits:
 
     def __iter__(self):
         known = []
-        for height in count(0):
-            for vector in self._shell(height):
-                if vector == self.lattice.zero() or vector not in self:
-                    continue
-                if not any(self.equivalent(representative, vector) for representative in known):
-                    known.append(vector)
-                    yield vector
+        frame = tuple(self.lattice.module_generators())
+        for coordinates in _fixed_norm_candidate_coordinates(self.lattice, self.square):
+            vector = sum(
+                (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, frame, strict=True)),
+                self.lattice.zero(),
+            )
+            if vector == self.lattice.zero() or vector not in self:
+                continue
+            if not any(self.equivalent(representative, vector) for representative in known):
+                known.append(vector)
+                yield vector
 
 
 class SubgroupVectorOrbits:
@@ -623,21 +654,18 @@ class SubgroupVectorOrbits:
         return self.transporter(left, right) is not None
 
     def __iter__(self):
-        from sage_indefinite_port.indefinite.recursive import _coordinate_box
-
         frame = tuple(self.lattice.module_generators())
         known = []
-        for height in count(0):
-            for coordinates in _coordinate_box(self.lattice, height):
-                if not any(coordinates):
-                    continue
-                vector = sum(
-                    (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, frame, strict=True)),
-                    self.lattice.zero(),
-                )
-                if vector in self and not any(self.equivalent(representative, vector) for representative in known):
-                    known.append(vector)
-                    yield vector
+        for coordinates in _fixed_norm_candidate_coordinates(self.lattice, self.square):
+            if not any(coordinates):
+                continue
+            vector = sum(
+                (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, frame, strict=True)),
+                self.lattice.zero(),
+            )
+            if vector in self and not any(self.equivalent(representative, vector) for representative in known):
+                known.append(vector)
+                yield vector
 
 
 
