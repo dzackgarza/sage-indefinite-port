@@ -1892,14 +1892,30 @@ class EichlerRecursion:
     def congruence_preimage_membership(self, lattice: Lattices.ParentMethods, modulus: int, isometry, allowed, *, ambient_generators=None):
         r"""Exact membership in an owned congruence preimage.
 
-        Membership is decided in the owned integral subgroup first, not
-        merely by the finite reduction (which cannot distinguish elements
-        outside a specified proper ambient group with the same image).
+        Membership requires both the exact integral ambient-group predicate
+        and membership of the reduction in the specified actual subgroup.
+        The finite-image condition alone is insufficient for a proper
+        generated ambient group.
         """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
         if isometry.domain() is not lattice or isometry.codomain() is not lattice:
             raise ValueError("membership requires an automorphism of the supplied lattice")
-        return isometry in self.congruence_preimage_subgroup(
-            lattice, modulus, allowed, ambient_generators=ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators)
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        permitted = frozenset(residue._key(residue.reduce(g)) for g in allowed)
+        if residue._key(residue.image_one) not in permitted or not permitted <= residue.image_keys():
+            raise ValueError("allowed must be a subgroup of the actual level image")
+        if any(residue._key(residue.reduce(a) * residue.reduce(b)) not in permitted
+               for a in residue._lifts.values() for b in residue._lifts.values()
+               if residue._key(residue.reduce(a)) in permitted
+               and residue._key(residue.reduce(b)) in permitted):
+            raise ValueError("allowed must be a subgroup of the actual level image")
+        columns = _column_matrix(isometry)
+        if not joint.ambient_contains(columns):
+            return False
+        return residue._key(residue.reduce(columns)) in permitted
 
     def congruence_preimage_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Owned inverse image of an arbitrary subgroup of the actual level image.
