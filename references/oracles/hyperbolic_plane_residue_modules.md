@@ -13,3 +13,11 @@ invertible linear maps preserve subgroup cardinality.
 
 The calculations use only the displayed Gram-preservation equations
 and coordinate reduction; no port implementation is involved.
+
+For nested flags at level four, let F be the ordered pair of submodules
+<(2,0)> <= <(1,0)> and let F' be <(0,2)> <= <(0,1)>.
+The swap S transports F to F'. By contrast the flag
+<(2,2)> <= <(1,1)> cannot transport to F: its first stage is
+fixed by all four integral orthogonal matrices and is distinct from
+<(2,0)>. This remains an obstruction even though the corresponding
+stages have equal cardinalities two and four.
