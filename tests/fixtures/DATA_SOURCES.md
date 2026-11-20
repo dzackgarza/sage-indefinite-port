@@ -96,12 +96,12 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Extraction**: `uv run references/extract/allcock_rank3.py`. It asserts that every simple root has positive norm and gives an integral reflection. It also checks that every Gram matrix appears in `reflective_forms_8821.json` with the same number of simple roots, which confirms that `ListReflect`'s rank-3 part is exactly this classification.
 
-### Generators of O^+(L) for a det -155 Lattice (Mertens)
+### Generators of the Negative-Cone Sheet Stabilizer for a det -155 Lattice (Mertens)
 
 - **File**: `tests/fixtures/mertens_generators.json`
 
 - **Source**: Mertens, arXiv:1303.3478, Example `exComplete` (vendored TeX). For
-  $A = \begin{pmatrix}-1&-3&-1\\-3&14&8\\-1&8&11\end{pmatrix}$ (det $-155$, signature (2,1)) the paper lists the stabilizers of its 9 $D$-perfect points (4 nontrivial) and 16 connecting elements. By its theorem (line 176) these generate $\Omega$, the stabilizer of the positive cone in $\operatorname{Aut}_{\mathbb Z}(A) = \{g : gAg^T = A\}$. So $\Omega = O^+(L)$ and $O(L) = \langle\Omega, -I\rangle$.
+  $A = \begin{pmatrix}-1&-3&-1\\-3&14&8\\-1&8&11\end{pmatrix}$ (det $-155$, signature (2,1)) the paper lists the stabilizers of its 9 $D$-perfect points (4 nontrivial) and 16 connecting elements. By its theorem (line 176), they generate $\Omega$, the stabilizer of a component of the **negative-norm** cone $\{v:vAv^T<0\}$ (source lines 259–269). Consequently $O(L)=\langle\Omega,-I\rangle$, but **$\Omega\ne L.O_\mathrm{plus}$** under the preamble's definition $O_\mathrm{plus}(L)=\ker\operatorname{sn}_{-b/2,\mathbb R}$: the published connecting element $c_{1,1}$ is reflection in $v=(30,-5,10)$ with $b(v,v)=50>0$, hence real-spinor sign $-1$, whereas $e_1$ and $e_1c_{1,1}$ have square $-1$ and mutual pairing $-26<0$, so $c_{1,1}$ preserves the negative-cone sheet. Conflating those distinct index-two groups would invalidate integral group-generation tests.
 
 - **Note**: the $D$-perfect points and neighbour counts are Mertens's construction. They are recorded as published, not as this port's perfect-domain counts.
 

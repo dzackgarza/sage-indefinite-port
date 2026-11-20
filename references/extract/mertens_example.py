@@ -9,8 +9,16 @@ hyperbolic Gram matrix A of determinant -155, Mertens's algorithm finds 9 inequi
 D-perfect points with their neighbour counts, the stabilizers of those points (trivial
 for x2, x5, x6, x7, x8, of order 2 otherwise) and 16 connecting elements. By the
 paper's theorem (line 176) the stabilizers and connecting elements generate Omega, the
-stabilizer of the positive cone in Aut_Z(A) = {g in GL_n(Z) : g A g^T = A} (line 129,
-remark at line 268); hence Omega = O^+(L) and O(L) = <Omega, -I>.
+stabilizer of a chosen component of the NEGATIVE-NORM cone
+{v: v A v^T < 0} in Aut_Z(A) = {g in GL_n(Z) : g A g^T = A} (lines 129,
+259--269). Its two sheets are interchanged by -I, so O(L) = <Omega, -I>.
+In signature (2,1) Omega is NOT the normalized real-spinor kernel
+L.O_plus() of the research preamble: the source generator c_{1,1} is an
+integral reflection in the positive-norm vector (30,-5,10), of square 50,
+so its normalized real-spinor sign is sign(-50/2)=-1. However its image
+of the negative-norm vector e1 has inner product b(e1,e1*c_{1,1})=-26<0,
+so it preserves the chosen negative-cone sheet. The real-spinor kernel
+and the time-orientation subgroup are distinct index-two subgroups.
 
 The D-perfect points and neighbour counts are Mertens's construction; they are recorded
 as such, not as this port's perfect-domain counts. The script asserts that every
@@ -92,7 +100,7 @@ def main() -> None:
         "gram": gram,
         "signature": [2, 1],
         "isometry_convention": "row vectors: g A g^T = A",
-        "omega": "stabilizer of the positive cone in Aut_Z(A), i.e. O^+(L); O(L) = <Omega, -I>",
+        "omega": "stabilizer of one sheet of the negative-norm cone v*A*v^T < 0 in Aut_Z(A); distinct from the normalized real-spinor kernel L.O_plus() in signature (2,1); O(L) = <Omega, -I>",
         "omega_generators": [{"name": g["name"], "matrix": g["matrix"]} for g in generators],
         "mertens_d_perfect_points": [{"point": points[k], "neighbours": neighbours[k - 1]} for k in range(1, 10)],
         "source": {"kind": "published_text", "file": str(SOURCE), "lines": f"{first_line}-{first_line + example.count(chr(10))}", "generation_theorem_line": 176},

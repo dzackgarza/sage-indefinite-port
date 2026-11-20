@@ -22,7 +22,7 @@
   1
  ],
  "isometry_convention": "row vectors: g A g^T = A",
- "omega": "stabilizer of the positive cone in Aut_Z(A), i.e. O^+(L); O(L) = <Omega, -I>",
+ "omega": "stabilizer of one sheet of the negative-norm cone v*A*v^T < 0 in Aut_Z(A); distinct from the normalized real-spinor kernel L.O_plus() in signature (2,1); O(L) = <Omega, -I>",
  "omega_generators": [
   {
    "name": "Stab(x_1)",
