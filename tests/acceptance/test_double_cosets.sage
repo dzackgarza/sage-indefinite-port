@@ -71,6 +71,22 @@ def test_double_cosets_partition_the_rational_group(case) -> None:
     assert classes, "the decomposition of a nonempty group is nonempty"
 
     sizes = tuple(len(class_.points()) * small_order for class_ in classes)
+    # The independently pinned upstream test
+    #   polyhedral_common/CI_tests/01_RatIntAutomorphy/ProcessExamples.g,
+    #   TestDoubleCosetPermDecomposition, lines 235--254,
+    # proves TWO separate obligations: the double cosets are pairwise
+    # disjoint AND their union is G. A sum-of-cardinalities assertion alone
+    # is not a partition certificate: overlapping duplicate blocks can
+    # have the correct sum while omitting other elements. Here every point
+    # in class_.points() is an actual right H-coset in G/H. Proving these
+    # orbits are pairwise disjoint, together with the size equality below,
+    # therefore proves they partition the whole finite G/H, and hence that
+    # the represented double cosets partition G.
+    for i, left in enumerate(classes):
+        for right in classes[i + 1:]:
+            assert not any(point in right.points() for point in left.points()), (
+                f"the source double-coset classes overlap in {case['id']}"
+            )
     assert sum(sizes) == big_order, (
         f"the double cosets {case['id']} have sizes {sizes}, summing to {sum(sizes)} rather than |G| = {big_order}"
     )
