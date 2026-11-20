@@ -11,6 +11,7 @@ arXiv:1607.01324), Scattone's K3 boundaries of degree 2 and 4 (Mem. AMS 374, Â§Â
 from functools import cache
 
 import pytest
+from sage.all import CartanMatrix, Graph, ZZ, block_diagonal_matrix, matrix
 
 from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,

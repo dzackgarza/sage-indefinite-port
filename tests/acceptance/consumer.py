@@ -93,12 +93,25 @@ def rows_of(morphism) -> list[list[int]]:
 def is_isometry(rows, gram) -> bool:
     images = matrix(ZZ, rows)
     form = matrix(ZZ, gram)
-    return images * form * images.transpose() == form
+    # A lattice automorphism must have an integral inverse: over ZZ this is
+    # equivalent to det = +/-1. Gram preservation alone is insufficient when
+    # the form has a radical.
+    return (
+        images.nrows() == images.ncols() == form.nrows() == form.ncols()
+        and abs(images.det()) == 1
+        and images * form * images.transpose() == form
+    )
 
 
 def is_witness(rows, source_gram, target_gram) -> bool:
     images = matrix(ZZ, rows)
-    return images * matrix(ZZ, target_gram) * images.transpose() == matrix(ZZ, source_gram)
+    source, target = matrix(ZZ, source_gram), matrix(ZZ, target_gram)
+    return (
+        images.nrows() == images.ncols() == source.nrows() == target.nrows()
+        and source.ncols() == target.ncols() == images.nrows()
+        and abs(images.det()) == 1
+        and images * target * images.transpose() == source
+    )
 
 
 def discriminant_image_order(lattice_, isometries) -> int:
