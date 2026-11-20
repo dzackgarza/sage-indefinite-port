@@ -412,6 +412,13 @@ def test_public_congruence_double_cosets_nonnormal_subgroup():
     assert len(classes) == 2
     assert all(g.domain() is ambient and g.codomain() is ambient for _, g in classes)
     assert {image._key(residue) for residue, _ in classes} <= image.image_keys()
+    stabilizers = engine.congruence_double_coset_stabilizers(
+        ambient, 3, subgroup, subgroup, ambient_generators=(first, second))
+    assert len(stabilizers) == 2
+    assert sorted(index for _, index, _ in stabilizers) == [3, 6]
+    assert all(representative.domain() is ambient and representative.codomain() is ambient
+               and all(g.domain() is ambient and g.codomain() is ambient for g in generators)
+               for representative, _, generators in stabilizers)
 
 
 def test_public_lattice_composite_residue_submodule_stabilizer():

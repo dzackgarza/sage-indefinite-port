@@ -214,6 +214,33 @@ class IntegralCongruenceImage:
         assert not unseen
         return tuple(result)
 
+    def double_coset_intersection(self, left_subgroup, right_subgroup, representative):
+        r"""Actual-image subgroup ``H intersect r*K*r^-1`` at composite level.
+
+        The representative is a residue matrix in the computed image.
+        The returned matrices are exactly the elements of the intersection,
+        not merely a generating subset.
+        """
+        images = {key: self.reduce(lift) for key, lift in self._lifts.items()}
+        identity = self._key(self.image_one)
+
+        def validated(elements):
+            keys = frozenset(self._key(g) for g in elements)
+            if identity not in keys or not keys <= images.keys():
+                raise ValueError("double-coset subgroup is outside the actual image")
+            if any(self._key(images[a] * images[b]) not in keys for a in keys for b in keys):
+                raise ValueError("double-coset argument is not a subgroup")
+            return keys
+
+        left, right = validated(left_subgroup), validated(right_subgroup)
+        key = self._key(representative)
+        if key not in images:
+            raise ValueError("representative is outside the actual image")
+        r = images[key]
+        inverse = r.inverse()
+        return frozenset(h for h in left
+                         if self._key(inverse * images[h] * r) in right)
+
     def residue_vector_stabilizer(self, coordinates):
         r"""Exact preimage of the stabilizer of a residue column vector.
 

@@ -1653,6 +1653,23 @@ class EichlerRecursion:
             lattice, allowed, real_spinor=True, ambient_generators=ambient_generators,
         )
 
+    def congruence_double_coset_stabilizers(self, lattice: Lattices.ParentMethods, modulus: int, left_subgroup, right_subgroup, *, ambient_generators=None):
+        r"""Exact integral stabilizer generators for each level double coset.
+
+        Return ``(representative, index, generators)``. The index is in
+        the explicitly specified ambient integral group, not a nominal
+        general linear group over the residue ring.
+        """
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        result = []
+        for residue, lift in image.double_coset_representatives(left_subgroup, right_subgroup):
+            intersection = image.double_coset_intersection(left_subgroup, right_subgroup, residue)
+            index, generators = image.preimage_generators(
+                image.reduce(image._lifts[key]) for key in intersection)
+            result.append((_isometry_from_column_matrix(lattice, lattice, lift), index,
+                           tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in generators)))
+        return tuple(result)
+
     def congruence_double_coset_representatives(self, lattice: Lattices.ParentMethods, modulus: int, left_subgroup, right_subgroup, *, ambient_generators=None):
         r"""Exact finite-level double cosets with owned integral witnesses."""
         image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
