@@ -108,7 +108,7 @@ whose completion permits switching to another issue.
 
 **Fixed functional queue (in this order, first unchecked is active):**
 
-1. [ ] **#42, Tier 0 — uniform finite-image arithmetic subgroups.** Complete
+1. [x] **#42, Tier 0 — uniform finite-image arithmetic subgroups.** Complete
    the *actual joint image* and exact owned integral preimages for
    discriminant actions, determinant, normalized real and base-changed field
    spinor, positive-cone component where defined, simultaneous/composite

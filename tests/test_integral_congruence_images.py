@@ -821,7 +821,7 @@ def test_local_odd_padic_spinor_images_are_exact_and_not_fictitiously_trivial():
     and a nonsquare in Q5. The finite generated character image has size
     respectively 1 and 2; it is *not* the entire Q_p square-class group.
     """
-    from sage_extensions.all import Qp as OwnedQp, QQ as OwnedQQ
+    from sage_extensions.all import Qp as OwnedQp, QQ as OwnedQQ, Lattices
     from tests.acceptance.consumer import lattice
 
     ambient = lattice([[4]])
@@ -844,6 +844,12 @@ def test_local_odd_padic_spinor_images_are_exact_and_not_fictitiously_trivial():
             )),
         )
         assert (reflection in kernel) is trivial
+
+    # An *intrinsic* Q5-valued lattice requires a distinct exact local
+    # reflection factorization provider. That unsupported branch must fail
+    # by name, not return a fictitious trivial character or AssertionError.
+    with pytest.raises(NotImplementedError, match="no selected Wall-form or reflection-factorization"):
+        Lattices(padic)([[1]]).spinor_norm()
 
 
 def test_owned_preimage_index_is_relative_to_proper_generated_ambient():
