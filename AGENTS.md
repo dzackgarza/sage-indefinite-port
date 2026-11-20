@@ -108,7 +108,7 @@ whose completion permits switching to another issue.
 
 **Fixed functional queue (in this order, first unchecked is active):**
 
-1. [x] **#42, Tier 0 — uniform finite-image arithmetic subgroups.** Complete
+1. [ ] **#42, Tier 0 — uniform finite-image arithmetic subgroups.** Complete
    the *actual joint image* and exact owned integral preimages for
    discriminant actions, determinant, normalized real and base-changed field
    spinor, positive-cone component where defined, simultaneous/composite
@@ -231,6 +231,12 @@ public path and the full domain before checking it. If a genuine mathematical
 dependency is discovered, implement it in place and record its necessary
 input relationship, without silently reordering this list. All 26 boxes,
 not just the next one, must be discharged to finish the user's entire task.
+
+The historical #42 checkmark in commit 0340017c was recorded before the
+mandatory oracle policy, relying on newly introduced tests without independently
+verified oracle records. It is **not accepted as completion evidence**;
+#42 remains the first unchecked item until its source contracts and new
+regressions have been checked against pre-existing independent oracles.
 
 A prerequisite must name the dependent capability, the exact operation it
 consumes, and a small independently justified example that cannot complete
