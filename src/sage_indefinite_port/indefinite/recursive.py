@@ -2149,7 +2149,9 @@ class EichlerRecursion:
         # subgroup membership; only the full O(L) uses the ambient predicate.
         ambient_group = lattice.O() if ambient_generators is None else lattice.O().subgroup(generators)
         exact_ambient_membership = False
-        if ambient_generators is not None and ambient_group.is_finite() is True:
+        finite_ambient = (ambient_generators is not None
+                          and (lattice.is_definite() or ambient_group.is_finite() is True))
+        if finite_ambient:
             # A generated subgroup's generic owned membership predicate may
             # recognize only supplied generators and certified words, even
             # when its finiteness is established. For a *proved finite*
@@ -2355,7 +2357,7 @@ class EichlerRecursion:
             rank=len(tuple(lattice.module_generating_set())),
             ambient_contains=ambient_contains,
         )
-        if ambient_generators is not None and ambient_group.is_finite() is True:
+        if finite_ambient:
             image._finite_ambient_lifts = tuple(finite_lifts)
         if exact_ambient_membership:
             image._exact_ambient_membership = True
