@@ -67,15 +67,21 @@ def slice_invariant(lattice, fixed, vector):
 
 
 def _fixed_norm_candidate_coordinates(lattice, square):
-    r"""Exhaustive coordinates of a norm fibre; finite and terminating for definite forms."""
+    r"""Exhaustive primitive-orbit candidates; finite for definite and split binary forms.
+
+    At zero norm in a split binary form, only primitive ray generators are
+    emitted, as both consuming orbit sets classify primitive vectors.
+    """
     from sage_indefinite_port.indefinite.recursive import _coordinate_box, _rectangular_coordinate_box
 
-    if int(square) == 0 and int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
-        # An indefinite rational binary form is isotropic exactly when
-        # b^2-ac is a rational square. Its two rational isotropic lines
-        # contain only four primitive integral vectors: the signed
-        # primitive generators of the two lines. For an anisotropic form
-        # there are none. Thus the primitive null fibre is *finite*.
+    if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
+        # For a rationally split binary form the entire fixed-norm fibre
+        # is finite: in the primitive isotropic ray basis (p,q),
+        # q(x)=2 b(p,q) u v. With D=det(p,q), the integers U=Du,V=Dv
+        # satisfy U V = square*D^2/(2b(p,q)). Enumerate signed divisors,
+        # recover x=(Up+Vq)/D, and check its integrality. At square zero
+        # only the four primitive signed rays survive. For a rationally
+        # anisotropic binary form the zero-norm fibre is empty.
         from math import gcd
 
         frame = tuple(lattice.module_generators())
@@ -83,18 +89,39 @@ def _fixed_norm_candidate_coordinates(lattice, square):
         a, b, c = ZZ(gram[0, 0]), ZZ(gram[0, 1]), ZZ(gram[1, 1])
         discriminant = b*b-a*c
         if not discriminant.is_square():
+            if int(square) == 0:
+                return
+        else:
+            root = discriminant.sqrt()
+            rays = ((-b+root, a), (-b-root, a)) if a else ((1, 0), (-c, 2*b))
+            primitive = tuple((int(x)//gcd(int(x), int(y)), int(y)//gcd(int(x), int(y)))
+                              for x, y in rays)
+            if int(square) == 0:
+                seen = set()
+                for ray in primitive:
+                    for coordinates in (ray, tuple(-z for z in ray)):
+                        if coordinates not in seen:
+                            seen.add(coordinates)
+                            yield coordinates
+                return
+            rays_matrix = matrix(ZZ, primitive).transpose()
+            determinant = ZZ(rays_matrix.det())
+            pairing = 2 * rays_matrix.column(0).dot_product(gram * rays_matrix.column(1))
+            product_value = QQ(int(square) * determinant**2) / pairing
+            if product_value.denominator() != 1:
+                return
+            product_value = ZZ(product_value)
+            seen = set()
+            for divisor in ZZ(abs(product_value)).divisors():
+                for U in (divisor, -divisor):
+                    V = product_value // U
+                    coordinates = rays_matrix.change_ring(QQ) * vector(QQ, [U, V]) / determinant
+                    if all(c.denominator() == 1 for c in coordinates):
+                        point = tuple(int(c) for c in coordinates)
+                        if point not in seen:
+                            seen.add(point)
+                            yield point
             return
-        root = discriminant.sqrt()
-        rays = ((-b+root, a), (-b-root, a)) if a else ((1, 0), (-c, 2*b))
-        seen = set()
-        for x, y in rays:
-            d = gcd(int(x), int(y))
-            primitive = (int(x)//d, int(y)//d)
-            for coordinates in (primitive, tuple(-z for z in primitive)):
-                if coordinates not in seen:
-                    seen.add(coordinates)
-                    yield coordinates
-        return
     if lattice.is_definite():
         frame = tuple(lattice.module_generators())
         if not frame:
