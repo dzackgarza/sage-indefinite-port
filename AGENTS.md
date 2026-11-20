@@ -339,28 +339,30 @@ operation is correct merely because its public name exists.
 **The inner loop is one mathematical obligation, not a test module, test
 family, CI tier, or acceptance suite.** Identify the pinned source operation,
 its exact hypotheses, and the smallest input on which the proposed behavior
-is nontrivial. Establish the expected answer independently: prove the orbit
-count, subgroup equality, integral obstruction, termination condition or
-transporter property as applicable. A passing test checks that example; it
-does **not** substitute for a proof of the routine's full advertised domain.
+is nontrivial. Use its pinned upstream answer or an already independently
+accepted mathematical assertion as the expected result. If that answer is
+not established, refer the *question* to the separate mathematical test
+authority in [CONTRIBUTING.md](CONTRIBUTING.md); do not derive and approve
+your own implementation's acceptance criterion. A passing test checks an
+example, not the routine's full advertised domain.
 
 **Contributor responsibility — [CONTRIBUTING.md](CONTRIBUTING.md).** A
 mathematical implementation contributor may faithfully translate pinned
 upstream tests without changing their meaning and may run temporary diagnostic
-experiments. The contributor **must not introduce, alter, or certify new
-mathematical expected results for the capability they implement**. Any new
-mathematical acceptance test must be specified by an independent mathematical
-test author, from the actual pinned upstream result or a separately checked
-proof, before acceptance. The implementing contributor cannot serve as that
-independent author, and cannot manufacture independence through another
-tool, a supposed proof, citations, or test metadata.
+experiments. Responsibility for **new mathematical test specification** lies
+with an independently appointed mathematical test author; **mathematical
+admission** lies with a distinct independent reviewer; **mathematical
+implementation** lies with the implementing contributor. Upstream-test
+translations require fidelity review. A newly introduced mathematical
+assertion is not admissible until its independent specification and
+mathematical review have established its exact hypotheses, result, and
+deduction. The implementation contributor has neither of those authorities.
 
 The existing automated `ci/check_test_oracles.py` and `oracle-provenance`
-check only provenance formatting. They do not enforce independent authorship
-or establish mathematical correctness. Passing them is **not** mathematical
-review, evidence of independent judgment, or permission for an implementer
-to self-author test expectations. Earlier self-authored test assertions remain
-diagnostics, not independent acceptance evidence.
+check only provenance formatting. They do not admit a mathematical test or
+establish its correctness. Acceptance requires an attributable independent
+mathematical decision under the governing contributor policy. Previously
+self-authored assertions remain diagnostics until that review occurs.
 
 Run one explicitly named pytest node with
 `just test-node 'tests/path.py::test_exact_mathematical_claim'`. The recipe

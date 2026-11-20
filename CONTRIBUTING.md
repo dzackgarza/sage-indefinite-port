@@ -1,62 +1,137 @@
-# Contributing to the Sage indefinite lattice port
+# Mathematical specification, implementation, and acceptance
 
-## Mathematical authority is not held by the implementer
+## Governing principle
 
-This is a port of pinned upstream mathematical algorithms. The upstream
-algorithms, their stated domains and guarantees, and their existing tests are
-the starting specification. An implementation contributor's job is to
-translate that specification faithfully, not to invent the mathematical
-statements against which their own implementation will be judged.
+This project ports pinned upstream mathematical algorithms to Sage. **The
+authority to establish what is mathematically correct is separate from the
+authority to implement it.** No contributor may establish the acceptance
+standard for their own mathematical implementation. This is a division of
+responsibility, not a prohibition list or a declaration that paperwork
+certifies mathematical truth.
 
-**The contributor implementing a mathematical capability must not introduce,
-change, approve, or certify the expected mathematical result of a new test
-for that capability.** This applies equally to agents, people, indirect
-helpers, generated fixtures, and tests described as “independent oracles.”
-Writing a purported proof, finding a citation, or asking another tool to
-repeat one's calculation does not make the result independent.
+### Jurisdiction
 
-* **Upstream tests:** Translate existing upstream test inputs and assertions
-  without altering their mathematical claims. Record the exact pinned upstream
-  location and any representation conversion. Where practical, compare actual
-  upstream results against the public Sage consumer. No new expected result is
-  authorized by the fact that the port happens to return it.
-* **Additional mathematical tests:** A separate mathematical test author,
-  independent of the implementation contributor and their proposed output,
-  must establish the expected result from the pinned upstream computation or
-  an independently checked proof **before** the test becomes an acceptance
-  assertion. This author must check the actual hypotheses, normalization,
-  domain, signs and deduction, not simply certify the implementer's account.
-  The source and the independent decision must be inspectable by reviewers.
-* **Implementation-side experiments:** The implementer may explore candidate
-  inputs, run comparisons, discover counterexamples and use disposable
-  diagnostic probes. Those experiments may help debug code. They are **not**
-  mathematical acceptance tests, irrespective of how many runs pass or how
-  detailed the accompanying justification appears. An implementer may
-  nominate a proposed new test for separate consideration, but must not
-  install its mathematical expectations as accepted assertions.
-* **Unresolved claims:** If no independent mathematical source or proof
-  establishes an expected answer, do not invent or guess one. Leave that
-  mathematical expectation unaccepted, and investigate the pinned upstream
-  behavior. The implementation's output cannot resolve the question.
+| Authority | Responsibility | Source of authority |
+| --- | --- | --- |
+| **Mathematical specification** | Defines the mathematical operations, domains, outputs, completeness, and equivalence criteria to be preserved. | Pinned upstream code and tests, their mathematical sources, and separately established project requirements. |
+| **Mathematical test author** | Establishes expected answers for mathematical tests not already supplied by upstream. | Independent computation with the pinned upstream, or an independent rigorous mathematical derivation. This author must be independent of the implementation under test. |
+| **Implementation contributor** | Translates the specified algorithms and interfaces, debugs failures, and demonstrates behavior against the specification. | The specification and already accepted tests. Implementation results do not confer authority over expected answers. |
+| **Mathematical reviewer** | Independently examines proposed new assertions and admits or rejects them as acceptance evidence. | Direct inspection of the source computation or mathematical argument. The reviewer must be distinct from the implementation contributor **and** from the author of the proposed assertion. |
+| **Project owner** | Designates independent mathematical test authors and reviewers, decides disputes about scope and authority, and accepts completed work. | The project's stated requirements; neither passing CI nor an agent's own signoff substitutes for the owner's decision. |
 
-## What constitutes acceptance
+An implementer cannot create independence by launching another agent, asking
+another model to endorse its result, rewriting a proof under another name, or
+selecting its own reviewer. A reviewer must actually exercise independent
+mathematical judgment. Distinct identities alone are not a review.
 
-A reviewer must distinguish three questions: whether the port executes, whether
-it agrees with the pinned upstream algorithm on the tested inputs, and whether
-its general mathematical claims follow from the upstream contract. A test pass
-answers neither of the last two questions by itself. Group generation needs
-completeness, orbit enumeration needs exhaustion and inequivalence, and
-transporters need the correct integral and subgroup constraints. An independent
-review must address the relevant assertion, rather than merely endorse a
-citation, provenance field, or executable test.
+## What tests are authorized
 
-Tests introduced by an implementation contributor before this separation was
-established are **not** retrospectively accepted as independent mathematical
-evidence. Their results may be informative diagnostics, but cannot justify a
-correctness or completion claim without independent mathematical scrutiny.
+### 1. Translated upstream tests
 
-This is a **contributor responsibility and review rule**, not a claim that a
-mechanical checker can decide mathematical truth. No oracle metadata format,
-self-signed declaration, CI badge, or automated agent review substitutes for
-independent mathematical judgment. Do not build a new verification harness to
-replace that judgment.
+Upstream tests are the default mathematical regression corpus. Their inputs,
+assertions, hypotheses, and intended mathematical meaning must be preserved.
+A translation may change representation, indexing, or syntax only insofar as
+the source and target mathematical objects are identified correctly. Its
+origin must be traceable to the pinned upstream revision, file, and test or
+algorithm. A change that adds an expected mathematical result, strengthens or
+weakens an assertion, changes a distinguishing input, or discards a case is
+**not** merely a translation: it invokes the new-test authority below.
+
+The implementer may translate upstream tests mechanically. Independent review
+of their fidelity is required before they count as evidence of upstream
+equivalence. Where upstream execution is possible, actual upstream outputs
+are preferred over an agent's restatement of what upstream supposedly does.
+
+### 2. Additional mathematical tests
+
+New mathematical assertions may enter the accepted test corpus **only after
+independent mathematical specification and independent mathematical review**.
+The test author's work must establish:
+
+* **The question being tested:** the specified upstream or separately
+  authorized mathematical contract, exact input and hypotheses, and which
+  required behavior the test distinguishes.
+* **The correct answer:** the exact pinned upstream computation (including
+  input/output identification), or a complete and checkable independent
+  mathematical argument. Inferences, signs, normalization, integrality,
+  subgroup restrictions, and negative or exhaustive claims must be justified
+  at their actual scope.
+* **The acceptance assertion:** the precise proposition the executable test
+  checks, with no unstated inference from a sample result to completeness of a
+  general algorithm.
+
+The implementation's output, an expected value invented by its author, a
+plausible citation, an autogenerated proof, and agreement between independently
+*run* copies of the port are not independent mathematical specifications.
+If the pinned upstream cannot answer a proposed question and no independent
+proof establishes it, the expectation is **undetermined**. It does not become
+an acceptance test by running it repeatedly.
+
+The implementing contributor may identify an omitted case or propose a test
+*question*. Another, independently appointed mathematical test author must
+establish its expected answer without treating the implementer's output or
+explanation as an oracle. The implementing contributor does not author, alter,
+or approve that mathematical assertion.
+
+### 3. Implementation diagnostics
+
+Implementers may write and run disposable experiments, compare
+representations, inspect candidate answers, and investigate counterexamples.
+Nonmathematical engineering tests may also check transport, parsing, error
+handling, and similar behavior. **These do not acquire mathematical
+acceptance status merely by being committed, passing, or acquiring metadata.**
+Any diagnostic promoted into a mathematical regression must pass the same
+independent specification and review as every other new mathematical test.
+When classification is disputed, mathematical acceptance authority decides.
+
+## Mandatory mathematical review
+
+**Admission precedes acceptance.** A mathematical test author submits the
+precise assertion with its independent source/result or proof. A mathematical
+reviewer who neither implemented the feature nor authored that assertion
+then independently checks the source, input correspondence, hypotheses,
+calculation or proof, and the exact assertion the test will execute. A reviewer
+must reject a source that is merely relevant in subject matter but does not
+imply the claimed result. For claims of generation, exhaustion, termination,
+uniqueness, integral equivalence or nonexistence, the review must establish
+that claim rather than just verify some returned examples.
+
+**Review is an attributable mathematical decision.** The review must be
+inspectable and identify the independently specified test or coherent test
+family, its immutable source/proof reference, the accepted mathematical
+assertions and hypotheses, the test author, the *distinct* reviewer, and the
+reviewer's actual mathematical reasoning or independently reproduced result.
+One mathematical argument can authorize an entire parameterized family when
+the argument truly covers the parameters; repeated forms and templates are
+not required. Rejected or unresolved assertions remain outside accepted
+mathematical evidence.
+
+Changing an accepted test's mathematical meaning (including expected values,
+inputs that distinguish cases, skips, tolerances, or completeness criteria)
+requires a new independent mathematical decision. Mechanical refactoring
+that preserves the assertion requires a fidelity check, not a new proof.
+The implementer may fix the code against accepted assertions but has no
+authority to redefine them.
+
+## Acceptance of the port
+
+Executable tests are witnesses to behavior on their inputs, **not proofs of
+the complete mathematical contract**. Acceptance of an algorithm requires
+review of the upstream-supported domain and every relevant dispatch branch,
+including its completeness, stopping conditions, group-generation claims,
+orbits, stabilizers, transporters, and public-consumer semantics. Additional
+capabilities beyond upstream must be explicitly recognized as *new
+mathematics*, independently specified and justified; they cannot silently be
+presented as part of a faithful translation.
+
+Previously introduced implementer-authored mathematical tests remain useful
+for diagnosis but receive **no retrospective independent authority** from
+their existence, passing status, citations, or provenance fields. They count
+toward acceptance only if independently specified and reviewed under this
+policy.
+
+CI, source-provenance scripts, checklists, and `ORACLE-*` fields may
+check syntax or record references. **They cannot appoint an independent
+mathematical authority, decide a theorem, or approve a test.** This document
+governs contributor conduct and mathematical review; it does not claim
+automated enforcement of mathematical truth.
