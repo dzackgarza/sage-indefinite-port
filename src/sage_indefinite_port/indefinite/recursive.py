@@ -2027,6 +2027,45 @@ class EichlerRecursion:
             generating_morphism=ambient.free_cover(generators),
         )
 
+    def joint_discriminant_right_cosets(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Exact right action and owned transporters of actual joint-image cosets.
+
+        Return coset keys, an action by actual-image keys, and integral
+        transporters. The action is defined on the *finite image*, not on
+        arbitrary matrices with unverified membership in a proper ambient
+        subgroup. In particular it retains all correlations between the
+        discriminant, level and arithmetic-character components.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            level_modulus=level_modulus, ambient_generators=ambient_generators)
+        subgroup = image.subgroup_from_generators(tuple(allowed))
+        cosets, _ = image.right_coset_action(subgroup)
+        order = {key: i for i, key in enumerate(image._lifts)}
+
+        def finite_action(index, key):
+            if key not in image.image_keys():
+                raise ValueError("key is outside the actual joint image")
+            if not 0 <= index < len(cosets):
+                raise IndexError("coset index out of range")
+            def representative(value):
+                return min((image._multiply(h, value) for h in subgroup), key=order.__getitem__)
+            positions = {representative(value): j for j, value in enumerate(cosets)}
+            return positions[representative(image._multiply(cosets[index], key))]
+
+        def transporter(source_index, target_index):
+            if not 0 <= source_index < len(cosets) or not 0 <= target_index < len(cosets):
+                raise IndexError("coset index out of range")
+            source = image.section(cosets[source_index])
+            target = image.section(cosets[target_index])
+            lift = source.inverse() * target
+            assert finite_action(source_index, image.image(lift)) == target_index
+            return _isometry_from_column_matrix(lattice, lattice, lift)
+
+        return cosets, finite_action, transporter
+
     def joint_discriminant_double_coset_representatives(self, lattice: Lattices.ParentMethods, left_subgroup, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Actual joint-character double cosets, with integral isometry witnesses.
 

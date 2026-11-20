@@ -482,6 +482,37 @@ def test_public_residue_stabilizers_respect_proper_ambient_subgroup():
         ambient, 4, ((2, 0), (0, 4)), **restricted)[0] == 1
 
 
+def test_public_joint_discriminant_cosets_have_owned_integral_transporters():
+    r"""Exact joint-image cosets of the order-two subgroup of S3.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraphs, coordinate permutation subgroup S3
+    ORACLE-EXCERPT: Its reduction modulo three is also injective, and the same transposition
+    ORACLE-HYPOTHESES: I3, ambient S3, level three, discriminant and level joint image, transposition subgroup
+    ORACLE-EXPECTED: Three cosets, exact finite-key right action and integral transporters for every ordered pair
+    ORACLE-DERIVATION: I3 is unimodular, so discriminant action is trivial; reduction is injective on S3, H has index three, and Ha*(a^-1*b)=Hb
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    e, f, h = ambient.module_generators()
+    first, second = ambient.O()((f, e, h)), ambient.O()((e, h, f))
+    engine = EichlerRecursion()
+    image = engine.joint_discriminant_character_image(
+        ambient, level_modulus=3, ambient_generators=(first, second))
+    subgroup = image.subgroup_from_generators((image.image(matrix(ZZ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])),))
+    cosets, act, transporter = engine.joint_discriminant_right_cosets(
+        ambient, subgroup, level_modulus=3, ambient_generators=(first, second))
+    assert len(cosets) == 3
+    for i in range(3):
+        assert act(i, image.identity) == i
+        for j in range(3):
+            g = transporter(i, j)
+            assert g.domain() is ambient and g.codomain() is ambient
+            assert act(i, image.image(matrix(ZZ, [g(x).to_vector() for x in ambient.module_generators()]).transpose())) == j
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
