@@ -177,6 +177,11 @@ def orthogonal_transporter(gram, marking, target):
     :func:`orthogonal_transporter_bound`; boxes `1, 2, 4, \dots` are searched up to that bound.
     """
     gram, marking, target = matrix(ZZ, gram), matrix(ZZ, marking), matrix(ZZ, target)
+    if (gram.nrows() != gram.ncols() or marking.nrows() != gram.nrows()
+            or target.dimensions() != marking.dimensions()):
+        raise ValueError("marked transporter requires matching ambient and marking dimensions")
+    if not marking.ncols():
+        return identity_matrix(ZZ, gram.nrows())
     if target.transpose() * gram * target != marking.transpose() * gram * marking:
         return None
     if marking.rank() != target.rank():
@@ -221,6 +226,58 @@ def orthogonal_transporter(gram, marking, target):
             return None
         g = candidate.change_ring(ZZ)
         return g if abs(g.det()) == 1 and g.transpose() * gram * g == gram else None
+    if gram.nrows() == 2 and gram.det() < 0 and ZZ(gram[0, 1]**2 - gram[0, 0]*gram[1, 1]).is_square():
+        # Every rationally split indefinite binary form has precisely two
+        # rational isotropic lines. A unimodular integral isometry permutes
+        # these lines and sends their primitive integral generators to
+        # primitive generators with signs. Enumerating the eight signed
+        # permutations and checking integrality gives the *entire* O(B),
+        # even when the two rays do not form an integral basis.
+        from math import gcd
+        a, b, c = (ZZ(gram[0, 0]), ZZ(gram[0, 1]), ZZ(gram[1, 1]))
+        root = ZZ(b*b-a*c).sqrt()
+        rays = ((-b+root, a), (-b-root, a)) if a else ((1, 0), (-c, 2*b))
+        primitive = tuple((ZZ(x)//g, ZZ(y)//g)
+                          for x, y in rays for g in (gcd(int(x), int(y)),))
+        frame = matrix(ZZ, primitive).transpose().change_ring(QQ)
+        if frame.det() == 0:
+            raise ArithmeticError("the two split isotropic rays must be independent")
+        for permutation in ((0, 1), (1, 0)):
+            for signs in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+                images = matrix(ZZ, [[signs[i]*primitive[permutation[i]][j]
+                                      for j in range(2)] for i in range(2)]).transpose()
+                candidate = images.change_ring(QQ)*frame.inverse()
+                if candidate.denominator() != 1:
+                    continue
+                candidate = candidate.change_ring(ZZ)
+                if (abs(candidate.det()) == 1 and candidate.transpose()*gram*candidate == gram
+                        and candidate*marking == target):
+                    return candidate
+        return None
+    if gram.nrows() == 2 and gram.det() != 0:
+        # For a nonisotropic v, its perpendicular line is generated over Q
+        # by t=((Bv)_2,-(Bv)_1). Its square is det(B)*q(v). Therefore
+        # exactly two rational isometries can send v to w, obtained by
+        # sending t to +/-t_w. Testing integrality and the full marking
+        # decides the Pell-type binary transporter without an infinite
+        # search or the rank >= 3 Li--Margulis theorem.
+        for j in range(marking.ncols()):
+            v = marking.matrix_from_columns([j])
+            w = target.matrix_from_columns([j])
+            if (v.transpose()*gram*v)[0, 0] == 0:
+                continue
+            bv, bw = gram*v, gram*w
+            frame = matrix(ZZ, [[v[0, 0], bv[1, 0]], [v[1, 0], -bv[0, 0]]]).change_ring(QQ)
+            for sign in (1, -1):
+                image_frame = matrix(ZZ, [[w[0, 0], sign*bw[1, 0]],
+                                          [w[1, 0], -sign*bw[0, 0]]]).change_ring(QQ)
+                candidate = image_frame*frame.inverse()
+                if candidate.denominator() == 1:
+                    candidate = candidate.change_ring(ZZ)
+                    if (abs(candidate.det()) == 1 and candidate.transpose()*gram*candidate == gram
+                            and candidate*marking == target):
+                        return candidate
+            return None
     if separated_by_invariant(gram, marking, target, []):
         return None
     limit = orthogonal_transporter_bound(gram, marking, target)
