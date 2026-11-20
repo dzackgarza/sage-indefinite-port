@@ -138,7 +138,10 @@ def orthogonal_transporter_bound(gram, marking, target):
     assert source_gram.det() != 0, "the source Gram matrix must be nonsingular"
     assert target.transpose() * gram * target == source_gram, "the target has another Gram matrix"
     for m in (marking, target):
-        assert all(e == 1 for e in m.elementary_divisors()), f"{m} is not primitive"
+        # For an n-by-k column marking with k<n, Sage includes n-k zero
+        # elementary divisors. The k nonzero Smith invariants are those
+        # of its transpose; zeros are not failures of primitivity.
+        assert all(e == 1 for e in m.transpose().elementary_divisors()), f"{m} is not primitive"
     basis_x, gram_x = _complement(gram, marking)
     basis_y, gram_y = _complement(gram, target)
     r = gram_x.nrows()
@@ -168,6 +171,22 @@ def orthogonal_transporter(gram, marking, target):
     gram, marking, target = matrix(ZZ, gram), matrix(ZZ, marking), matrix(ZZ, target)
     if target.transpose() * gram * target != marking.transpose() * gram * marking:
         return None
+    if marking.rank() == marking.ncols() and marking.ncols() < gram.nrows() and any(
+        abs(d) != 1 for d in marking.transpose().elementary_divisors()
+    ):
+        # An isometry maps the primitive saturation of a nonprimitive
+        # marking to the saturation of its image. Extend the prescribed
+        # map rationally to that saturation, then demand integrality and
+        # primitivity before applying the primitive marked decision.
+        saturated = marking.transpose().saturation().transpose()
+        coefficients = marking.change_ring(QQ).solve_right(saturated.change_ring(QQ))
+        moved = target.change_ring(QQ) * coefficients
+        if moved.denominator() != 1:
+            return None
+        moved = moved.change_ring(ZZ)
+        if any(abs(d) != 1 for d in moved.transpose().elementary_divisors()):
+            return None
+        return orthogonal_transporter(gram, saturated, moved)
     if marking.nrows() == gram.nrows() and marking.ncols() == gram.nrows() and marking.det() != 0:
         # No Li--Margulis complement is needed for a full-rank marking:
         # the rational extension is unique and its integrality is exact.
