@@ -1670,6 +1670,53 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def _joint_character_representation(self, lattice: Lattices.ParentMethods, image, ambient_generators=None):
+        r"""Faithful finite regular-action realization of the actual joint image.
+
+        Return a *preamble group morphism* with codomain the genuine image of
+        the integer automorphisms, never a product of independent character
+        targets or the ambient symmetric group on the image keys. Both
+        public representation and exact subgroup preimage share this one
+        construction, including the finite-codomain and image-section
+        data consumed by marked orbit splitting and Schreier stabilizers.
+        """
+        from sage_extensions.categories.group.g_sets import FiniteGSets
+        from sage_extensions.categories.sets.finite_ordered_sets import finite_ordered_set
+
+        generators = None if ambient_generators is None else tuple(ambient_generators)
+        ambient = lattice.O() if generators is None else lattice.O().subgroup(generators)
+        points = finite_ordered_set(tuple(image._lifts))
+        action = FiniteGSets(ambient)(
+            points,
+            lambda g, key: image._multiply(image.image(_column_matrix(g)), key),
+        )
+        permutation = action.permutation_representation()
+        actual = permutation.codomain().subgroup(tuple(
+            permutation(_isometry_from_column_matrix(lattice, lattice, g))
+            for g in image.generators
+        ))
+        return ambient.Mor(actual).elementwise(
+            lambda g: actual(permutation(g))
+        )
+
+    def joint_discriminant_character_representation(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""The exact owned morphism from O(L) (or supplied subgroup) onto its joint arithmetic image.
+
+        Its actual finite codomain retains all discriminant, level,
+        determinant, normalized real-spinor, field-spinor and positive-cone
+        correlations. Every target subgroup has an exact integral preimage
+        with its complete kernel, and the morphism supplies the finite
+        quotient and owned image section used by public marked actions.
+        """
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            level_modulus=level_modulus, ambient_generators=ambient_generators,
+        )
+        return self._joint_character_representation(lattice, image, ambient_generators)
+
     def joint_discriminant_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Return an *owned group* realizing the exact joint finite-image inverse image.
 
@@ -1685,9 +1732,6 @@ class EichlerRecursion:
         consumers. Its complete Schreier generating epimorphism is selected
         from the computed preimage words, not merely a membership filter.
         """
-        from sage_extensions.categories.group.g_sets import FiniteGSets
-        from sage_extensions.categories.sets.finite_ordered_sets import finite_ordered_set
-
         allowed = frozenset(allowed)
         ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
         image = self.joint_discriminant_character_image(
@@ -1697,22 +1741,10 @@ class EichlerRecursion:
             ambient_generators=ambient_generators,
         )
         _, matrices = image.preimage_generators(allowed)
-        ambient = (lattice.O() if ambient_generators is None
-                   else lattice.O().subgroup(ambient_generators))
+        representation = self._joint_character_representation(lattice, image, ambient_generators)
+        ambient = representation.domain()
         generators = tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
-        points = finite_ordered_set(tuple(image._lifts))
-        action = FiniteGSets(ambient)(
-            points,
-            lambda g, key: image._multiply(image.image(_column_matrix(g)), key),
-        )
-        permutation = action.permutation_representation()
-        finite_image = permutation.codomain().subgroup(tuple(
-            permutation(_isometry_from_column_matrix(lattice, lattice, g)) for g in image.generators
-        ))
-        representation = ambient.Mor(finite_image).elementwise(
-            lambda g: finite_image(permutation(g))
-        )
-        target = finite_image.subgroup(tuple(
+        target = representation.codomain().subgroup(tuple(
             representation(_isometry_from_column_matrix(lattice, lattice, image.section(key)))
             for key in image.image_keys() if key in allowed
         ))

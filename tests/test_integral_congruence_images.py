@@ -1357,6 +1357,41 @@ def test_actual_joint_component_determinant_real_spinor_discriminant_and_level_p
     assert all(g not in multilevel for g in (swap, negative, swap * negative))
 
 
+def test_public_orthogonal_group_joint_arithmetic_representation_is_exact_and_splits_markings():
+    r"""The owner O(U), not an internal finite-image class, supplies an exact group morphism.
+
+    Its four-element *actual image* carries all discriminant, reduction,
+    determinant, real-spinor and cone characters with their correlations.
+    The preimage of its identity is trivial, and its complete finite-codomain
+    morphism must be accepted by the existing marked-orbit splitting API.
+    """
+    from sage_extensions.all import Lattices, ZZ as OwnedZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from tests.acceptance.consumer import lattice
+
+    ambient = lattice([[0, 1], [1, 0]])
+    group = ambient.O()
+    e, f = ambient.module_generators()
+    swap = group((f, e))
+    negative = group((-e, -f))
+    representation = group.joint_arithmetic_representation(
+        determinant=True, real_spinor=True, positive_cone=True,
+        level_modulus=2,
+    )
+    assert representation.domain() is group
+    assert representation.codomain().is_finite() is True
+    assert int(representation.codomain().cardinality()) == 4
+    assert len({representation(g) for g in (group.one(), swap, negative, swap * negative)}) == 4
+    subgroup = group.preimage(representation, representation.codomain().subgroup(()))
+    assert int(subgroup.index()) == 4
+    assert group.one() in subgroup
+    assert all(g not in subgroup for g in (swap, negative, swap * negative))
+    source = lattice([[0]])
+    category = CosliceCategory(Lattices(OwnedZZ), source)
+    marked = category(source.hom([e], codomain=ambient))
+    assert len(tuple(group.split_orbit(marked, subgroup))) == 4
+
+
 def test_owned_determinant_kernel_distinguishes_reflection_from_negative_identity():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
