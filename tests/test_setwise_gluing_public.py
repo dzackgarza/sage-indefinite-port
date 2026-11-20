@@ -65,3 +65,20 @@ def test_index_two_full_rank_marking_excludes_exchange():
         tuple(matrix(ZZ, ((1, 0), (0, 1))).list()),
         tuple(matrix(ZZ, ((-1, 0), (0, -1))).list()),
     }
+
+
+def test_scalar_centralizer_retains_exact_gluing_stabilizer():
+    # -I is central in O(U), so C_O(U)(-I)=O(U). The marked module
+    # 2Ze+Zf has precisely the two-element stabilizer {I,-I}.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    e, f = lattice.module_generators()
+    negation = lattice.O()({label: -v for label, v in zip(
+        lattice.module_generating_set(), (e, f), strict=True)})
+    centralizer = CentralizerSubgroup(lattice, (negation,))
+    generators = centralizer.setwise_stabilizer_generators((2 * e, f))
+    assert len(generators) == 2
+    assert {tuple(matrix(ZZ, [[int(c) for c in g(v)] for v in (e, f)]).list())
+            for g in generators} == {
+        tuple(matrix(ZZ, ((1, 0), (0, 1))).list()),
+        tuple(matrix(ZZ, ((-1, 0), (0, -1))).list()),
+    }

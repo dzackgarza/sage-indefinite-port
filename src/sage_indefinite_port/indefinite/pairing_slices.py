@@ -1088,7 +1088,13 @@ class CentralizerSubgroup:
             return tuple(g for g in self._finite_elements() if g in self and
                          (matrix(ZZ, [[int(c) for c in g(v)] for v in basis])
                           if basis else matrix(ZZ, 0, len(self.frame))).row_module() == module)
-        if not self.matrices and self.lattice.is_nondegenerate():
+        # Scalar actions ±I commute with every integral isometry, so their
+        # simultaneous centralizer is the entire O(L). In particular the
+        # complete finite-gluing construction applies without replacing
+        # the centralizer by a smaller, generator-filtered subgroup.
+        identity = identity_matrix(ZZ, len(self.frame))
+        scalar_actions = all(F == identity or F == -identity for F in self.matrices)
+        if scalar_actions and self.lattice.is_nondegenerate():
             X = self._columns(basis)
             if X.rank() and (X.transpose()*self.gram*X).rank() == X.rank():
                 from sage_indefinite_port.indefinite.effective_reduction import (
