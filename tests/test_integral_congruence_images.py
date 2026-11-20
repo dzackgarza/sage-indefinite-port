@@ -35,6 +35,27 @@ def test_nonnormal_subgroup_preimage_uses_schreier_not_generator_filter():
     assert any(image.reduce(g) == image.reduce(a) for g in generators)
 
 
+def test_nonnormal_finite_image_right_cosets_have_exact_action():
+    r"""Three right cosets of a transposition subgroup of S3.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraphs, coordinate permutation subgroup S3
+    ORACLE-EXCERPT: Its reduction modulo three is also injective, and the same transposition
+    ORACLE-HYPOTHESES: Coordinate permutation matrices in dimension three, reduction modulo three, subgroup of order two
+    ORACLE-EXPECTED: Three cosets; the right action satisfies the group-action identity and the first transposition fixes exactly the identity coset
+    ORACLE-DERIVATION: S3 has order six, H has order two, and right multiplication on left cosets is associative
+    """
+    a = matrix(ZZ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    b = matrix(ZZ, [[1, 0, 0], [0, 0, 1], [0, 1, 0]])
+    image = IntegralCongruenceImage((a, b), 3)
+    cosets, act = image.right_coset_action((image.image_one, image.reduce(a)))
+    assert len(cosets) == 3
+    for i in range(3):
+        assert act(i, image.image_one) == i
+        assert act(act(i, image.reduce(a)), image.reduce(b)) == act(i, image.reduce(a * b))
+    assert sum(act(i, image.reduce(a)) == i for i in range(3)) == 1
+
+
 def test_rejects_non_subgroup_and_nonunimodular_inputs():
     a = matrix(ZZ, [[0, 1], [1, 0]])
     image = IntegralCongruenceImage((a,), 3)

@@ -133,6 +133,40 @@ class IntegralCongruenceImage:
             raise ArithmeticError("relative congruence kernel has incorrect index")
         return index, generators
 
+    def right_coset_action(self, allowed):
+        r"""Finite right action on ``H\\F`` for the *actual* reduction image F.
+
+        ``allowed`` is a subgroup of F, including nonnormal subgroups.
+        The action takes matrices in F, not arbitrary integral matrices;
+        the latter require a separate certified ambient membership test.
+        Return coset representatives and a right action on their indices.
+        """
+        subgroup = frozenset(self._key(g) for g in allowed)
+        identity = self._key(self.image_one)
+        if identity not in subgroup or not subgroup <= self.image_keys():
+            raise ValueError("allowed must contain identity and lie in the actual image")
+        images = {key: self.reduce(lift) for key, lift in self._lifts.items()}
+        if any(self._key(images[a] * images[b]) not in subgroup
+               for a in subgroup for b in subgroup):
+            raise ValueError("allowed is not a subgroup")
+
+        def canonical(g):
+            return min(self._key(images[h] * g) for h in subgroup)
+
+        cosets = tuple(sorted({canonical(g) for g in images.values()}))
+        positions = {key: i for i, key in enumerate(cosets)}
+        assert len(cosets) * len(subgroup) == len(images)
+
+        def act(index, g):
+            if not 0 <= index < len(cosets):
+                raise IndexError("coset index out of range")
+            key = self._key(g)
+            if key not in images:
+                raise ValueError("matrix is outside the actual finite image")
+            return positions[canonical(images[cosets[index]] * images[key])]
+
+        return cosets, act
+
     def residue_vector_stabilizer(self, coordinates):
         r"""Exact preimage of the stabilizer of a residue column vector.
 
