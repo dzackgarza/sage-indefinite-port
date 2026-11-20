@@ -360,12 +360,14 @@ Upstream-test translations require independent source-fidelity review. No
 new mathematical assertion is admissible without independent mathematical
 specification and review of its exact hypotheses, result and deduction.
 
-The existing automated `ci/check_test_oracles.py` and `oracle-provenance`
-check only provenance formatting. They do not admit a test or establish
-its correctness; **all tests**, including previously committed ones, require
-the independent authorship, current review, and source authority specified
-in CONTRIBUTING.md before supporting acceptance claims. Unreviewed tests
-remain diagnostics.
+**No automated oracle-enforcement machinery.** Do not introduce provenance
+scripts, Git hooks, CI gates, test-runner checks, or mandatory metadata
+parsers for mathematical oracles. Mathematical correctness is the
+responsibility of independently identified mathematical test authors and
+reviewers under CONTRIBUTING.md, not a syntactic provenance mechanism.
+**All tests**, including previously committed ones, require independent
+authorship, current mathematical review, and exact source authority before
+supporting acceptance claims. Unreviewed tests remain diagnostics.
 
 Run one explicitly named pytest node with
 `just test-node 'tests/path.py::test_exact_mathematical_claim'`. The recipe

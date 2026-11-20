@@ -1,8 +1,0 @@
-#!/bin/sh
-set -eu
-# Preserve the user's global fast syntax hook, then check oracle provenance.
-prior="$(git config --global --get core.hooksPath || true)"
-if [ -n "$prior" ] && [ -x "$prior/pre-commit" ]; then
-    "$prior/pre-commit" "$@"
-fi
-python3 ci/check_test_oracles.py --staged

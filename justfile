@@ -20,18 +20,11 @@ ambient:
 
 # Run commit-tier SageMath QC through the central implementation.
 test-commit:
-    @python3 ci/check_test_oracles.py --staged
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-commit
 
 # Syntax checks on outgoing commits (not a full SageMath test run).
 test-push:
-    @python3 ci/check_test_oracles.py --range "$(git rev-parse refs/remotes/origin/main)..HEAD"
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-push
-
-# Fail closed for new or changed mathematical tests lacking an independent
-# pinned source and a verbatim matching oracle excerpt.
-oracle-gate:
-    @python3 ci/check_test_oracles.py --staged
 
 # Run CI acceptance QC through the central implementation.
 test-ci:
@@ -48,7 +41,6 @@ test-node node:
         tests/*::* ) ;;
         *) echo "Expected one explicit test node: tests/path.py::test_claim[parameter]" >&2; exit 2 ;;
     esac
-    python3 ci/check_test_oracles.py --worktree --node "$node"
     # This Sage launcher is a container wrapper and does not forward
     # arbitrary environment variables or additional argv. Serialize only
     # the selected node as a quoted Python string literal.
