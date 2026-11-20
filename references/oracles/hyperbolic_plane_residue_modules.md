@@ -66,3 +66,7 @@ of its level-three reduction is exactly H, with no additional elements.
 Inside O(I_3), the coordinate permutation subgroup S_3 has order six.
 Its reduction modulo three is also injective, and the same transposition
 subgroup H has index three in this explicitly generated ambient subgroup.
+The double coset space H\\S3/H has two elements: H itself and HsH,
+where s is any transposition not in H. The first double coset has
+cardinality two, and the second has cardinality four, because
+H intersect sHs^-1 is trivial. Thus 2+4=6 partitions S3.
