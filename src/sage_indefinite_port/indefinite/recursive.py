@@ -2205,18 +2205,20 @@ class EichlerRecursion:
             field_spinor=field_spinor, positive_cone=positive_cone,
             field_map=field_map, form_multiplier=form_multiplier,
             level_modulus=level_modulus, ambient_generators=ambient_generators)
-        subgroup = image.subgroup_from_generators(tuple(allowed))
+        subgroup = frozenset(allowed)
         cosets, _ = image.right_coset_action(subgroup)
         order = {key: i for i, key in enumerate(image._lifts)}
+
+        def representative(value):
+            return min((image._multiply(h, value) for h in subgroup), key=order.__getitem__)
+
+        positions = {representative(value): j for j, value in enumerate(cosets)}
 
         def finite_action(index, key):
             if key not in image.image_keys():
                 raise ValueError("key is outside the actual joint image")
             if not 0 <= index < len(cosets):
                 raise IndexError("coset index out of range")
-            def representative(value):
-                return min((image._multiply(h, value) for h in subgroup), key=order.__getitem__)
-            positions = {representative(value): j for j, value in enumerate(cosets)}
             return positions[representative(image._multiply(cosets[index], key))]
 
         def transporter(source_index, target_index):
