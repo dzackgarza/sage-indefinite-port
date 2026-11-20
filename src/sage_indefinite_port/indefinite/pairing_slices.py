@@ -717,8 +717,23 @@ class CentralizerSubgroup:
     def _orbit(self, vectors):
         return CentralizerTupleOrbit(self.gram, self.matrices, self._columns(vectors))
 
+    def _finite_elements(self):
+        r"""Complete owned enumeration when O(L) is finite, including split binary forms."""
+        from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
+
+        return iter_exact_integral_orthogonal_isometries(self.lattice)
+
     def tuple_equivalence_witness(self, left, right):
         r"""Return `g \in C` with `g(left_i) = right_i`, or ``None`` as a proof that none exists."""
+        left, right = tuple(left), tuple(right)
+        if len(left) != len(right):
+            return None
+        if self.lattice.O().is_finite() is True:
+            # Exhaust the entire finite integral orthogonal group, not a
+            # bounded approximation to its centralizer. This also decides
+            # dependent and degenerate equivariant markings exactly.
+            return next((g for g in self._finite_elements()
+                         if g in self and all(g(x) == y for x, y in zip(left, right))), None)
         found = self._orbit(left).transporter(self._columns(right))
         if found is None:
             return None
@@ -731,11 +746,24 @@ class CentralizerSubgroup:
         return self.tuple_equivalence_witness((left,), (right,))
 
     def vector_stabilizer_generators(self, vector):
+        if self.lattice.O().is_finite() is True:
+            return tuple(g for g in self._finite_elements() if g in self and g(vector) == vector)
         return tuple(self._element(g) for g in self._orbit((vector,)).stabilizer_generators())
 
     def pointwise_stabilizer_generators(self, vectors):
+        if self.lattice.O().is_finite() is True:
+            vectors = tuple(vectors)
+            return tuple(g for g in self._finite_elements()
+                         if g in self and all(g(v) == v for v in vectors))
         return tuple(self._element(g) for g in self._orbit(tuple(vectors)).stabilizer_generators())
 
     def setwise_stabilizer_generators(self, basis):
         r"""Return generators of `\{g \in C : g \Lambda = \Lambda\}` for the sublattice `\Lambda` with ``basis``."""
+        if self.lattice.O().is_finite() is True:
+            basis = tuple(basis)
+            source = matrix(ZZ, [[int(c) for c in v] for v in basis]) if basis else matrix(ZZ, 0, len(self.frame))
+            module = source.row_module()
+            return tuple(g for g in self._finite_elements() if g in self and
+                         (matrix(ZZ, [[int(c) for c in g(v)] for v in basis])
+                          if basis else matrix(ZZ, 0, len(self.frame))).row_module() == module)
         return tuple(self._element(g) for g in self._orbit(tuple(basis)).setwise_stabilizer_generators())
