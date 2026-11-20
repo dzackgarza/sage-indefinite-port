@@ -4681,6 +4681,34 @@ class EichlerRecursion:
                         lattice.base_ring()(content), vector_class.representative
                     )
             return
+        if int(square) == 0 and not lattice.is_nondegenerate():
+            # If the nondegenerate quotient C=L/rad(L) is anisotropic
+            # over Q, every integral null vector lies in rad(L).
+            # The radical is a primitive direct summand, and the full
+            # orthogonal group contains GL(rad(L)), so its primitive
+            # null vectors form exactly one orbit. Nonprimitive null
+            # vectors are classified by their positive content.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            quotient_rank = int(reduced_gram.rank())
+            if quotient_rank:
+                complement = lattice.lattice_category()(
+                    [[int(reduced_gram[i, j]) for j in range(quotient_rank)]
+                     for i in range(quotient_rank)]
+                )
+                if not complement.is_isotropic():
+                    radical = reduction.isometry(_from_column(
+                        reduced, (0,) * quotient_rank + (1,)
+                        + (0,) * (int(lattice.rank())-quotient_rank-1)
+                    ))
+                    if primitive_only:
+                        yield radical
+                        return
+                    yield lattice.zero()
+                    for content in count(1):
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), radical)
+                    return
         if int(square) != 0 and not lattice.is_nondegenerate():
             # For L=C (+) R with nondegenerate C and zero radical
             # R, O(L) is the semidirect product of O(C) x GL(R) with
