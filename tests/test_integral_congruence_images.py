@@ -54,6 +54,11 @@ def test_nonnormal_finite_image_right_cosets_have_exact_action():
         assert act(i, image.image_one) == i
         assert act(act(i, image.reduce(a)), image.reduce(b)) == act(i, image.reduce(a * b))
     assert sum(act(i, image.reduce(a)) == i for i in range(3)) == 1
+    for i in range(3):
+        for j in range(3):
+            witness = image.right_coset_transporter((image.image_one, image.reduce(a)), i, j)
+            assert witness.det() in (1, -1)
+            assert act(i, image.reduce(witness)) == j
 
 
 def test_rejects_non_subgroup_and_nonunimodular_inputs():

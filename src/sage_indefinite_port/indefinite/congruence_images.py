@@ -167,6 +167,22 @@ class IntegralCongruenceImage:
 
         return cosets, act
 
+    def right_coset_transporter(self, allowed, source_index, target_index):
+        r"""Integral section-word lift transporting two actual-image cosets.
+
+        For ``H*a`` and ``H*b`` the lift of ``a^-1*b`` acts on the right.
+        Both representatives are sections of the generated integral group;
+        no nominal GL or ambient subgroup membership oracle is needed.
+        """
+        cosets, act = self.right_coset_action(allowed)
+        if not 0 <= source_index < len(cosets) or not 0 <= target_index < len(cosets):
+            raise IndexError("coset index out of range")
+        source = self._lifts[cosets[source_index]]
+        target = self._lifts[cosets[target_index]]
+        witness = matrix(ZZ, source.inverse() * target)
+        assert act(source_index, self.reduce(witness)) == target_index
+        return witness
+
     def residue_vector_stabilizer(self, coordinates):
         r"""Exact preimage of the stabilizer of a residue column vector.
 
