@@ -813,6 +813,8 @@ class CentralizerSubgroup:
         return self.lattice.O()(images)
 
     def __contains__(self, element):
+        if element.domain() is not self.lattice or element.codomain() is not self.lattice:
+            return False
         g = self._matrix(element)
         return g.transpose() * self.gram * g == self.gram and all(g * F == F * g for F in self.matrices)
 
