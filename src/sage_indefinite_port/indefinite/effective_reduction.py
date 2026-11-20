@@ -327,10 +327,10 @@ def orthogonal_transporter(gram, marking, target):
                 if abs(candidate.det()) == 1 and candidate.transpose()*gram*candidate == gram:
                     return candidate
         return None
-    if (gram.det() != 0 and marking.ncols() == gram.nrows()-2
+    if (gram.det() != 0 and 0 < marking.ncols() <= gram.nrows()-2
             and (marking.transpose()*gram*marking).det() != 0):
-        # A nondegenerate codimension-two marking splits the rational
-        # space into its marked span and a binary orthogonal complement.
+        # A nondegenerate marking splits the rational space into its
+        # marked span and an integral orthogonal complement of rank >=2.
         # If that complement is definite, its entire integral isometry
         # torsor is finite. Enumerate the exact complement isometries
         # and check the induced rational ambient maps for integrality;
