@@ -146,6 +146,8 @@ def marked_transporter(lattice, source, target):
     source, target = tuple(source), tuple(target)
     if len(source) != len(target):
         return None
+    if any(v.parent() is not lattice for v in (*source, *target)):
+        raise ValueError("marked vectors must belong to the original lattice")
     if not source or all(point == lattice.zero() for point in source):
         # The empty marking has the entire orthogonal group as stabilizer;
         # the all-zero marking has the same stabilizer, but cannot be sent
@@ -440,6 +442,9 @@ def setwise_transporter(lattice, fixed, left, right):
     `O(S)` decides. For indefinite `S`, the decision splits along `S + S^\perp`.
     """
     fixed = tuple(fixed)
+    if (left.parent() is not lattice or right.parent() is not lattice
+            or any(v.parent() is not lattice for v in fixed)):
+        raise ValueError("setwise markings must belong to the original lattice")
     if not fixed or all(point == lattice.zero() for point in fixed):
         # The zero submodule is invariant under every integral isometry.
         # There is no nondegenerate marked lattice to construct here.
