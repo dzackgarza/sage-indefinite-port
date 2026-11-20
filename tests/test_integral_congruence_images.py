@@ -696,6 +696,38 @@ def test_prime_field_spinor_character_in_exact_reduced_joint_image():
         lattice([[10]]).spinor_norm(OwnedZZ.Mor(five)(lambda n: five(n)))
 
 
+def test_odd_finite_extension_field_spinor_images_preserve_base_change_and_square_classes():
+    r"""The degree-two extensions of F3 and F5 make every prime-field unit a square.
+
+    A finite-field spinor character must be evaluated in the actual target
+    field, not in the prime field or Q. For -I on <4>, the base-field
+    class [-2] becomes trivial in F9 and F25. The original rank-one
+    discriminant action still has two elements: the joint actual image
+    must retain that factor independently of the now-trivial field spinor.
+    """
+    from sage_extensions.all import GF as OwnedGF, ZZ as OwnedZZ
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[4]])
+    (e,) = ambient.module_generators()
+    reflection = ambient.O()((-e,))
+    engine = EichlerRecursion()
+    for order in (9, 25):
+        field = OwnedGF(order)
+        assert int(field.characteristic()) in (3, 5)
+        reduction = OwnedZZ.Mor(field)(lambda n, field=field: field(n))
+        character = ambient.spinor_norm(reduction)
+        assert character(reflection).is_one()
+        image = engine.joint_discriminant_character_image(
+            ambient, field_spinor=True, field_map=reduction, level_modulus=2,
+        )
+        assert len(image.image_keys()) == 2
+        assert all(key[-1] == image.identity[-1] for key in image.image_keys())
+        kernel = engine.field_spinor_kernel_subgroup(ambient, field_map=reduction)
+        assert int(kernel.index()) == 1 and reflection in kernel
+
+
 def test_owned_preimage_index_is_relative_to_proper_generated_ambient():
     """G=<swap> in O(U), det G=C2; its det kernel is trivial, with [G:1]=2."""
     from tests.acceptance.consumer import lattice
