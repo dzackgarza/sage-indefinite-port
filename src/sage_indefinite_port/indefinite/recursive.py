@@ -1653,6 +1653,35 @@ class EichlerRecursion:
             lattice, allowed, real_spinor=True, ambient_generators=ambient_generators,
         )
 
+    def congruence_preimage_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Owned inverse image of an arbitrary subgroup of the actual level image.
+
+        ``allowed`` contains residue matrices, not nominal GL elements or
+        discriminant-character keys. Nonnormal subgroups are supported;
+        their Schreier generators and exact finite quotient action are
+        retained by the joint-discriminant preimage owner. All
+        discriminant classes remain unrestricted.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        permitted = frozenset(residue._key(residue.reduce(g)) for g in allowed)
+        if residue._key(residue.image_one) not in permitted or not permitted <= residue.image_keys():
+            raise ValueError("allowed must contain identity and lie in the actual level image")
+        if any(residue._key(residue.reduce(a) * residue.reduce(b)) not in permitted
+               for a in residue._lifts.values() for b in residue._lifts.values()
+               if residue._key(residue.reduce(a)) in permitted
+               and residue._key(residue.reduce(b)) in permitted):
+            raise ValueError("allowed is not a subgroup of the actual level image")
+        target = joint.subgroup_from_membership(lambda key: key[0] in permitted)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, target, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+
     def principal_congruence_subgroup_generators(self, lattice: Lattices.ParentMethods, modulus: int):
         r"""Generators of ``ker(O(L) -> Aut(L/modulus*L))`` (principal congruence subgroup)."""
         image = self.congruence_image(lattice, modulus)
