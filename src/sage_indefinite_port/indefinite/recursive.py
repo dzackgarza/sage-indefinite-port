@@ -2148,6 +2148,7 @@ class EichlerRecursion:
         # outside a supplied proper subgroup G. Use the provider's owned
         # subgroup membership; only the full O(L) uses the ambient predicate.
         ambient_group = lattice.O() if ambient_generators is None else lattice.O().subgroup(generators)
+        cyclic_unipotent = None
         if ambient_generators is not None and ambient_group.is_finite() is True:
             # A generated subgroup's generic owned membership predicate may
             # recognize only supplied generators and certified words, even
@@ -2175,6 +2176,31 @@ class EichlerRecursion:
                         finite_lifts.append(product)
                         queue.append(product)
             ambient_contains = lambda g: matrix_key(g) in finite_members
+        elif ambient_generators is not None and len(generators) == 1:
+            # For a cyclic square-zero unipotent A=I+N, N^2=0, the
+            # entire integral subgroup is {I+kN : k in Z}. This is an
+            # exact membership decision, not a finite-image proxy. The
+            # generic generated-group predicate cannot decide whether
+            # A^2 belongs to <A> without a supplied word.
+            generator_matrix = _column_matrix(generators[0])
+            from sage.matrix.constructor import identity_matrix
+            from sage.rings.rational_field import QQ as SageQQ
+
+            one = identity_matrix(SageZZ, generator_matrix.nrows())
+            nilpotent = generator_matrix - one
+            if nilpotent and nilpotent*nilpotent == 0:
+                position = next((i, j) for i in range(nilpotent.nrows())
+                                for j in range(nilpotent.ncols()) if nilpotent[i, j])
+
+                def unipotent_contains(g):
+                    difference = matrix(SageZZ, g) - one
+                    exponent = SageQQ(difference[position]) / nilpotent[position]
+                    return exponent.denominator() == 1 and difference == SageZZ(exponent)*nilpotent
+
+                ambient_contains = unipotent_contains
+                cyclic_unipotent = generator_matrix
+            else:
+                ambient_contains = lambda g: as_isometry(g) in ambient_group
         else:
             ambient_contains = lambda g: as_isometry(g) in ambient_group
         image = JointDiscriminantCharacterImage(
@@ -2187,6 +2213,8 @@ class EichlerRecursion:
         )
         if ambient_generators is not None and ambient_group.is_finite() is True:
             image._finite_ambient_lifts = tuple(finite_lifts)
+        if cyclic_unipotent is not None:
+            image._cyclic_unipotent_generator = cyclic_unipotent
         return image
 
     def joint_discriminant_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
@@ -2267,6 +2295,16 @@ class EichlerRecursion:
                 enumeration=lambda: (
                     _isometry_from_column_matrix(lattice, lattice, m)
                     for m in image._finite_ambient_lifts),
+            )
+        elif generators is not None and hasattr(image, "_cyclic_unipotent_generator"):
+            # The cyclic unipotent membership predicate is an exact
+            # integral equation, so the owned preimage must use it rather
+            # than the provider's undecided generic generated-subgroup
+            # membership. The supplied free cover certifies generation.
+            ambient = lattice.O().predicate_subgroup(
+                lambda g: image.ambient_contains(_column_matrix(g)),
+                lambda: "the specified infinite cyclic unipotent subgroup",
+                generating_morphism=lattice.O().free_cover(generators),
             )
         else:
             ambient = lattice.O() if generators is None else lattice.O().subgroup(generators)
