@@ -99,6 +99,33 @@ def centralizer_transporter_in_box(gram, actions, marking, target, bound):
                     and all(g * F == F * g for F in actions)):
                 return g
         return None
+    if n == 2 and marking.rank():
+        # A nonzero binary marking has at most two integral transporters
+        # when it contains a nonisotropic vector; for an isotropic vector
+        # the split binary orthogonal group has at most one transporter.
+        # Check this complete candidate family against the coordinate
+        # bound and the prescribed centralizer, avoiding an enormous box.
+        for j in range(marking.ncols()):
+            v, w = marking.matrix_from_columns([j]), target.matrix_from_columns([j])
+            if (v.transpose()*gram*v)[0, 0] == 0:
+                continue
+            bv, bw = gram*v, gram*w
+            source_frame = matrix(ZZ, [[v[0, 0], bv[1, 0]],
+                                       [v[1, 0], -bv[0, 0]]])
+            for sign in (1, -1):
+                target_frame = matrix(ZZ, [[w[0, 0], sign*bw[1, 0]],
+                                           [w[1, 0], -sign*bw[0, 0]]])
+                candidate = orthogonal_transporter(gram, source_frame, target_frame)
+                if (candidate is not None and _entry_norm(candidate) <= bound
+                        and candidate*marking == target
+                        and all(candidate*F == F*candidate for F in actions)):
+                    return candidate
+            return None
+        candidate = orthogonal_transporter(gram, marking, target)
+        if (candidate is not None and _entry_norm(candidate) <= bound
+                and all(candidate*F == F*candidate for F in actions)):
+            return candidate
+        return None
 
     def candidates(column):
         # The effective Li--Margulis bound can exceed machine-sized range
