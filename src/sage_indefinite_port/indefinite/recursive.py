@@ -1648,7 +1648,7 @@ class EichlerRecursion:
             ambient_generators=ambient_generators,
         )
 
-    def joint_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+    def joint_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
         r"""Actual joint image of level reduction and normalized real spinor sign.
 
         Uses the provider's ``O_plus`` character with the Gritsenko--Hulek--
@@ -1663,19 +1663,22 @@ class EichlerRecursion:
             isometry = _isometry_from_column_matrix(lattice, lattice, columns)
             return 1 if character(isometry).is_one() else -1
 
-        generators = self.orthogonal_group_generators(lattice)
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
         return JointSignCongruenceImage(
             tuple(_column_matrix(g) for g in generators),
             modulus, sign, rank=len(tuple(lattice.module_generating_set())),
         )
 
-    def joint_real_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+    def joint_real_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Integral generators of a joint level/real-spinor inverse image."""
-        image = self.joint_real_spinor_congruence_image(lattice, modulus)
+        image = self.joint_real_spinor_congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_determinant_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+    def joint_determinant_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
         r"""Actual image of level, determinant and normalized real-spinor signs."""
         from sage_indefinite_port.indefinite.congruence_images import JointTwoSignsCongruenceImage
 
@@ -1685,16 +1688,19 @@ class EichlerRecursion:
             isometry = _isometry_from_column_matrix(lattice, lattice, columns)
             return 1 if character(isometry).is_one() else -1
 
-        generators = self.orthogonal_group_generators(lattice)
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
         return JointTwoSignsCongruenceImage(
             tuple(_column_matrix(g) for g in generators), modulus,
             lambda g: int(g.det()), spinor,
             rank=len(tuple(lattice.module_generating_set())),
         )
 
-    def joint_determinant_real_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+    def joint_determinant_real_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Integral preimage generators for a subgroup of the actual triple image."""
-        image = self.joint_determinant_real_spinor_congruence_image(lattice, modulus)
+        image = self.joint_determinant_real_spinor_congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
@@ -1709,7 +1715,7 @@ class EichlerRecursion:
         index, matrices = image.residue_colouring_stabilizer(colour_classes)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_field_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, field_map=None, form_multiplier=None):
+    def joint_field_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, field_map=None, form_multiplier=None, *, ambient_generators=None):
         r"""Actual finite generated image of level and field-spinor square classes.
 
         The field-spinor normalization is exactly that of the provider's
@@ -1724,16 +1730,19 @@ class EichlerRecursion:
             isometry = _isometry_from_column_matrix(lattice, lattice, columns)
             return character(isometry)
 
-        generators = self.orthogonal_group_generators(lattice)
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
         return JointFieldSpinorCongruenceImage(
             tuple(_column_matrix(g) for g in generators), modulus,
             spinor, character.codomain().one(),
             rank=len(tuple(lattice.module_generating_set())),
         )
 
-    def joint_field_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, field_map=None, form_multiplier=None):
+    def joint_field_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, field_map=None, form_multiplier=None, *, ambient_generators=None):
         r"""Integral generators of a subgroup of the actual joint field-spinor image."""
-        image = self.joint_field_spinor_congruence_image(lattice, modulus, field_map, form_multiplier)
+        image = self.joint_field_spinor_congruence_image(lattice, modulus, field_map, form_multiplier, ambient_generators=ambient_generators)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
