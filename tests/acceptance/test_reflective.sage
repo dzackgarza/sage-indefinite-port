@@ -8,6 +8,7 @@ ten simple roots of U + E8(-1).
 """
 
 import pytest
+from collections import Counter
 from sage_extensions.all import ZZ as PreambleZZ
 from sage_extensions.all import HyperbolicLattices
 from sage.all import QQ, ZZ, Graph, matrix, vector
@@ -37,6 +38,83 @@ def _canonical_root_graph(root_gram):
     return norms, [len(cell) for cell in partition], graph.canonical_label(partition=partition, edge_labels=True, algorithm="sage").copy(immutable=True)
 
 
+def _ambient_root_transport(gram, source_roots, target_roots):
+    r"""Return an actual integral lattice automorphism carrying one root set to the other.
+
+    Source and target roots come from distinct implementations. Equality of
+    their Gram graphs is not sufficient for an ambient integral isometry:
+    the roots may span a proper finite-index sublattice, so the overlattice
+    gluing must also be preserved. For a full-rank root configuration, any
+    ambient isometry is uniquely determined by its action on *any* rational
+    basis chosen from the source roots. Enumerate the finitely many candidate
+    images of that basis, preserving all signed pairings and each root's
+    full pairing multiset; solve for the unique rational matrix and require
+    that it be integral, unimodular, preserve the original Gram, and map the
+    ENTIRE unordered source root configuration onto the target. The latter
+    condition proves this is an actual isometry of the original lattice,
+    not just a rational isometry of two root spans with the same Coxeter
+    graph. The search is exhaustive for full-rank configurations because
+    every ambient root-set isometry restricts to one of these basis maps.
+    """
+    original_gram = matrix(ZZ, gram)
+    source = matrix(ZZ, source_roots)
+    target = matrix(ZZ, target_roots)
+    rank = original_gram.nrows()
+    if source.nrows() != target.nrows() or source.ncols() != rank or source.rank() != rank or target.rank() != rank:
+        return None
+
+    pairing_source = source * original_gram * source.transpose()
+    pairing_target = target * original_gram * target.transpose()
+    source_colors = [
+        (pairing_source[i, i], tuple(sorted(pairing_source.row(i))))
+        for i in range(source.nrows())
+    ]
+    target_colors = [
+        (pairing_target[j, j], tuple(sorted(pairing_target.row(j))))
+        for j in range(target.nrows())
+    ]
+    if Counter(source_colors) != Counter(target_colors):
+        return None
+
+    independent = []
+    for i in range(source.nrows()):
+        if source.matrix_from_rows(independent + [i]).rank() > len(independent):
+            independent.append(i)
+            if len(independent) == rank:
+                break
+    basis = source.matrix_from_rows(independent).change_ring(QQ)
+    candidate_positions = [
+        tuple(j for j, color in enumerate(target_colors) if color == source_colors[i])
+        for i in independent
+    ]
+    expected_vectors = Counter(tuple(row) for row in target.rows())
+
+    def extend(images):
+        depth = len(images)
+        if depth == rank:
+            candidate_basis = target.matrix_from_rows(images).change_ring(QQ)
+            transport = basis.inverse() * candidate_basis
+            if (all(entry in ZZ for entry in transport.list())
+                    and abs(transport.det()) == 1
+                    and transport * original_gram * transport.transpose() == original_gram
+                    and Counter(tuple(row) for row in source * transport) == expected_vectors):
+                return transport.change_ring(ZZ)
+            return None
+        i = independent[depth]
+        for j in candidate_positions[depth]:
+            if j in images:
+                continue
+            if any(pairing_source[i, independent[k]] != pairing_target[j, images[k]]
+                   for k in range(depth)):
+                continue
+            result = extend(images + [j])
+            if result is not None:
+                return result
+        return None
+
+    return extend([])
+
+
 def _hyperbolic(gram):
     """The lattice in HyperbolicLattices' signature (n, 1); a (1, n) Gram matrix is negated, which keeps coordinates."""
     negative = sum(1 for value in matrix(QQ, gram).eigenvalues() if value < 0)
@@ -54,6 +132,12 @@ def _assert_same_root_system(gram, recorded_roots) -> None:
     computed = _computed_roots(gram)
     assert len(computed) == len(recorded_roots)
     assert _canonical_root_graph(_root_gram(gram, computed)) == _canonical_root_graph(_root_gram(gram, recorded_roots))
+    # Source data records roots in the ORIGINAL integral lattice. Its
+    # acceptance contract is ambient integral equivalence, not equality of
+    # abstract Coxeter diagrams (which loses overlattice gluing). The
+    # certified matrix proves the stronger claim for full-rank root sets.
+    transporter = _ambient_root_transport(gram, recorded_roots, computed)
+    assert transporter is not None, "matching root Gram graphs need not extend to an integral ambient isometry"
 
 
 @pytest.mark.parametrize("case", load_reflective_forms(), ids=lambda case: case["id"])
