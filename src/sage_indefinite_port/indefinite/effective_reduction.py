@@ -356,6 +356,44 @@ def orthogonal_transporter(gram, marking, target):
                     if abs(candidate.det()) == 1 and candidate.transpose()*gram*candidate == gram:
                         return candidate
             return None
+        # For an indefinite complement, O(K_y) can be infinite, but the
+        # ambient gluing obstruction is finite. Put S=[X|K_x] and
+        # D=|det(S)|. If g,g' in O(K_y) agree modulo D, then the ambient
+        # maps [Y|K_y*g*h0]*S^-1 and [Y|K_y*g'*h0]*S^-1 differ by an
+        # integral matrix, since D*S^-1 is integral. Hence integrality
+        # is constant on each residue class of the actual O(K_y) image.
+        # Enumerate that finite image with *integral* section lifts,
+        # rather than truncating an infinite complement group search.
+        from sage_extensions.all import Lattices, ZZ as OwnedZZ
+        from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        category = Lattices(OwnedZZ)
+        Kx = category([[int(c) for c in row] for row in gram_x.rows()])
+        Ky = category([[int(c) for c in row] for row in gram_y.rows()])
+        torsor = Kx.Isom(Ky)
+        if torsor.is_empty():
+            return None
+        h0 = torsor.an_element()
+        H0 = matrix(ZZ, [[int(c) for c in h0(v)] for v in Kx.module_generators()]).transpose()
+        source_frame = marking.augment(basis_x).change_ring(QQ)
+        modulus = abs(ZZ(marking.augment(basis_x).det()))
+        if modulus == 1:
+            lifts = (identity_matrix(ZZ, gram_x.nrows()),)
+        else:
+            generators = EichlerRecursion().orthogonal_group_generators(Ky)
+            image = IntegralCongruenceImage(
+                tuple(_column_matrix(g) for g in generators), modulus, rank=gram_x.nrows()
+            )
+            lifts = tuple(image._lifts.values())
+        for lift in lifts:
+            target_frame = target.augment(basis_y*lift*H0).change_ring(QQ)
+            candidate = target_frame*source_frame.inverse()
+            if candidate.denominator() == 1:
+                candidate = candidate.change_ring(ZZ)
+                if abs(candidate.det()) == 1 and candidate.transpose()*gram*candidate == gram:
+                    return candidate
+        return None
     if gram.nrows() == 2 and gram.rank() == 1:
         # A primitive radical vector r extends to a unimodular basis
         # (u,r), in which B=diag(a,0), a != 0. Its entire integral
