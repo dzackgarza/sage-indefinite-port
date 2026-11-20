@@ -95,3 +95,22 @@ def test_scalar_centralizer_pointwise_marking():
     generators = centralizer.pointwise_stabilizer_generators((2 * (e + f),))
     assert len(generators) == 2
     assert all(g(e + f) == e + f for g in generators)
+
+
+def test_scalar_centralizer_zero_marking_is_full_group():
+    # Every isometry fixes zero; -I is central. Thus the returned group
+    # must be the full four-element O(U), not a proper subgroup.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    e, f = lattice.module_generators()
+    negation = lattice.O()({label: -v for label, v in zip(
+        lattice.module_generating_set(), (e, f), strict=True)})
+    centralizer = CentralizerSubgroup(lattice, (negation,))
+    generators = centralizer.pointwise_stabilizer_generators((lattice.zero(),))
+    assert len(generators) == 4
+    assert {tuple(matrix(ZZ, [[int(c) for c in g(v)] for v in (e, f)]).list())
+            for g in generators} == {
+        tuple(matrix(ZZ, rows).list()) for rows in (
+            ((1, 0), (0, 1)), ((-1, 0), (0, -1)),
+            ((0, 1), (1, 0)), ((0, -1), (-1, 0)),
+        )
+    }

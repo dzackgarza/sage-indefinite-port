@@ -1000,7 +1000,8 @@ class CentralizerSubgroup:
 
     def _whole_generators(self):
         r"""Exact integral generators of the entire simultaneous centralizer."""
-        if not self.matrices:
+        identity = identity_matrix(ZZ, len(self.frame))
+        if all(F == identity or F == -identity for F in self.matrices):
             from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 
             return EichlerRecursion().orthogonal_group_generators(self.lattice)
