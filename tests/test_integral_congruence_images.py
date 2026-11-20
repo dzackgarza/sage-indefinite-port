@@ -625,6 +625,77 @@ def test_number_field_base_changed_spinor_is_an_actual_finite_image_preimage():
     assert ambient.O()((-ambient.module_generators()[0],)) not in subgroup
 
 
+def test_prime_field_spinor_character_in_exact_reduced_joint_image():
+    r"""The normalized spinor norm on <4> has distinct mod-5 and mod-3 images.
+
+    The reflection -1 has b(v,v)=4. In characteristic 5 the selected
+    -b/2 multiplier gives -2=3, a nonsquare; in characteristic 3 it gives
+    1, a square. Choosing +b/2 instead makes the characteristic-3 class
+    2, a nonsquare. The target fields receive the *integral* map from Z,
+    not a nonexistent field map from Q to positive characteristic.
+    """
+    from sage_extensions.all import GF as OwnedGF, ZZ as OwnedZZ
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[4]])
+    (e,) = ambient.module_generators()
+    reflection = ambient.O()((-e,))
+    engine = EichlerRecursion()
+    for prime, expected_square in ((3, True), (5, False)):
+        field = OwnedGF(prime)
+        reduction = OwnedZZ.Mor(field)(lambda n, field=field: field(n))
+        character = ambient.spinor_norm(reduction)
+        expected = field.square_class_group()(field(-2))
+        assert character(reflection) == expected
+        assert character(reflection).is_one() is expected_square
+        image = engine.joint_discriminant_character_image(
+            ambient, field_spinor=True, field_map=reduction, level_modulus=2,
+        )
+        # The rank-one discriminant action is independently nontrivial;
+        # it is the field-spinor *projection* that varies with p.
+        assert len(image.image_keys()) == 2
+        assert len({key[-1] for key in image.image_keys()}) == (1 if expected_square else 2)
+        kernel = engine.field_spinor_kernel_subgroup(ambient, field_map=reduction)
+        assert int(kernel.index()) == (1 if expected_square else 2)
+        assert (reflection in kernel) is expected_square
+
+    three = OwnedGF(3)
+    reduction = OwnedZZ.Mor(three)(lambda n: three(n))
+    positive_multiplier = three(1) / three(2)
+    assert not ambient.spinor_norm(reduction, positive_multiplier)(reflection).is_one()
+
+    hyperbolic = lattice([[0, 1], [1, 0]])
+    e, f = hyperbolic.module_generators()
+    negation = hyperbolic.O()((-e, -f))
+    swap = hyperbolic.O()((f, e))
+    spinor = hyperbolic.spinor_norm(reduction)
+    assert spinor(swap).is_one()
+    assert not spinor(negation).is_one()
+    for g in (hyperbolic.O().one(), swap, negation, swap * negation):
+        for h in (hyperbolic.O().one(), swap, negation, swap * negation):
+            assert spinor(g * h) == spinor(g) * spinor(h)
+
+    # A nonsymmetric matrix reflection on U+U checks the exact row-action
+    # convention in the Wall-form computation, not just scalar negations.
+    doubled = lattice([[0, 1, 0, 0], [1, 0, 0, 0],
+                       [0, 0, 0, 1], [0, 0, 1, 0]])
+    basis = doubled.module_generators()
+    root = basis[0] + basis[1] + basis[2]
+    assert root.q() == OwnedZZ(2)
+    reflection_doubled = doubled.O()(tuple(
+        x - doubled.scalar_multiple(doubled.b(x, root), root) for x in basis
+    ))
+    assert doubled.spinor_norm(reduction)(reflection_doubled) == three.square_class_group()(three(-1))
+
+    with pytest.raises(ValueError, match="characteristic different from two"):
+        two = OwnedGF(2)
+        ambient.spinor_norm(OwnedZZ.Mor(two)(lambda n: two(n)))
+    with pytest.raises(ValueError, match="reduced quadratic form is degenerate"):
+        five = OwnedGF(5)
+        lattice([[10]]).spinor_norm(OwnedZZ.Mor(five)(lambda n: five(n)))
+
+
 def test_owned_preimage_index_is_relative_to_proper_generated_ambient():
     """G=<swap> in O(U), det G=C2; its det kernel is trivial, with [G:1]=2."""
     from tests.acceptance.consumer import lattice
