@@ -1147,8 +1147,11 @@ class JointDiscriminantCharacterImage:
 
     def double_coset_intersection(self, left_subgroup, right_subgroup, representative):
         r"""Exact subgroup ``H intersect r*K*r^-1`` in the actual image."""
-        left = self.subgroup_from_generators(tuple(left_subgroup))
-        right = self.subgroup_from_generators(tuple(right_subgroup))
+        left = frozenset(left_subgroup)
+        right = frozenset(right_subgroup)
+        for subgroup in (left, right):
+            if subgroup != self.subgroup_from_generators(subgroup):
+                raise ValueError("double-coset intersection requires actual subgroups, not generating sets")
         if representative not in self._lifts:
             raise ValueError("representative is outside the actual image")
         r = self.section(representative)
