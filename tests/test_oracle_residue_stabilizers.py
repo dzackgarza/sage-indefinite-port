@@ -56,3 +56,21 @@ def test_composite_modulus_submodule_stabilizer_is_not_vector_stabilizer():
         moved = _column_matrix(g, lattice.module_generators()).change_ring(image.ring)
         image_e = moved * matrix(image.ring, [[1], [0]])
         assert image_e[1, 0] == 0
+
+
+def test_composite_modulus_submodule_transporters_are_exact():
+    # The swap exchanges the rank-one coordinate summands of (Z/4)^2.
+    # No integral isometry can carry <e> to <e+f>: the complete O(U)
+    # consists of signed diagonal and signed exchange matrices, so all
+    # possible images of e lie on a coordinate axis.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    recursion = EichlerRecursion()
+    witness = recursion.congruence_submodule_transporter(
+        lattice, 4, ((1, 0),), ((0, 1),)
+    )
+    assert witness is not None
+    e = lattice.module_generators()[0]
+    assert tuple(int(c) % 4 for c in witness(e)) in ((0, 1), (0, 3))
+    assert recursion.congruence_submodule_transporter(
+        lattice, 4, ((1, 0),), ((1, 1),)
+    ) is None
