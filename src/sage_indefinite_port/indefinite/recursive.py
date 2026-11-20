@@ -1976,7 +1976,7 @@ class EichlerRecursion:
             ambient_generators=ambient_generators,
         )
 
-    def joint_positive_cone_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+    def joint_positive_cone_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
         r"""Actual joint image of congruence reduction and positive-cone component."""
         from sage_indefinite_port.indefinite.congruence_images import JointSignCongruenceImage
 
@@ -1988,15 +1988,18 @@ class EichlerRecursion:
             isometry = _isometry_from_column_matrix(lattice, lattice, columns)
             return 1 if isometry.preserves_positive_cone() else -1
 
-        generators = self.orthogonal_group_generators(lattice)
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
         return JointSignCongruenceImage(
             tuple(_column_matrix(g) for g in generators), modulus, sign,
             rank=len(tuple(lattice.module_generating_set())),
         )
 
-    def joint_positive_cone_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+    def joint_positive_cone_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Integral generators of a subgroup of the actual level/component image."""
-        image = self.joint_positive_cone_congruence_image(lattice, modulus)
+        image = self.joint_positive_cone_congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
