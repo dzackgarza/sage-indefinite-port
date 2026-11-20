@@ -794,7 +794,9 @@ class PointwiseStabilizerOrbits:
             )
 
     def __iter__(self):
-        if (int(self.lattice.rank()) <= 2 and not self.lattice.is_nondegenerate()
+        frame = tuple(self.lattice.module_generators())
+        zero_form = all(int(self.lattice.b(x, y)) == 0 for x in frame for y in frame)
+        if ((zero_form or (int(self.lattice.rank()) <= 2 and not self.lattice.is_nondegenerate()))
                 and all(v == self.lattice.zero() for v in self.fixed)):
             # The complete radical GL/shear classification already
             # computes primitive full-group orbits for binary degenerate
@@ -820,7 +822,6 @@ class PointwiseStabilizerOrbits:
                     yield representative
             return
         known = []
-        frame = tuple(self.lattice.module_generators())
         for coordinates in _fixed_norm_candidate_coordinates(self.lattice, self.square):
             vector = sum(
                 (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, frame, strict=True)),
@@ -872,8 +873,10 @@ class SubgroupVectorOrbits:
         return self.transporter(left, right) is not None
 
     def __iter__(self):
-        if (self.group is self.lattice.O() and int(self.lattice.rank()) <= 2
-                and not self.lattice.is_nondegenerate()):
+        frame = tuple(self.lattice.module_generators())
+        zero_form = all(int(self.lattice.b(x, y)) == 0 for x in frame for y in frame)
+        if (self.group is self.lattice.O()
+                and (zero_form or (int(self.lattice.rank()) <= 2 and not self.lattice.is_nondegenerate()))):
             from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 
             yield from EichlerRecursion().exact_vector_orbit_iterator(
@@ -889,7 +892,6 @@ class SubgroupVectorOrbits:
                 if int(representative.content()) == 1:
                     yield representative
             return
-        frame = tuple(self.lattice.module_generators())
         known = []
         for coordinates in _fixed_norm_candidate_coordinates(self.lattice, self.square):
             if not any(coordinates):
