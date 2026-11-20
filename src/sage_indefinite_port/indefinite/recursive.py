@@ -764,13 +764,29 @@ def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
     than one box at a time.
     """
     rank = int(lattice.rank())
+    height = int(height)
+    if height < 0:
+        return
     if height == 0:
         yield tuple(0 for _ in range(rank))
         return
-    ranges = [range(-height, height + 1)] * rank
-    for coordinates in itertools.product(*ranges):
+    if not rank:
+        return
+    # Python's product(range(-h,h+1),...) queries range lengths and fails
+    # for 2h+1 > sys.maxsize. An unbounded-integer odometer retains the
+    # same lexicographic order with constant auxiliary space and never
+    # materializes a coordinate shell.
+    coordinates = [-height] * rank
+    while True:
         if max(abs(entry) for entry in coordinates) == height:
-            yield coordinates
+            yield tuple(coordinates)
+        for position in range(rank - 1, -1, -1):
+            if coordinates[position] < height:
+                coordinates[position] += 1
+                coordinates[position + 1:] = [-height] * (rank - position - 1)
+                break
+        else:
+            return
 
 
 def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:
