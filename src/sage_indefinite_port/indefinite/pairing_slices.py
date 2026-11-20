@@ -368,6 +368,46 @@ def setwise_transporter(lattice, fixed, left, right):
         # The zero submodule is invariant under every integral isometry.
         # There is no nondegenerate marked lattice to construct here.
         return marked_transporter(lattice, (left,), (right,))
+    if int(lattice.rank()) == 2 and lattice.is_nondegenerate():
+        # A binary nonisotropic pointed transporter has at most two
+        # rational candidates, independently of the size/index of the
+        # prescribed fixed submodule. Test *both* against its actual
+        # integral row module: preserving the primitive saturation alone
+        # is insufficient for a nonprimitive rank-two marking.
+        from sage_indefinite_port.indefinite.effective_reduction import orthogonal_transporter
+
+        frame = tuple(lattice.module_generators())
+        B = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        v = matrix(ZZ, 2, 1, [int(c) for c in left])
+        w = matrix(ZZ, 2, 1, [int(c) for c in right])
+        source_rows = matrix(ZZ, [[int(c) for c in x] for x in fixed]).row_module()
+        if left == lattice.zero():
+            return lattice.O().identity() if right == lattice.zero() else None
+        candidates = []
+        if (v.transpose()*B*v)[0, 0]:
+            bv, bw = B*v, B*w
+            basis = matrix(ZZ, [[v[0, 0], bv[1, 0]], [v[1, 0], -bv[0, 0]]]).change_ring(QQ)
+            for sign in (1, -1):
+                image_basis = matrix(ZZ, [[w[0, 0], sign*bw[1, 0]],
+                                          [w[1, 0], -sign*bw[0, 0]]]).change_ring(QQ)
+                candidate = image_basis*basis.inverse()
+                if candidate.denominator() == 1:
+                    candidates.append(candidate.change_ring(ZZ))
+        else:
+            candidate = orthogonal_transporter(B, v, w)
+            if candidate is not None:
+                candidates.append(candidate)
+        for candidate in candidates:
+            if (abs(candidate.det()) != 1 or candidate.transpose()*B*candidate != B
+                    or candidate*v != w):
+                continue
+            moved = matrix(ZZ, [[int(c) for c in candidate*vector(ZZ, x)] for x in fixed])
+            if moved.row_module() == source_rows:
+                images = tuple(sum(
+                    (lattice.scalar_multiple(int(candidate[j, i]), frame[j]) for j in range(2)
+                     if candidate[j, i]), lattice.zero()) for i in range(2))
+                return lattice.O()(images)
+        return None
     if len(fixed) == 1 and int(fixed[0].content()) > 1:
         # For a nonzero vector v=c*v_0 in a torsion-free integral lattice,
         # g(Zv)=Zv iff g(v_0)=+/-v_0. Thus the rank-one submodule and its
