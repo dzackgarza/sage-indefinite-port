@@ -183,6 +183,37 @@ class IntegralCongruenceImage:
         assert act(source_index, self.reduce(witness)) == target_index
         return witness
 
+    def double_coset_representatives(self, left_subgroup, right_subgroup):
+        r"""Exact integral representatives of ``H\\F/K`` in the actual image.
+
+        Both inputs are subgroups of the computed finite reduction image;
+        return pairs of canonical residue matrices and integral lifts.
+        """
+        images = {key: self.reduce(lift) for key, lift in self._lifts.items()}
+        identity = self._key(self.image_one)
+
+        def validated(elements):
+            keys = frozenset(self._key(g) for g in elements)
+            if identity not in keys or not keys <= images.keys():
+                raise ValueError("double-coset subgroup is outside the actual image")
+            if any(self._key(images[a] * images[b]) not in keys for a in keys for b in keys):
+                raise ValueError("double-coset argument is not a subgroup")
+            return keys
+
+        left, right = validated(left_subgroup), validated(right_subgroup)
+        unseen = set(images)
+        result = []
+        for key, lift in self._lifts.items():
+            if key not in unseen:
+                continue
+            orbit = {self._key(images[h] * images[key] * images[k]) for h in left for k in right}
+            if not orbit <= unseen:
+                raise ArithmeticError("double cosets do not partition the actual image")
+            unseen.difference_update(orbit)
+            result.append((images[key], lift))
+        assert not unseen
+        return tuple(result)
+
     def residue_vector_stabilizer(self, coordinates):
         r"""Exact preimage of the stabilizer of a residue column vector.
 

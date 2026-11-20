@@ -1653,6 +1653,12 @@ class EichlerRecursion:
             lattice, allowed, real_spinor=True, ambient_generators=ambient_generators,
         )
 
+    def congruence_double_coset_representatives(self, lattice: Lattices.ParentMethods, modulus: int, left_subgroup, right_subgroup, *, ambient_generators=None):
+        r"""Exact finite-level double cosets with owned integral witnesses."""
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        return tuple((residue, _isometry_from_column_matrix(lattice, lattice, lift))
+                     for residue, lift in image.double_coset_representatives(left_subgroup, right_subgroup))
+
     def congruence_right_cosets(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Owned coset transporters and finite right action of an actual level image.
 
