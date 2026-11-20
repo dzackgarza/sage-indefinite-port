@@ -1061,6 +1061,20 @@ class CentralizerSubgroup:
         if self.lattice.O().is_finite() is True:
             return tuple(g for g in self._finite_elements()
                          if g in self and all(g(v) == v for v in vectors))
+        if not self.matrices and self.lattice.is_nondegenerate():
+            # Fixing a possibly dependent/nonprimitive tuple is exactly
+            # fixing the primitive saturation of its rational span.
+            # When that span is nondegenerate, finite residue gluing of
+            # its orthogonal complement gives the complete *integral*
+            # stabilizer generators, including the infinite kernel.
+            X = self._columns(vectors).transpose().saturation().transpose()
+            if X.ncols() and (X.transpose()*self.gram*X).det() != 0:
+                from sage_indefinite_port.indefinite.effective_reduction import (
+                    orthogonal_marking_stabilizer_generators,
+                )
+
+                return tuple(self._element(g) for g in
+                             orthogonal_marking_stabilizer_generators(self.gram, X))
         return tuple(self._element(g) for g in self._orbit(tuple(vectors)).stabilizer_generators())
 
     def setwise_stabilizer_generators(self, basis):

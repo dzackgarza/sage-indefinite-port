@@ -486,3 +486,58 @@ def orthogonal_transporter(gram, marking, target):
         if found is not None or size >= limit:
             return found
         size *= 2
+
+
+def orthogonal_marking_stabilizer_generators(gram, marking):
+    r"""Exact integral generators fixing a nondegenerate marked span pointwise.
+
+    Let `K=X^perp` with primitive integral basis, `S=[X|K]`, and
+    `D=|det(S)|`. The pointwise stabilizer is the subgroup of `O(K)`
+    whose block extension `S diag(I,g) S^-1` is integral. Integrality
+    depends only on `g mod D`. Compute the actual finite image of `O(K)`
+    and its allowed subgroup, then apply Schreier's lemma to obtain
+    *all* integral generators of the preimage, including its kernel.
+    """
+    from sage_extensions.all import Lattices, ZZ as OwnedZZ
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
+    from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+    B, X = matrix(ZZ, gram), matrix(ZZ, marking)
+    n = B.nrows()
+    if B.det() == 0 or X.nrows() != n or X.rank() != X.ncols():
+        raise ValueError("pointwise gluing requires a nondegenerate ambient and injective marking")
+    if X.ncols() and (X.transpose()*B*X).det() == 0:
+        raise ValueError("the marked span must be nondegenerate")
+    if not X.ncols():
+        L = Lattices(OwnedZZ)([[int(c) for c in row] for row in B.rows()])
+        return tuple(_column_matrix(g) for g in EichlerRecursion().orthogonal_group_generators(L))
+    X = X.transpose().saturation().transpose()
+    if X.ncols() == n:
+        return (identity_matrix(ZZ, n),)
+    K, gram_K = _complement(B, X)
+    complement = Lattices(OwnedZZ)([[int(c) for c in row] for row in gram_K.rows()])
+    generators = tuple(_column_matrix(g) for g in EichlerRecursion().orthogonal_group_generators(complement))
+    S = X.augment(K)
+    inverse = S.change_ring(QQ).inverse()
+    D = abs(ZZ(S.det()))
+
+    def extend(g):
+        return X.augment(K*g).change_ring(QQ)*inverse
+
+    if D == 1:
+        return tuple(extend(g).change_ring(ZZ) for g in generators)
+    image = IntegralCongruenceImage(generators, D, rank=gram_K.nrows())
+    allowed = tuple(image.reduce(lift) for lift in image._lifts.values()
+                    if extend(lift).denominator() == 1)
+    _, kernel_and_section = image.preimage_generators(allowed)
+    result = []
+    for generator in kernel_and_section:
+        candidate = extend(generator)
+        if candidate.denominator() != 1:
+            raise ArithmeticError("finite-image gluing kernel failed integral extension")
+        candidate = candidate.change_ring(ZZ)
+        if (abs(candidate.det()) != 1 or candidate.transpose()*B*candidate != B
+                or candidate*X != X):
+            raise ArithmeticError("finite-image gluing stabilizer generator failed verification")
+        result.append(candidate)
+    return tuple(result)
