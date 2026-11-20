@@ -5,7 +5,8 @@ quadratic forms*, author's PDF, https://li-han.weebly.com/uploads/5/1/3/3/513387
 printed pp. 2--3, Theorems 1 (equations (3), (4)) and 2.
 The determinant exponent in (3) was checked against the RENDERED p. 2,
 not against extracted text or the port's documentation. The author PDF
-prints a POSITIVE determinant exponent.
+prints a NEGATIVE determinant exponent. For nonsingular integral B,
+|det B| >= 1, hence its negative-power factor is at most one.
 
 The Hilbert-form examples below are direct proofs from the definition of
 field norm and the displayed Hermitian determinant; they do not assert
@@ -24,20 +25,21 @@ from sage_indefinite_port.indefinite.witt_one_hilbert import HilbertWittOneLatti
 from sage_extensions.all import Lattices
 
 
-def test_theorem_one_equation_three_printed_positive_determinant_exponent():
-    r"""Li--Margulis, printed p. 2, Theorem 1, equation (3).
+def test_theorem_one_equation_three_negative_determinant_majorant():
+    r"""Li--Margulis, Theorem 1(3), printed p. 2: negative determinant power.
 
-    For n=3, the displayed exponents are respectively 8/3, 41/4,
-    43/4. Indeed substituting n=3 in the three printed numerators gives
-    160/60, 410/40, 430/40. For B=A=diag(2,-2,6), |det B|=24
-    and both sup norms equal 6. The public bound routine deliberately
-    rounds each positive exponent upward, so with formal multiplier 1 its
-    algebraic result must be 24^3 * 6^(11+11) + 1. Multiplier 1 is NOT
-    asserted to be the unknown theorem constant C_3: this tests only the
-    published exponent arithmetic of the routine.
+    The actual determinant exponent is
+    -(13n^3-39n^2+36n+52)/(20n), equal to -160/60=-8/3
+    at n=3. Since B is nonsingular integral, |det B|>=1 and
+    |det B|^(-8/3)<=1. Replacing that factor by one is a
+    valid (weaker) upper bound. The positive norm exponents
+    410/40=41/4 and 430/40=43/4 round upward to 11 each.
+    For A=B=diag(2,-2,6), both sup norms are 6.
+    The multiplier 1 is only a formal arithmetic input, NOT
+    the unknown theorem constant C_3.
     """
     B = matrix(ZZ, [[2, 0, 0], [0, -2, 0], [0, 0, 6]])
-    assert isometry_box_bound(B, B, ZZ(1)) == 24**3 * 6**22 + 1
+    assert isometry_box_bound(B, B, ZZ(1)) == 6**22 + 1
 
 
 def test_theorem_one_equation_four_anisotropic_exponents():

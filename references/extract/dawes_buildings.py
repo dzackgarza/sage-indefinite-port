@@ -19,9 +19,9 @@ A2 below is the negative definite A2 and every lattice has signature (2, n).
   Gamma_2 = {g in O^+(L_2) : g v* = v* mod L_2}, v generating <-2>, the boundary
   has two curves, three points and four point-curve incidences.
 
-For figure 2u2a2building, black nodes are curves and white nodes are points (as in the
-other building figures of the paper). The outer circle joins consecutive nodes at
-k * 30 degrees; each chord "edge [bend right=30]" joins two white nodes and passes
+For figure 2u2a2building, black nodes are points and white nodes are curves (as stated at
+arXiv:2205.10601, source line 809). The outer circle joins consecutive nodes at
+k * 30 degrees; each chord "edge [bend right=30]" joins two outer white nodes and passes
 through one inner black node, which the script determines by evaluating the midpoint
 of the TikZ Bezier curve (control distance 0.3915 * chord length) and asserting it lies
 within 0.01 cm of exactly one inner node. The chord contributes the two point-curve
@@ -108,7 +108,7 @@ def circular_building(relative: str, label: str) -> tuple[Building, int, int]:
     nodes: dict[tuple[float, float], Node] = {}
     for fill, step, radius in re.findall(r"\\draw\[black, fill=(black|white)\] " + angle + r" circle", body):
         key = (int(step.split("*")[0]) * 30.0, float(radius))
-        nodes[key] = {"kind": "curve" if fill == "black" else "point", "angle": key[0], "radius": key[1]}
+        nodes[key] = {"kind": "point" if fill == "black" else "curve", "angle": key[0], "radius": key[1]}
     for step, radius, text in re.findall(r"\\node at " + angle + r" \{(\d+)\}", body):
         degrees, label_radius = int(step.split("*")[0]) * 30.0, float(radius)
         owner = min(nodes, key=lambda key: math.dist(polar(*key), polar(degrees, label_radius)))
@@ -196,10 +196,10 @@ def main() -> None:
         },
     ]
     building, first, last = circular_building(paper, "2u2a2building")
-    assert (len(building["points"]), len(building["curves"]), len(building["incidences"])) == (6, 9, 18), building
-    assert building["points"] == list(range(6)) and building["curves"] == list(range(9))
-    assert all(sum(p == point for p, _ in building["incidences"]) == 3 for point in building["points"])
-    assert all(sum(c == curve for _, c in building["incidences"]) == 2 for curve in building["curves"])
+    assert (len(building["points"]), len(building["curves"]), len(building["incidences"])) == (9, 6, 18), building
+    assert building["points"] == list(range(9)) and building["curves"] == list(range(6))
+    assert all(sum(p == point for p, _ in building["incidences"]) == 2 for point in building["points"])
+    assert all(sum(c == curve for _, c in building["incidences"]) == 3 for curve in building["curves"])
     records.append(
         {
             "id": "dawes_2U2_A2_stable",
@@ -207,7 +207,7 @@ def main() -> None:
             "gram": block_sum([[0, 2], [2, 0]], [[0, 2], [2, 0]], a2),
             "signature": [2, 4],
             "group": "stable orthogonal group (discriminant kernel of O^+)",
-            "building": {"points": 6, "curves": 9, "edges": 18},
+            "building": {"points": 9, "curves": 6, "edges": 18},
             "source": {
                 "convention": convention,
                 "statement": cite(paper, 1496, 1498, r"The building $\bc(\otl)$ is given in Figure \ref{2u2a2building}"),

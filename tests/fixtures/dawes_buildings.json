@@ -216,9 +216,9 @@
       ],
       "group": "Gamma_2 = {g in O^+(L_2) : g v* = v* mod L_2}, v generating <-2>",
       "building": {
-        "points": 2,
+        "points": 3,
         "curves": 2,
-        "edges": 3
+        "edges": 4
       },
       "source": {
         "definition": {

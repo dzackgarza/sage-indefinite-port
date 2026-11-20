@@ -3,7 +3,8 @@
 Pinned primary source: references/vendor/arxiv/2205.10601/orbits_in_lattices.tex.
 The building is the bipartite incidence graph of group-orbits of rational
 isotropic lines and planes (definitions at source lines 800-812); its edges
-are group-orbits of incident line-plane flags (lines 806-860).
+are distinct incident pairs of line and plane orbits (lines 803-809),
+not necessarily the set of orbits of complete flags.
 
 Each expected triple below is counted directly from the indicated published
 TikZ figure, not from the port, its existing fixture JSON, or an old test.
@@ -14,11 +15,8 @@ import pytest
 
 from tests.acceptance.consumer import (
     MARKED_CLASSES,
-    flag_classes,
-    isotropic_classes,
     lattice,
     require,
-    subgroup_classes,
 )
 
 _U = ((0, 1), (1, 0))
@@ -81,9 +79,8 @@ def test_published_tits_building_orbit_counts(gram, stable, expected):
     require(MARKED_CLASSES)
     L = lattice(gram)
     group = _stable_positive_group(L) if stable else L.O_plus()
-    computed = (
-        len(subgroup_classes(group, isotropic_classes(L, 1))),
-        len(subgroup_classes(group, isotropic_classes(L, 2))),
-        len(subgroup_classes(group, flag_classes(L))),
-    )
+    lines, planes = tuple(group.cusps(1)), tuple(group.cusps(2))
+    incidences = {(lines.index(edge.line_cusp()), planes.index(edge.plane_cusp()))
+                  for edge in group.tits_building_incidence()}
+    computed = (len(lines), len(planes), len(incidences))
     assert computed == expected
