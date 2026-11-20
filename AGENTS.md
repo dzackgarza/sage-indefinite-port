@@ -232,11 +232,12 @@ dependency is discovered, implement it in place and record its necessary
 input relationship, without silently reordering this list. All 26 boxes,
 not just the next one, must be discharged to finish the user's entire task.
 
-The historical #42 checkmark in commit 0340017c was recorded before the
-mandatory oracle policy, relying on newly introduced tests without independently
-verified oracle records. It is **not accepted as completion evidence**;
-#42 remains the first unchecked item until its source contracts and new
-regressions have been checked against pre-existing independent oracles.
+The historical #42 checkmark in commit 0340017c relied in part on newly
+introduced implementation-side tests. Those tests are **not independent
+mathematical acceptance evidence**. Correctness of #42 and subsequent work
+must be established from the pinned upstream contract and any independently
+specified additional mathematical expectations, not retrospective
+implementer-authored oracle declarations.
 
 A prerequisite must name the dependent capability, the exact operation it
 consumes, and a small independently justified example that cannot complete
@@ -343,47 +344,23 @@ count, subgroup equality, integral obstruction, termination condition or
 transporter property as applicable. A passing test checks that example; it
 does **not** substitute for a proof of the routine's full advertised domain.
 
-**MANDATORY ORACLE BEFORE EVERY NEW OR CHANGED MATHEMATICAL TEST.** No agent
-may invent a test's expected answer from the implementation it is changing,
-from its own proposed formula, or from an unverified recollection of a paper.
-An existing test or a test written by the same agent is *not* an independent
-oracle. Each new mathematical test, and each existing test whose mathematical
-assertions are modified, must carry in its own docstring:
+**Contributor responsibility — [CONTRIBUTING.md](CONTRIBUTING.md).** A
+mathematical implementation contributor may faithfully translate pinned
+upstream tests without changing their meaning and may run temporary diagnostic
+experiments. The contributor **must not introduce, alter, or certify new
+mathematical expected results for the capability they implement**. Any new
+mathematical acceptance test must be specified by an independent mathematical
+test author, from the actual pinned upstream result or a separately checked
+proof, before acceptance. The implementing contributor cannot serve as that
+independent author, and cannot manufacture independence through another
+tool, a supposed proof, citations, or test metadata.
 
-    ORACLE-FILE: references/vendor/<committed-source-or-exact-extraction>
-    ORACLE-LOCATOR: <theorem/equation/table/line and exact hypotheses>
-    ORACLE-EXCERPT: <literal, independently checked passage from that file>
-    ORACLE-HYPOTHESES: <the source hypotheses verified on this test input>
-    ORACLE-EXPECTED: <the exact claim and value this test checks>
-    ORACLE-DERIVATION: <independent steps connecting the source to that value>
-
-The `ORACLE-FILE` must already be committed *before* the test is introduced
-(and must not be implementation code or another test). The excerpt must be
-found verbatim in that committed source. A separately established proof is
-allowed as a committed `references/oracles/` source with its independently
-cited inputs, explicit argument and exact claim. An oracle extracted from a
-published table must point to the frozen source/fixture in the committed
-oracle manifest. A URL, paper title, theorem number, or citation without
-the checked **statement itself** is insufficient. If the source contains
-apparently inconsistent statements, the test is blocked until the discrepancy
-is resolved, not selected according to which version fits the new code.
-
-`ci/check_test_oracles.py` is a required fail-closed new/changed-test gate
-in the named inner loop, commit checks and outgoing checks. It checks the
-source pre-exists and the excerpt occurs in that source; this necessary
-mechanical gate does **not** certify that the mathematics inferred from the
-excerpt is correct. Before accepting a test, independently check the source's
-hypotheses, signs, domain, normalization and resulting expected value, and
-record the derivation in the test. No passing self-consistency assertion can
-replace this oracle. A missing/unverified oracle is a **blocked mathematical
-test**, not a warning, test-skip, xfail or reason to relax the acceptance
-standard. Do not push a test that fails this gate. The local repository
-`.githooks` preserve the existing global fast syntax checks, and the
-automatic `oracle-provenance` GitHub workflow checks each pushed commit. Do
-not bypass hooks with `--no-verify`. Previously committed mathematical tests
-without a verified oracle are **not** retrospectively certified: the next
-completion claim depending on any such test requires correcting its oracle
-first, not counting its earlier pass as acceptance evidence.
+The existing automated `ci/check_test_oracles.py` and `oracle-provenance`
+check only provenance formatting. They do not enforce independent authorship
+or establish mathematical correctness. Passing them is **not** mathematical
+review, evidence of independent judgment, or permission for an implementer
+to self-author test expectations. Earlier self-authored test assertions remain
+diagnostics, not independent acceptance evidence.
 
 Run one explicitly named pytest node with
 `just test-node 'tests/path.py::test_exact_mathematical_claim'`. The recipe
