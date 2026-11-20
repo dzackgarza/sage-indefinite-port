@@ -67,6 +67,14 @@ def slice_invariant(lattice, fixed, vector):
 
 def marked_transporter(lattice, source, target):
     r"""Return `g \in O(L)` with `g(source_i) = target_i` for tuples, or ``None``."""
+    source, target = tuple(source), tuple(target)
+    if len(source) != len(target):
+        return None
+    if not source or all(point == lattice.zero() for point in source):
+        # The empty marking has the entire orthogonal group as stabilizer;
+        # the all-zero marking has the same stabilizer, but cannot be sent
+        # to a tuple containing a nonzero vector.
+        return lattice.O().identity() if all(point == lattice.zero() for point in target) else None
     gram = lambda vectors: [[lattice.b(x, y) for y in vectors] for x in vectors]
     if gram(source) != gram(target):
         return None
