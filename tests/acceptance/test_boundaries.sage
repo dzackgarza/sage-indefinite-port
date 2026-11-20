@@ -271,7 +271,7 @@ def test_enriques_modular_groups_match_dutour_sikiric_hulek(case) -> None:
 
 @pytest.mark.parametrize(
     "case",
-    load_enriques_classical_indices()["consistent_with_table"] + load_enriques_classical_indices()["inconsistent_with_table"],
+    load_enriques_classical_indices()["consistent_with_table"],
     ids=lambda case: f"degree_{case['degree']}",
 )
 def test_classical_polarization_indices(case) -> None:

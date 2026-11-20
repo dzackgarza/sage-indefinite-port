@@ -1,6 +1,41 @@
 {
  "consistent_with_table": [
   {
+   "degree": 2,
+   "case": 1,
+   "index_in_O_plus_N": 67456,
+   "gamma_h_over_stable_order": 696729600,
+   "source": {
+    "count": {
+     "kind": "published_theorem",
+     "reference": "Barth--Peters, Automorphisms of Enriques surfaces, Invent. Math. 73 (1983), Theorem 3.9, p. 398",
+     "url": "https://www-fourier.univ-grenoble-alpes.fr/~peters/Articles/pub11.pdf"
+    },
+    "display": {
+     "kind": "published_text",
+     "reference": "Dutour Sikiric--Hulek, Moduli of polarised Enriques surfaces--Computational aspects, J. London Math. Soc. 109 (2024), section 3.7.1",
+     "url": "https://doi.org/10.1112/jlms.12828"
+    },
+    "order_of_O_plus_F2": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "700-700"
+    },
+    "prepublication_erratum": {
+     "index": {
+      "kind": "published_text",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "lines": "1275-1275"
+     },
+     "quotient": {
+      "kind": "published_text",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "lines": "1278-1280"
+     }
+    }
+   }
+  },
+  {
    "degree": 6,
    "case": 4,
    "index_in_O_plus_N": 2698240,
@@ -38,34 +73,6 @@
      "kind": "published_text",
      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
      "lines": "1309-1311"
-    },
-    "order_of_O_plus_F2": {
-     "kind": "published_text",
-     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
-     "lines": "700-700"
-    }
-   }
-  }
- ],
- "inconsistent_with_table": [
-  {
-   "degree": 2,
-   "case": 1,
-   "index_in_O_plus_N": 67456,
-   "gamma_h_over_stable_order": 696729600,
-   "stated_index_in_O_plus_N": 27776,
-   "stated_gamma_h_over_stable_order": 21598617600,
-   "quotient_of_displayed_numbers": 1692057600,
-   "source": {
-    "count": {
-     "kind": "published_text",
-     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
-     "lines": "1275-1275"
-    },
-    "display": {
-     "kind": "published_text",
-     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
-     "lines": "1278-1280"
     },
     "order_of_O_plus_F2": {
      "kind": "published_text",
