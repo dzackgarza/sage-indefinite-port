@@ -66,6 +66,34 @@ def test_mixed_archimedean_signs_have_the_complete_finite_unitary_centralizer():
     assert MatrixGroup([M.change_ring(GF(3)) for M in matrices]).order() == 200
 
 
+def test_public_quartic_cm_hermitian_unitary_group_has_200_integral_elements():
+    r"""The indefinite trace of (zeta_5+zeta_5^-1)I_2 has compact U(h) of order 200.
+
+    The exact unitary generators are now available directly from the
+    Hermitian lattice, without supplying a root-of-unity scalar operator
+    or pretending the rational trace lattice is definite.
+    """
+    from sage_extensions.categories.hermitian_lattices import HermitianLattice
+
+    field = CyclotomicField(5)
+    zeta = field.gen()
+    scale = zeta + zeta**(-1)
+    hermitian = HermitianLattice(
+        tuple(zeta**k for k in range(4)),
+        matrix(field, 2, 2, [scale, 0, 0, scale]),
+    )
+    lattice = hermitian.trace_lattice()
+    assert tuple(int(i) for i in lattice.signature_pair()) == (4, 4)
+    generators = tuple(hermitian.unitary_group_generators())
+    assert generators and all(hermitian.is_order_linear(g) for g in generators)
+    labels = tuple(lattice.module_generating_set())
+    matrices = [matrix(SageZZ, [
+        [int(g(v).to_vector()(label)) for v in lattice.module_generators()]
+        for label in labels
+    ]) for g in generators]
+    assert MatrixGroup([M.change_ring(GF(3)) for M in matrices]).order() == 200
+
+
 def test_indefinite_eisenstein_binary_unitary_has_complete_public_generators():
     r"""The order-three centralizer on A2+A2(-1) is the full infinite U(1,1;O_E).
 
