@@ -1417,6 +1417,47 @@ class EichlerRecursion:
             raise ValueError("multilevel and character conditions do not define a subgroup")
         return joint, allowed
 
+    def multilevel_joint_character_right_cosets(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Actual correlated multilevel cosets and owned integral transporters.
+
+        Return ``(cosets, act, transporter)`` for the right action of the
+        generated *joint finite image* on the left cosets of the selected
+        multilevel/character subgroup. ``act`` accepts an actual joint-image
+        key, not an unverified integral matrix. The transporter returns an
+        integral lattice automorphism, including for nonnormal targets.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        cosets, _ = joint.right_coset_action(allowed)
+        order = {key: i for i, key in enumerate(joint._lifts)}
+
+        def canonical(key):
+            return min((joint._multiply(h, key) for h in allowed), key=order.__getitem__)
+
+        positions = {canonical(key): i for i, key in enumerate(cosets)}
+
+        def act(index, key):
+            if not 0 <= index < len(cosets):
+                raise IndexError("coset index out of range")
+            if key not in joint.image_keys():
+                raise ValueError("key is outside the actual joint image")
+            return positions[canonical(joint._multiply(cosets[index], key))]
+
+        def transporter(source_index, target_index):
+            if not 0 <= source_index < len(cosets) or not 0 <= target_index < len(cosets):
+                raise IndexError("coset index out of range")
+            source = joint.section(cosets[source_index])
+            target = joint.section(cosets[target_index])
+            lift = source.inverse() * target
+            assert act(source_index, joint.image(lift)) == target_index
+            return _isometry_from_column_matrix(lattice, lattice, lift)
+
+        return cosets, act, transporter
+
     def multilevel_joint_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Exact kernel/section word for simultaneous level and character constraints.
 
