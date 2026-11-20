@@ -839,6 +839,21 @@ class CentralizerSubgroup:
         left, right = tuple(left), tuple(right)
         if len(left) != len(right):
             return None
+        if any(v.parent() is not self.lattice for v in (*left, *right)):
+            raise ValueError("equivariant marked vectors must belong to the original lattice")
+        if all(x == self.lattice.zero() for x in left):
+            # The identity belongs to every simultaneous centralizer and
+            # fixes every zero marking, even when the centralizer is
+            # infinite and the equivariant-marking constructor requires
+            # a nonzero column span.
+            return (self.lattice.O().identity()
+                    if all(y == self.lattice.zero() for y in right) else None)
+        if any(self.lattice.b(x, y) != self.lattice.b(u, v)
+               for i, x in enumerate(left) for j, y in enumerate(left)
+               for u, v in ((right[i], right[j]),)):
+            return None
+        if self._columns(left).transpose().elementary_divisors() != self._columns(right).transpose().elementary_divisors():
+            return None
         if self.lattice.O().is_finite() is True:
             # Exhaust the entire finite integral orthogonal group, not a
             # bounded approximation to its centralizer. This also decides
