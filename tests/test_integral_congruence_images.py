@@ -625,6 +625,41 @@ def test_number_field_base_changed_spinor_is_an_actual_finite_image_preimage():
     assert ambient.O()((-ambient.module_generators()[0],)) not in subgroup
 
 
+def test_field_spinor_multiplier_is_chosen_in_the_target_number_field():
+    r"""For <4> over Q(sqrt5), multiplication of the quadratic form by sqrt5.
+
+    On the reflection -1, sn_{c b}=[c*b(e,e)]=[4c]=[sqrt5] in
+    K^×/(K^×)^2. The factor sqrt5 is not in Q, so replacing it with
+    a rational scalar or using the default -1/2 at the wrong stage is
+    incorrect. Its class is nontrivial: a square in K must have norm a
+    square in Q, whereas N(sqrt5)=-5 is not a rational square.
+    """
+    from sage_extensions.all import QuadraticField, QQ as OwnedQQ
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    field = QuadraticField(5, "a")
+    alpha = field.primitive_element()
+    embedding = OwnedQQ.Mor(field)(lambda x: field(x))
+    ambient = lattice([[4]])
+    reflection = ambient.O()((-ambient.module_generators()[0],))
+    character = ambient.spinor_norm(embedding, form_multiplier=alpha)
+    expected = field.square_class_group()(alpha)
+    assert character(reflection) == expected
+    assert not character(reflection).is_one()
+    image = EichlerRecursion().joint_discriminant_character_image(
+        ambient, field_spinor=True, field_map=embedding,
+        form_multiplier=alpha,
+    )
+    assert len({key[-1] for key in image.image_keys()}) == 2
+    selected = image.subgroup_from_membership(lambda key: key[-1] == image.identity[-1])
+    subgroup = EichlerRecursion().joint_discriminant_character_preimage_subgroup(
+        ambient, selected, field_spinor=True, field_map=embedding,
+        form_multiplier=alpha,
+    )
+    assert int(subgroup.index()) == 2 and reflection not in subgroup
+
+
 def test_prime_field_spinor_character_in_exact_reduced_joint_image():
     r"""The normalized spinor norm on <4> has distinct mod-5 and mod-3 images.
 
@@ -775,6 +810,40 @@ def test_odd_finite_extension_field_spinor_images_preserve_base_change_and_squar
         assert all(key[-1] == image.identity[-1] for key in image.image_keys())
         kernel = engine.field_spinor_kernel_subgroup(ambient, field_map=reduction)
         assert int(kernel.index()) == 1 and reflection in kernel
+
+
+def test_local_odd_padic_spinor_images_are_exact_and_not_fictitiously_trivial():
+    r"""The Q_p spinor classes of a norm-4 reflection are [-2], for p=3,5.
+
+    A homomorphism QQ→Q_p exists, unlike QQ→F_p. Hensel's square-class
+    criterion at odd p says a valuation-zero unit is a square iff its
+    nonzero residue is a quadratic residue. Thus -2 is a square in Q3
+    and a nonsquare in Q5. The finite generated character image has size
+    respectively 1 and 2; it is *not* the entire Q_p square-class group.
+    """
+    from sage_extensions.all import Qp as OwnedQp, QQ as OwnedQQ
+    from tests.acceptance.consumer import lattice
+
+    ambient = lattice([[4]])
+    (e,) = ambient.module_generators()
+    reflection = ambient.O()((-e,))
+    for prime, trivial in ((3, True), (5, False)):
+        padic = OwnedQp(prime)
+        base_change = OwnedQQ.Mor(padic)(lambda x, padic=padic: padic(x))
+        spinor = ambient.spinor_norm(base_change)
+        assert spinor(reflection) == padic.square_class_group()(padic(int(-2)))
+        assert spinor(reflection).is_one() is trivial
+        morphism = ambient.O().joint_arithmetic_representation(
+            field_spinor=True, field_map=base_change,
+        )
+        assert int(morphism.codomain().cardinality()) == 2
+        kernel = ambient.O().preimage(
+            morphism, morphism.codomain().subgroup(tuple(
+                morphism(g) for g in ambient.O().group_generators()
+                if spinor(g).is_one()
+            )),
+        )
+        assert (reflection in kernel) is trivial
 
 
 def test_owned_preimage_index_is_relative_to_proper_generated_ambient():
