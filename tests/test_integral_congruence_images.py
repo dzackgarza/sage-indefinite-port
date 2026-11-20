@@ -85,6 +85,39 @@ def test_nonfree_composite_residue_submodule_stabilizer():
     assert index_full == 1
 
 
+def test_actual_image_nonfree_residue_submodule_transporter():
+    r"""Exact residue-module transport under the four integral symmetries of U.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Gram preservation equations and modulo-4 cyclic submodules
+    ORACLE-EXCERPT: Thus O(U) consists exactly of I, -I, the coordinate swap S, and -S.
+    ORACLE-HYPOTHESES: U has Gram [[0,1],[1,0]], level 4, and the displayed order-two and order-four cyclic submodules
+    ORACLE-EXPECTED: Coordinate axes transport by S; diagonal order-two subgroup does not transport to a coordinate axis; different cardinalities do not transport
+    ORACLE-DERIVATION: ac=bd=0 and ad+bc=1 force the four matrices; their reductions fix the diagonal and exchange coordinate axes, while invertibility preserves subgroup cardinality
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    swap = matrix(ZZ, [[0, 1], [1, 0]])
+    negative = -identity_matrix(ZZ, 2)
+    image = IntegralCongruenceImage((swap, negative), 4)
+    lift = image.residue_submodule_transporter(((2, 0),), ((0, 2),))
+    assert lift is not None
+    assert tuple(lift.change_ring(image.ring) * vector(image.ring, (2, 0))) == (0, 2)
+    assert image.residue_submodule_transporter(((2, 0),), ((1, 0),)) is None
+    # Equal cardinality is insufficient: the actual image cannot carry
+    # the diagonal order-two subgroup onto either coordinate subgroup.
+    assert image.residue_submodule_transporter(((2, 2),), ((2, 0),)) is None
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    transporter = engine.congruence_submodule_transporter(ambient, 4, ((2, 0),), ((0, 2),))
+    assert transporter is not None
+    assert transporter.domain() is ambient and transporter.codomain() is ambient
+    assert tuple(int(x) % 4 for x in transporter(2 * ambient.module_generators()[0]).to_vector()) == (0, 2)
+    assert engine.congruence_submodule_transporter(ambient, 4, ((2, 2),), ((2, 0),)) is None
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion

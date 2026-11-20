@@ -200,6 +200,41 @@ class IntegralCongruenceImage:
                 allowed.append(image)
         return self.preimage_generators(allowed)
 
+    def residue_submodule_transporter(self, source, target):
+        r"""Integral lift transporting one residue submodule to another, or ``None``.
+
+        The comparison uses the actual finite image, including nonfree
+        submodules over composite residue rings.
+        """
+        from sage.modules.free_module_element import vector
+
+        def members(generators):
+            rows = tuple(vector(self.ring, row) for row in generators)
+            if any(len(row) != self.rank for row in rows):
+                raise ValueError("residue submodule generator has the wrong rank")
+            zero = vector(self.ring, [0] * self.rank)
+            result = {tuple(zero)}
+            queue = deque([zero])
+            while queue:
+                current = queue.popleft()
+                for row in rows:
+                    moved = current + row
+                    key = tuple(moved)
+                    if key not in result:
+                        result.add(key)
+                        queue.append(moved)
+            return rows, result
+
+        rows, source_members = members(source)
+        _, target_members = members(target)
+        if len(source_members) != len(target_members):
+            return None
+        for lift in self._lifts.values():
+            image = self.reduce(lift)
+            if all(tuple(image * row) in target_members for row in rows):
+                return lift
+        return None
+
     def simultaneous_residue_stabilizer(self, *, vectors=(), submodules=(), flags=(), colour_classes=None):
         """Schreier preimage of the exact simultaneous residue stabilizer."""
         keys = self.simultaneous_residue_stabilizer_keys(
