@@ -326,6 +326,46 @@ class IntegralCongruenceImage:
             raise ValueError("modulus times the ambient lattice must lie in the sublattice")
         return self.residue_submodule_stabilizer(rows.rows())
 
+    def residue_flag_transporter(self, source, target):
+        r"""Integral lift between nested residue-submodule flags, or ``None``.
+
+        A missing transporter is certified in the actual finite image.
+        Nonfree stages over composite levels are permitted.
+        """
+        from sage.modules.free_module_element import vector
+
+        def flag_data(stages):
+            result = []
+            for stage in stages:
+                rows = tuple(vector(self.ring, row) for row in stage)
+                if any(len(row) != self.rank for row in rows):
+                    raise ValueError("residue flag generator has the wrong rank")
+                zero = vector(self.ring, [0] * self.rank)
+                members = {tuple(zero)}
+                queue = deque([zero])
+                while queue:
+                    current = queue.popleft()
+                    for row in rows:
+                        moved = current + row
+                        key = tuple(moved)
+                        if key not in members:
+                            members.add(key)
+                            queue.append(moved)
+                result.append((rows, members))
+            if any(not left[1] <= right[1] for left, right in zip(result, result[1:])):
+                raise ValueError("residue flag stages must be nested")
+            return result
+
+        left, right = flag_data(source), flag_data(target)
+        if len(left) != len(right) or any(len(a[1]) != len(b[1]) for a, b in zip(left, right)):
+            return None
+        for lift in self._lifts.values():
+            image = self.reduce(lift)
+            if all(all(tuple(image * row) in target_members for row in rows)
+                   for (rows, _), (_, target_members) in zip(left, right)):
+                return lift
+        return None
+
     def residue_flag_stabilizer(self, stages):
         r"""Exact inverse image of the stabilizer of a nested residue-module flag.
 

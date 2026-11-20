@@ -139,6 +139,30 @@ def test_public_residue_vector_transporter_and_actual_image_obstruction():
     assert engine.congruence_vector_transporter(ambient, 4, (1, 0), (1, 1)) is None
 
 
+def test_public_composite_residue_flag_transporter_and_obstruction():
+    r"""Exact flag transport for the hyperbolic plane over Z/4.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraph, nested flags at level four
+    ORACLE-EXCERPT: The swap S transports F to F'.
+    ORACLE-HYPOTHESES: Integral hyperbolic plane, modulus 4, ordered nested cyclic stages
+    ORACLE-EXPECTED: The coordinate-axis flags are conjugate, while the diagonal flag is not conjugate to a coordinate-axis flag
+    ORACLE-DERIVATION: The only four integral isometries are sign and coordinate swap; they fix the diagonal order-two stage and swap the coordinate stages
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    source = (((2, 0),), ((1, 0),))
+    target = (((0, 2),), ((0, 1),))
+    g = engine.congruence_flag_transporter(ambient, 4, source, target)
+    assert g is not None and g.domain() is ambient and g.codomain() is ambient
+    assert tuple(int(x) % 4 for x in g(ambient.module_generators()[0]).to_vector()) in ((0, 1), (0, 3))
+    diagonal = (((2, 2),), ((1, 1),))
+    assert engine.congruence_flag_transporter(ambient, 4, diagonal, source) is None
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion

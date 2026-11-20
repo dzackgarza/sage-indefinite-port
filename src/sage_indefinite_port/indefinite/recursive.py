@@ -1194,6 +1194,11 @@ class EichlerRecursion:
         lift = self.congruence_image(lattice, modulus).residue_submodule_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
+    def congruence_flag_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+        r"""Owned integral transporter of residue-module flags, or ``None``."""
+        lift = self.congruence_image(lattice, modulus).residue_flag_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
     def congruence_flag_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, stages):
         r"""Integral setwise stabilizer of a nested flag in ``L / modulus L``."""
         image = self.congruence_image(lattice, modulus)
