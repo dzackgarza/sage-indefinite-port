@@ -1417,6 +1417,50 @@ class EichlerRecursion:
             raise ValueError("multilevel and character conditions do not define a subgroup")
         return joint, allowed
 
+    def multilevel_joint_character_restricted_transporter(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, ambient_transporter, stabilizer_generators, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Correct an integral marked transporter inside a joint arithmetic preimage.
+
+        Right corrections come from the *integral* marking stabilizer,
+        not the ambient joint finite image. Return an owned witness or
+        ``None`` when no allowed arithmetic correction exists.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        if ambient_transporter.domain() is not lattice or ambient_transporter.codomain() is not lattice:
+            raise ValueError("ambient transporter must be an automorphism of the supplied lattice")
+        stabilizer_generators = tuple(stabilizer_generators)
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in stabilizer_generators):
+            raise ValueError("stabilizer generators must be automorphisms of the supplied lattice")
+        witness = joint.restricted_transporter(
+            allowed, _column_matrix(ambient_transporter),
+            tuple(_column_matrix(g) for g in stabilizer_generators))
+        return None if witness is None else _isometry_from_column_matrix(lattice, lattice, witness)
+
+    def multilevel_joint_character_marked_stabilizer_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, stabilizer_generators, representative, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Integral marked stabilizer under correlated multilevel restrictions.
+
+        The supplied generators generate the full integral stabilizer of
+        the original mark, not merely its finite image. Schreier is done
+        in this integral stabilizer, since the joint congruence kernel
+        need not preserve the mark.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        stabilizer_generators = tuple(stabilizer_generators)
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in stabilizer_generators):
+            raise ValueError("stabilizer generators must be automorphisms of the supplied lattice")
+        index, matrices = joint.conjugate_stabilizer_generators(
+            allowed, tuple(_column_matrix(g) for g in stabilizer_generators), representative)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
     def multilevel_joint_character_double_cosets(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Exact double cosets of a multilevel arithmetic subgroup and K.
 
