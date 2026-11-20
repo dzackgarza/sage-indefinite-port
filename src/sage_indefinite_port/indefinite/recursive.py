@@ -2127,6 +2127,7 @@ class EichlerRecursion:
             def matrix_key(g):
                 return tuple(g.list())
             finite_members = {matrix_key(identity)}
+            finite_lifts = [identity]
             queue = deque([identity])
             while queue:
                 current = queue.popleft()
@@ -2135,11 +2136,12 @@ class EichlerRecursion:
                     key = matrix_key(product)
                     if key not in finite_members:
                         finite_members.add(key)
+                        finite_lifts.append(product)
                         queue.append(product)
             ambient_contains = lambda g: matrix_key(g) in finite_members
         else:
             ambient_contains = lambda g: as_isometry(g) in ambient_group
-        return JointDiscriminantCharacterImage(
+        image = JointDiscriminantCharacterImage(
             tuple(_column_matrix(g) for g in generators),
             lambda g: rho(as_isometry(g)),
             tuple((lambda g, chi=chi: chi(as_isometry(g))) for chi in signs),
@@ -2147,6 +2149,9 @@ class EichlerRecursion:
             rank=len(tuple(lattice.module_generating_set())),
             ambient_contains=ambient_contains,
         )
+        if ambient_generators is not None and ambient_group.is_finite() is True:
+            image._finite_ambient_lifts = tuple(finite_lifts)
+        return image
 
     def joint_discriminant_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Exact owned integral membership in an actual joint-image preimage.
@@ -2213,7 +2218,22 @@ class EichlerRecursion:
         from sage_extensions.categories.sets.finite_ordered_sets import finite_ordered_set
 
         generators = None if ambient_generators is None else tuple(ambient_generators)
-        ambient = lattice.O() if generators is None else lattice.O().subgroup(generators)
+        if generators is not None and hasattr(image, "_finite_ambient_lifts"):
+            # The general generated-subgroup predicate may not recognize a
+            # newly constructed product, even for a proved finite subgroup.
+            # Realize that finite group by its exact integral membership
+            # predicate, retaining its generating morphism and enumeration.
+            ambient = lattice.O().predicate_subgroup(
+                lambda g: image.ambient_contains(_column_matrix(g)),
+                lambda: "the specified finite integral orthogonal subgroup",
+                generating_morphism=lattice.O().free_cover(generators),
+                cardinality_decision=lambda: len(image._finite_ambient_lifts),
+                enumeration=lambda: (
+                    _isometry_from_column_matrix(lattice, lattice, m)
+                    for m in image._finite_ambient_lifts),
+            )
+        else:
+            ambient = lattice.O() if generators is None else lattice.O().subgroup(generators)
         points = finite_ordered_set(tuple(image._lifts))
         action = FiniteGSets(ambient)(
             points,
