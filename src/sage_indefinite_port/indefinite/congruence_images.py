@@ -1280,7 +1280,8 @@ class JointDiscriminantCharacterImage:
         For ``g in rho^-1(H)`` return ``(k,s,word)`` with ``g=k*s``,
         ``rho(k)=1``, ``rho(s)=rho(g) in H``, and ``word`` the exact
         ambient-generator word of the chosen section. Return ``None``
-        when ``g`` belongs to the ambient group but not the preimage.
+        whenever ``g`` is not in the preimage, including outside a
+        specified proper integral ambient subgroup.
         """
         subgroup = frozenset(allowed)
         if self.identity not in subgroup or not subgroup <= self.image_keys():
@@ -1289,7 +1290,7 @@ class JointDiscriminantCharacterImage:
             raise ValueError("allowed is not a subgroup")
         g = matrix(ZZ, matrix_value)
         if self.ambient_contains is not None and not self.ambient_contains(g):
-            raise ValueError("matrix is outside the specified ambient subgroup")
+            return None
         key = self.image(g)
         if key not in self._lifts:
             raise ValueError("matrix image is outside the generated ambient image")
