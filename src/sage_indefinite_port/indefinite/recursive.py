@@ -1417,6 +1417,29 @@ class EichlerRecursion:
             raise ValueError("multilevel and character conditions do not define a subgroup")
         return joint, allowed
 
+    def multilevel_joint_character_double_cosets(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Exact double cosets of a multilevel arithmetic subgroup and K.
+
+        Return integral representatives and the full integral preimage
+        generators of each finite intersection ``H intersect r*K*r^-1``.
+        These preimages are finite-quotient stabilizers, not necessarily
+        stabilizers of a geometric marking. Both subgroups live in the
+        *same correlated joint image* at the common congruence level.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        right = joint.subgroup_from_generators(tuple(right_subgroup))
+        result = []
+        for key, lift in joint.double_coset_representatives(allowed, right):
+            index, generators = joint.double_coset_stabilizer_preimage(allowed, right, key)
+            result.append((_isometry_from_column_matrix(lattice, lattice, lift), index,
+                           tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in generators)))
+        return tuple(result)
+
     def multilevel_joint_character_right_cosets(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Actual correlated multilevel cosets and owned integral transporters.
 
