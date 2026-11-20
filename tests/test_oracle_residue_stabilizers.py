@@ -1,0 +1,40 @@
+"""Independent finite-image residue stabilizer oracles for O(U)."""
+
+from sage.all import ZZ, matrix
+from sage_extensions.all import Lattices, ZZ as OwnedZZ
+
+from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+
+def _column_matrix(g, frame):
+    return matrix(ZZ, [[int(c) for c in g(v)] for v in frame]).transpose()
+
+
+def test_mod_three_vector_stabilizer_in_full_hyperbolic_group():
+    # Solving ac=bd=0 and ad+bc=1 gives O(U)={I,-I,S,-S}.
+    # Modulo three these four matrices remain distinct. Since -e != e
+    # modulo three, only I fixes e=(1,0), so the actual-image stabilizer
+    # has index four.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    e, f = lattice.module_generators()
+    recursion = EichlerRecursion()
+    image = recursion.congruence_image(lattice, 3)
+    assert len(image.image_keys()) == 4
+    index, generators = recursion.congruence_stabilizer_generators(
+        lattice, 3, (1, 0)
+    )
+    assert index == 4
+    for g in generators:
+        reduced = _column_matrix(g, (e, f)).change_ring(image.ring)
+        assert reduced * matrix(image.ring, [[1], [0]]) == matrix(image.ring, [[1], [0]])
+
+
+def test_mod_three_residue_vector_transporter_and_negative_decision():
+    # The exchange carries e to f. No element of O(U) carries e to e+f:
+    # its four possible images are ±e and ±f.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    recursion = EichlerRecursion()
+    witness = recursion.congruence_vector_transporter(lattice, 3, (1, 0), (0, 1))
+    assert witness is not None
+    assert tuple(int(c) % 3 for c in witness(lattice.module_generators()[0])) == (0, 1)
+    assert recursion.congruence_vector_transporter(lattice, 3, (1, 0), (1, 1)) is None
