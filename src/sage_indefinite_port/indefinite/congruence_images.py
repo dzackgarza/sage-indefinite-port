@@ -164,6 +164,34 @@ class IntegralCongruenceImage:
                 return lift
         return None
 
+    def residue_colouring_transporter(self, source, target):
+        r"""Integral lift transporting every named finite residue colour class.
+
+        Colours are fixed labels; only points within a class may permute.
+        Return ``None`` precisely when no element of the actual image acts
+        as required.
+        """
+        from sage.modules.free_module_element import vector
+
+        def classes(colouring):
+            result = {}
+            for label, points in colouring.items():
+                entries = frozenset(tuple(vector(self.ring, point)) for point in points)
+                if any(len(point) != self.rank for point in entries):
+                    raise ValueError("coloured residue vector has the wrong rank")
+                result[label] = entries
+            return result
+
+        left, right = classes(source), classes(target)
+        if left.keys() != right.keys() or any(len(left[k]) != len(right[k]) for k in left):
+            return None
+        for lift in self._lifts.values():
+            image = self.reduce(lift)
+            if all({tuple(image * vector(self.ring, point)) for point in points} == right[label]
+                   for label, points in left.items()):
+                return lift
+        return None
+
     def residue_colouring_stabilizer(self, colour_classes):
         r"""Preimage preserving every named colour class of residue vectors.
 

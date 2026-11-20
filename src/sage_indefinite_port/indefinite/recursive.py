@@ -1504,6 +1504,11 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def congruence_colouring_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+        r"""Integral orthogonal transporter of labelled residue colour classes."""
+        lift = self.congruence_image(lattice, modulus).residue_colouring_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
     def congruence_colouring_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, colour_classes):
         r"""Integral stabilizer preserving each named residue-vector colour."""
         image = self.congruence_image(lattice, modulus)

@@ -163,6 +163,30 @@ def test_public_composite_residue_flag_transporter_and_obstruction():
     assert engine.congruence_flag_transporter(ambient, 4, diagonal, source) is None
 
 
+def test_public_labelled_residue_colouring_transporter():
+    r"""Exact coloured-set transport under O(U) at composite level.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraph, labelled finite subsets at level four
+    ORACLE-EXCERPT: Colour labels cannot be permuted.
+    ORACLE-HYPOTHESES: U has Gram [[0,1],[1,0]], level 4, red and blue singleton classes
+    ORACLE-EXPECTED: Swapping both coordinate-axis colour classes has a transporter, but mapping red (1,0) to (1,1) has none
+    ORACLE-DERIVATION: The four orthogonal matrices are I,-I,S,-S and their images of (1,0) are the four signed coordinate axes
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    source = {"red": ((1, 0),), "blue": ((2, 0),)}
+    target = {"red": ((0, 1),), "blue": ((0, 2),)}
+    g = engine.congruence_colouring_transporter(ambient, 4, source, target)
+    assert g is not None and g.domain() is ambient and g.codomain() is ambient
+    assert tuple(int(x) % 4 for x in g(ambient.module_generators()[0]).to_vector()) == (0, 1)
+    impossible = {"red": ((1, 1),), "blue": ((0, 2),)}
+    assert engine.congruence_colouring_transporter(ambient, 4, source, impossible) is None
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
