@@ -1,19 +1,17 @@
-"""Extract tests/fixtures/indefinite_isometry_pairs.json from vendored tests.
+"""Extract tests/fixtures/indefinite_isometry_pairs.json from asserted upstream tests.
 
-Pairs of indefinite Gram matrices with a recorded isometry verdict, from two
-independent implementations' test suites:
-
-- Indefinite.jl@374a5ebb TestLor/{U_I3,U_E8,U_2U_2I3}_mat{1,2}, which its driver
-  test_gap.jl tests for equivalence (no witness recorded);
-- Hecke.jl@e2ab5716 test/QuadForm/Quad/ZLatticeAutIso.jl, testset "isometry
+Pairs of indefinite Gram matrices with a *recorded* isometry verdict from
+Hecke.jl@e2ab5716 test/QuadForm/Quad/ZLatticeAutIso.jl, testset "isometry
   testing": U(2)+A2 against its transform by the recorded unimodular u, U against
   U(2), and a recorded isometric pair of 3x3 Grams.
 
-Each verdict carries a certificate checked here, independently of the port:
-a witness W with W * gram1 * W^T == gram2; or, for a pair without a witness,
-equal genera with no spinor generators (one improper spinor genus), which for an
-indefinite lattice of rank >= 3 is a single isometry class (Eichler); or, for a
-non-isometric pair, different determinants.
+Each verdict is explicitly asserted by Hecke's upstream test and checked
+here by a witness W with W * gram1 * W^T == gram2, or by differing determinants.
+
+Indefinite.jl's test_gap.jl lists three TestLor matrix pairs, but
+CaseEquiv1/2/3 are all set to false (lines 34-52), and the code does not
+assert a verdict for them. They must NOT be assigned 'isometric: true'
+via a self-authored genus argument and presented as pinned upstream oracles.
 
 Run from the repository root under Sage's Python:
     "$(dirname $(sage -c 'import sys; print(sys.executable)'))/python3" references/extract/isometry_pairs.py
@@ -25,10 +23,9 @@ from pathlib import Path
 from typing import NotRequired, TypedDict
 
 # Importing from sage.all runs Sage's session startup.
-from sage.all import AA, ZZ, Genus, matrix
+from sage.all import AA, ZZ, matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 
-INDEF = Path("references/vendor/Indefinite.jl@374a5ebb")
 HECKE = Path("references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl")
 TARGET = Path("tests/fixtures/indefinite_isometry_pairs.json")
 
@@ -43,13 +40,6 @@ class IsometryPair(TypedDict):
     source: dict[str, str | list[str]]
     witness: NotRequired[list[list[int]]]
     witness_convention: NotRequired[str]
-
-
-def read_indefinite_matrix(path: Path) -> Matrix_integer_dense:
-    tokens = [int(token) for token in path.read_text(encoding="utf-8").split()]
-    rows, cols, entries = tokens[0], tokens[1], tokens[2:]
-    assert len(entries) == rows * cols, path
-    return matrix(ZZ, rows, cols, entries)
 
 
 def julia_matrix(text: str) -> Matrix_integer_dense:
@@ -67,13 +57,6 @@ def signature(gram: Matrix_integer_dense) -> list[int]:
 
 def as_rows(m: Matrix_integer_dense) -> list[list[int]]:
     return [[int(entry) for entry in row] for row in m.rows()]
-
-
-def genus_certificate(gram1: Matrix_integer_dense, gram2: Matrix_integer_dense) -> str:
-    assert gram1.nrows() >= 3, "the Eichler certificate needs rank >= 3"
-    assert Genus(gram1) == Genus(gram2), "the pair is not in one genus"
-    assert Genus(gram1).spinor_generators(proper=False) == [], "the genus has more than one spinor genus"
-    return "equal genera, no spinor generators (one improper spinor genus); indefinite of rank >= 3, so one isometry class (Eichler)"
 
 
 def record(
@@ -105,18 +88,6 @@ def record(
 
 def main() -> None:
     cases: list[IsometryPair] = []
-    driver = (INDEF / "test_gap.jl").read_text(encoding="utf-8")
-    for name in ("U_I3", "U_E8", "U_2U_2I3"):
-        assert f'"TestLor/{name}_mat1"' in driver and f'"TestLor/{name}_mat2"' in driver
-        gram1 = read_indefinite_matrix(INDEF / "TestLor" / f"{name}_mat1")
-        gram2 = read_indefinite_matrix(INDEF / "TestLor" / f"{name}_mat2")
-        source: dict[str, str | list[str]] = {
-            "kind": "independent_implementation_test",
-            "files": [str(INDEF / "TestLor" / f"{name}_mat{i}") for i in (1, 2)],
-            "driver": str(INDEF / "test_gap.jl"),
-        }
-        cases.append(record(f"indefinite_jl_{name}", gram1, gram2, True, genus_certificate(gram1, gram2), None, source))
-
     lines = HECKE.read_text(encoding="utf-8").splitlines()
     start = next(i for i, line in enumerate(lines) if '@testset "isometry testing"' in line)
     block = "\n".join(lines[start : start + 33])

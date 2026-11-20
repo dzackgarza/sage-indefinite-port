@@ -84,7 +84,6 @@ oracles:
     runtime: sage
     kind: independent_implementation_test
     sources:
-      - references/vendor/Indefinite.jl@374a5ebb/TestLor
       - references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl
   - fixture_file: isometry_centralizers.json
     extraction: references/extract/oscar_centralizers.py

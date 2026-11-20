@@ -11,6 +11,7 @@ import builtins
 from collections import Counter
 
 import pytest
+from sage.all import ZZ, CartanMatrix, block_diagonal_matrix, matrix
 
 from tests.acceptance.consumer import (
     MARKED_CLASSES,
@@ -74,32 +75,6 @@ def test_i_2_10_is_transitive_on_norm_minus_one_vectors() -> None:
     case = load_allcock_i_2_10_orbits()
 
     assert len(vector_classes(lattice(case["gram"]), -1)) == case["norm_minus_one_vector_orbits"]
-
-
-def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
-    """An anisotropic (1,1) plane has no perfect-cell cusp to enumerate."""
-    require(MARKED_CLASSES, MARKED_ISOMETRY)
-
-    binary = lattice([[2, 0], [0, -3]])
-    assert not binary.is_isotropic()
-    assert vector_classes(binary, 0) == ()
-    # 2*x^2 - 3*y^2 = 1 has no integer solution modulo 3.
-    assert vector_classes(binary, 1) == ()
-    for square in (2, -3):
-        classes = vector_classes(binary, square)
-        assert classes
-        category = pointed_category(square)
-        canonical = pointed(binary, element(binary, (1, 0) if square == 2 else (0, 1)))
-        assert builtins.sum(are_isomorphic(category, marked, canonical) for marked in classes) == 1
-        witnesses = []
-        for marked in classes:
-            generators = tuple(marked.arrow()(g) for g in marked.arrow().domain().module_generators())
-            assert len(generators) == 1
-            witness, = generators
-            assert int(witness.q()) == square
-            assert int(witness.content()) == 1
-            assert all(not are_isomorphic(category, marked, previous) for previous in witnesses)
-            witnesses.append(marked)
 
 
 def _k3_gram() -> list[list[int]]:

@@ -290,19 +290,20 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Replaced**: the previous `centralizer_involutions.json` held derived identities, not data.
 
-### Indefinite Isometry Pairs (Indefinite.jl and Hecke)
+### Indefinite Isometry Pairs (Hecke)
 
 - **File**: `tests/fixtures/indefinite_isometry_pairs.json`
 
-- **Sources**: `references/vendor/Indefinite.jl@374a5ebb/TestLor/` (three pairs that `test_gap.jl` tests for equivalence: $U\oplus3\langle-1\rangle$, $U\oplus E_8(-1)$, $U\oplus U(2)\oplus3\langle-2\rangle$), and `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl`, testset "isometry testing":
+- **Source**: `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl`, testset "isometry testing" (lines 712–744):
   - $U(2)\oplus A_2$ with the recorded witness $u$;
   - $U$ against $U(2)$ (non-isometric);
   - a recorded isometric $3\times3$ pair.
 
-- **Certificates** (checked by the extraction, independently of the port):
-  - a verified witness $W\,G_1\,W^T = G_2$;
-  - or equal genera with no spinor generators, which for indefinite rank $\ge 3$ means one isometry class (Eichler), computed with Sage's genus code;
+- **Certificates** (checked by extraction independently of the port):
+  - an explicitly recorded unimodular witness $W\,G_1\,W^T = G_2$;
   - or, for the non-isometric pair, different determinants.
+
+- **Excluded unsourced expectations**: `Indefinite.jl@374a5ebb/test_gap.jl` (lines 34–52) contains matrix pairs `U_I3`, `U_E8`, and `U_2U_2I3` with all three equivalence switches set to `false`. They are inputs, **not upstream assertions of isometry**. The former extraction invented `isometric: true` by performing a separate Sage genus computation and incorrectly represented those three derived conclusions as upstream test oracles. They are not accepted here; a new independent mathematical source and review would be required.
 
 - **Extraction**: `references/extract/isometry_pairs.py`, run under Sage's Python.
 

@@ -113,29 +113,6 @@ def reduction_image_order(gram, generator_rows, prime: int) -> int:
     return int(reduced.O().subgroup(group_generators).cardinality())
 
 
-def comparison_primes(gram) -> tuple[int, ...]:
-    """The primes dividing 2 det G, and 3, 5 and 7: the reductions on which two generating sets are compared."""
-    determinant = int(matrix(ZZ, gram).determinant())
-    return tuple(sorted(set(prime_divisors(2 * determinant)) | {3, 5, 7}))
-
-
-def assert_same_finite_images(gram, computed, recorded_rows) -> None:
-    """Assert that computed isometries and recorded generators have the same finite images.
-
-    The images compared are the image in O(q_L) and the reductions modulo the primes of
-    ``comparison_primes``. Recorded generators come from the reference implementation or
-    the literature as row matrices.
-    """
-    lattice_ = computed[0].domain()
-    computed_rows = [rows_of(isometry) for isometry in computed]
-    assert all(is_isometry(rows, gram) for rows in computed_rows)
-    assert all(is_isometry(rows, gram) for rows in recorded_rows)
-    recorded = [isometry_from_rows(lattice_, rows) for rows in recorded_rows]
-    assert discriminant_image_order(lattice_, computed) == discriminant_image_order(lattice_, recorded)
-    for prime in comparison_primes(gram):
-        assert reduction_image_order(gram, computed_rows, prime) == reduction_image_order(gram, recorded_rows, prime), prime
-
-
 def transpose(rows):
     return [list(column) for column in zip(*rows, strict=True)]
 
