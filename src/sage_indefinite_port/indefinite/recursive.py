@@ -1222,6 +1222,11 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
+    def simultaneous_congruence_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+        r"""Owned integral transporter of simultaneous finite-level marked data."""
+        lift = self.congruence_image(lattice, modulus).simultaneous_residue_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
     def simultaneous_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, *, vectors=(), submodules=(), flags=(), colour_classes=None):
         r"""Integral stabilizer of simultaneous finite-level residue constraints."""
         image = self.congruence_image(lattice, modulus)

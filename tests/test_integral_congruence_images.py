@@ -187,6 +187,32 @@ def test_public_labelled_residue_colouring_transporter():
     assert engine.congruence_colouring_transporter(ambient, 4, source, impossible) is None
 
 
+def test_public_simultaneous_residue_transporter_preserves_correlations():
+    r"""One integral isometry must carry every marked residue constraint.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Final paragraph, simultaneous marked data at level four
+    ORACLE-EXCERPT: The coordinate swap transports all three simultaneously to (0,1),
+    ORACLE-HYPOTHESES: U has Gram [[0,1],[1,0]], modulus four, vector, cyclic submodule and labelled singleton
+    ORACLE-EXPECTED: The simultaneous swap exists; inconsistent red singleton has no transporter despite separately attainable targets
+    ORACLE-DERIVATION: The four integral orthogonal maps are I,-I,S,-S; S is uniquely determined by the required vector image and its red singleton image is forced
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    engine = EichlerRecursion()
+    source = {"vectors": ((1, 0),), "submodules": (((2, 0),),),
+              "colour_classes": {"red": ((1, 0),)}}
+    target = {"vectors": ((0, 1),), "submodules": (((0, 2),),),
+              "colour_classes": {"red": ((0, 1),)}}
+    g = engine.simultaneous_congruence_transporter(ambient, 4, source, target)
+    assert g is not None and g.domain() is ambient and g.codomain() is ambient
+    assert tuple(int(x) % 4 for x in g(ambient.module_generators()[0]).to_vector()) == (0, 1)
+    inconsistent = {**target, "colour_classes": {"red": ((1, 0),)}}
+    assert engine.simultaneous_congruence_transporter(ambient, 4, source, inconsistent) is None
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion

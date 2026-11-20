@@ -279,6 +279,63 @@ class IntegralCongruenceImage:
                 return lift
         return None
 
+    def simultaneous_residue_transporter(self, source, target):
+        r"""Exact integral transporter of simultaneous labelled residue data.
+
+        Each mapping may specify ``vectors``, ``submodules``, ``flags`` and
+        ``colour_classes``. All are transported by the *same* image element.
+        """
+        from sage.modules.free_module_element import vector
+
+        def closure(rows):
+            rows = tuple(vector(self.ring, row) for row in rows)
+            if any(len(row) != self.rank for row in rows):
+                raise ValueError("residue submodule generator has the wrong rank")
+            zero = vector(self.ring, [0] * self.rank)
+            members = {tuple(zero)}
+            queue = deque([zero])
+            while queue:
+                x = queue.popleft()
+                for y in rows:
+                    z = x + y
+                    if tuple(z) not in members:
+                        members.add(tuple(z))
+                        queue.append(z)
+            return members
+
+        def data(spec):
+            vectors = tuple(vector(self.ring, x) for x in spec.get("vectors", ()))
+            if any(len(x) != self.rank for x in vectors):
+                raise ValueError("residue vector has the wrong rank")
+            modules = tuple(closure(rows) for rows in spec.get("submodules", ()))
+            flags = tuple(tuple(closure(stage) for stage in stages)
+                          for stages in spec.get("flags", ()))
+            if any(not a <= b for flag in flags for a, b in zip(flag, flag[1:])):
+                raise ValueError("residue flag stages must be nested")
+            colours = {label: frozenset(tuple(vector(self.ring, x)) for x in points)
+                       for label, points in spec.get("colour_classes", {}).items()}
+            if any(len(x) != self.rank for points in colours.values() for x in points):
+                raise ValueError("coloured residue vector has the wrong rank")
+            return vectors, modules, flags, colours
+
+        left, right = data(source), data(target)
+        lv, lm, lf, lc = left
+        rv, rm, rf, rc = right
+        if (len(lv) != len(rv) or len(lm) != len(rm) or len(lf) != len(rf)
+                or any(len(a) != len(b) for a, b in zip(lf, rf))
+                or lc.keys() != rc.keys()):
+            return None
+        def moved(image, points):
+            return {tuple(image * vector(self.ring, x)) for x in points}
+        for lift in self._lifts.values():
+            image = self.reduce(lift)
+            if (all(image * a == b for a, b in zip(lv, rv))
+                    and all(moved(image, a) == b for a, b in zip(lm, rm))
+                    and all(moved(image, a) == b for f, g in zip(lf, rf) for a, b in zip(f, g))
+                    and all(moved(image, lc[k]) == rc[k] for k in lc)):
+                return lift
+        return None
+
     def simultaneous_residue_stabilizer(self, *, vectors=(), submodules=(), flags=(), colour_classes=None):
         """Schreier preimage of the exact simultaneous residue stabilizer."""
         keys = self.simultaneous_residue_stabilizer_keys(
