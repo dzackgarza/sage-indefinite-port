@@ -29,13 +29,17 @@ For |E_i|<r=1/432, the Neumann series in row-sum norm gives
 
 Thus Lemma 9 applies and Lemma 10 holds with r=1/432.
 
-For Lemma 11, |g| >= 1 (since det g=1) and Cramer's rule yields
-|g^(-1)| <= 2|g|**2. If gamma in SL_3(Z) is nonidentity, then
+For Lemma 11, put m=|g|, t=m**3. By the Leibniz determinant
+formula, 1=|det g|<=3!m**3=6t, so t>=1/6 (NOT m>=1: the
+determinant-one matrix (1/3)[[2,-2,1],[2,1,-2],[1,2,2]] has
+entrywise maximum m=2/3). Cramer's rule yields
+|g^(-1)| <= 2m**2. If gamma in SL_3(Z) is nonidentity, then
 1 <= |gamma-I| <= 9|g^(-1)| |g*gamma*g^(-1)-I| |g|
-<= 18|g|**3 |g*gamma*g^(-1)-I|.
-For delta=(432|g|**3)^(-1), the same Neumann estimate gives
-|g_2^(-1)g_1-I| < 12*delta <= 1/(36|g|**3), strictly
-smaller than 1/(18|g|**3). Thus distinct g_1,g_2 in B_G(delta)
+<= 18t |g*gamma*g^(-1)-I|.
+For delta=(432t)^(-1) <=1/72, the same Neumann estimate gives
+|g_2^(-1)g_1-I| < 6*delta/(1-3*delta) = 6/(432t-3)
+< 1/(18t), because the last inequality is equivalent to
+324t>3, which follows from t>=1/6. Thus distinct g_1,g_2 in B_G(delta)
 cannot have the same image in G/Gamma_N, proving the stated radius.
 
 No claim about the independently unverified constants of Lemmas 14--15,
@@ -71,7 +75,12 @@ def test_lemma11_explicit_rank_three_uniform_radius():
     """Source Lemmas 9 and 11; Cramer's lower bound proved above."""
     n = 3
     kappa = 432
-    # Set |g|=1, the worst case because |g|>=1 for det(g)=1.
-    delta = Fraction(1, kappa)
-    assert Fraction(6) * delta / (1 - 3 * delta) < Fraction(1, 18)
+    # For g in SL_3(R), t=|g|**3 >= 1/6 by det Leibniz, not t>=1.
+    # The relative comparison improves as t grows; its strict inequality
+    # for all t>=1/6 is equivalent to 324*t > 3.
+    minimum_t = Fraction(1, 6)
+    delta = 1 / (kappa * minimum_t)
+    assert delta <= Fraction(1, 72)
+    assert Fraction(6) * delta / (1 - 3 * delta) < Fraction(1, 18) / minimum_t
+    assert 324 * minimum_t > 3
     assert lemma11_constant(n) == kappa
