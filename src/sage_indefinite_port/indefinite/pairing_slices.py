@@ -346,6 +346,11 @@ def setwise_transporter(lattice, fixed, left, right):
         # The zero submodule is invariant under every integral isometry.
         # There is no nondegenerate marked lattice to construct here.
         return marked_transporter(lattice, (left,), (right,))
+    if len(fixed) == 1 and int(fixed[0].content()) > 1:
+        # For a nonzero vector v=c*v_0 in a torsion-free integral lattice,
+        # g(Zv)=Zv iff g(v_0)=+/-v_0. Thus the rank-one submodule and its
+        # primitive saturation have exactly the same setwise stabilizer.
+        fixed = (fixed[0].primitive_part(),)
     gram = [[int(lattice.b(x, y)) for y in fixed] for x in fixed]
     source = Lattices(lattice.base_ring())(gram)
     if not source.is_nondegenerate():
