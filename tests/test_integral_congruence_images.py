@@ -315,6 +315,12 @@ def test_public_nonnormal_congruence_preimage_is_owned_subgroup():
     assert first in subgroup and second not in subgroup
     assert int(subgroup.index()) == 3
     assert image.preimage_generators((image.image_one, image.reduce(swap)))[0] == 3
+    assert engine.congruence_preimage_membership(
+        ambient, 3, first, (image.image_one, image.reduce(swap)),
+        ambient_generators=generators)
+    assert not engine.congruence_preimage_membership(
+        ambient, 3, second, (image.image_one, image.reduce(swap)),
+        ambient_generators=generators)
 
 
 def test_public_nonnormal_congruence_preimage_section_word():

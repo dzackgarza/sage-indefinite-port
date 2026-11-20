@@ -1699,6 +1699,18 @@ class EichlerRecursion:
             ambient_generators=ambient_generators,
         )
 
+    def congruence_preimage_membership(self, lattice: Lattices.ParentMethods, modulus: int, isometry, allowed, *, ambient_generators=None):
+        r"""Exact membership in an owned congruence preimage.
+
+        Membership is decided in the owned integral subgroup first, not
+        merely by the finite reduction (which cannot distinguish elements
+        outside a specified proper ambient group with the same image).
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("membership requires an automorphism of the supplied lattice")
+        return isometry in self.congruence_preimage_subgroup(
+            lattice, modulus, allowed, ambient_generators=ambient_generators)
+
     def congruence_preimage_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Owned inverse image of an arbitrary subgroup of the actual level image.
 
