@@ -183,22 +183,46 @@ class HilbertWittOneLattice:
 
 
 def recognized_model(lattice):
-    r"""Return ``(model, basis)`` when ``L`` is isometric to a Hilbert model, or ``None``.
+    r"""Return ``(model, basis)`` when ``L`` is integrally isometric to a Hilbert model, or ``None``.
 
-    Columns of ``basis`` are the images of the model coordinates. Finds a hyperbolic plane in a small box, splits it off, and matches the complement with the
-    trace form of `O_E` for `E = Q(\sqrt{D})`, `D` the squarefree part of `|\det L|`. Generators of
-    the model are conjugated back. Finding no plane or no match in the box returns ``None``,
-    which is no statement about `L`.
+    Columns of ``basis`` are the model coordinates mapped into the supplied
+    original integral basis. First reduce the presentation integrally and
+    decide the exact source/target Isom predicate. In a positive case a
+    radius-three hyperbolic-pair/complement search is a fast path, not a
+    completeness test: if it fails, ``Isom.an_element`` constructs an
+    actual integral witness (the positive spinor-genus decision makes its
+    fair GL_4(Z) search terminate). Finally conjugate back using the
+    reduction's retained *integral* isometry.
+
+    In particular arbitrarily large unimodular basis transformations
+    cannot cause an isometric Hilbert model to be falsely unrecognized,
+    or send its full group and cusp orbits to the Li--Margulis box solely
+    because no short isotropic vector was visible in the input coordinates.
     """
-    frame = tuple(lattice.module_generators())
-    if len(frame) != 4:
+    if int(lattice.module_rank()) != 4:
         return None
-    gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    original_frame = tuple(lattice.module_generators())
+    gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in original_frame] for x in original_frame])
+    original_gram = gram
     determinant = abs(gram.det())
     D = determinant.squarefree_part()
     if D == 1 or QuadraticField(D, "s").discriminant() != determinant:
         return None
     model = HilbertWittOneLattice(D)
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+    from sage_extensions.categories.lattices import Lattices
+
+    presentation = indefinite_reduced_presentation(lattice)
+    reduced = presentation.reduced
+    source = Lattices(lattice.base_ring())([[int(c) for c in row] for row in model.gram().rows()])
+    is_empty = source.Isom(reduced).is_empty()
+    if is_empty is True:
+        return None
+    if is_empty is not False:
+        raise ArithmeticError("Hilbert model integral isometry decision is undecided")
+
+    frame = tuple(reduced.module_generators())
+    gram = matrix(ZZ, [[int(reduced.b(x, y)) for y in frame] for x in frame])
     target = model.gram()[2:, 2:]
     box = [vector(ZZ, v) for v in product(range(-3, 4), repeat=4) if any(v)]
     null = [v for v in box if (v * gram * v) == 0]
@@ -216,8 +240,27 @@ def recognized_model(lattice):
                     basis = matrix(ZZ, [e, f]).stack(change * complement).transpose()
                     if abs(basis.det()) != 1:
                         continue
-                    return model, basis
-    return None
+                    break
+            else:
+                continue
+            break
+        else:
+            continue
+        break
+    else:
+        # A finite small-coordinate search is not a negative decision.
+        # The exact Isom Boolean is already positive, so this method
+        # must return a witness regardless of integral basis height.
+        witness = source.Isom(reduced).an_element()
+        basis = matrix(ZZ, [[int(c) for c in witness(x)]
+                            for x in source.module_generators()]).transpose()
+
+    back = matrix(ZZ, [[int(c) for c in presentation.isometry(x)]
+                       for x in reduced.module_generators()]).transpose()
+    basis = back * basis
+    if abs(basis.det()) != 1 or basis.transpose() * original_gram * basis != model.gram():
+        raise ArithmeticError("Hilbert-model transporter is not an integral Gram isometry")
+    return model, basis
 
 
 def recognized_generators(lattice):

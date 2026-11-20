@@ -934,3 +934,44 @@ def test_low_witt_one_primitive_null_line_moving_transporter_and_inverse():
     assert witness is not None
     assert witness(e) in (f, -f)
     assert (~witness)(witness(e)) == e
+
+
+def test_witt_one_hilbert_recognition_recovers_original_high_basis_and_full_cusps():
+    r"""A large integral change of basis must not defeat the Hilbert model.
+
+    The old radius-three model recognition was only a *sufficient* test,
+    not an exact isometry decision; after a large change of basis it could
+    return None and force an astronomically large Li--Margulis enumeration.
+    Now the integral reduced presentation and exact positive Isom decision
+    recover the same model with an actual matrix taking its basis to L.
+    In Q(sqrt2) (class number one), the primitive null fibre has one
+    orbit and all content-two vectors form its scaled orbit.
+    """
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+    from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_model
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    B = matrix(SageZZ, [[0, 1, 0, 0], [1, 0, 0, 0],
+                        [0, 0, 2, 0], [0, 0, 0, -4]])
+    P = matrix(SageZZ, [[1, 15, 0, 0], [0, 1, 0, 0],
+                        [0, 0, 1, 17], [0, 0, 0, 1]])
+    changed = P * B * P.transpose()
+    ambient = lattice([[int(value) for value in row] for row in changed.rows()])
+    recognized = recognized_model(ambient)
+    assert recognized is not None
+    model, columns = recognized
+    assert abs(columns.det()) == 1
+    assert columns.transpose() * changed * columns == model.gram()
+    orbits = RECURSION.primitive_vector_classes(ambient, 0)
+    assert len(orbits) == 1
+    assert int(orbits[0].representative.q()) == 0
+    assert int(orbits[0].representative.content()) == 1
+    doubled = ambient.O().vector_orbit_representatives(0, content=2)
+    assert int(doubled.cardinality()) == 1
+    assert int(next(iter(doubled)).content()) == 2
+    generators = tuple(ambient.O().group_generators())
+    assert generators
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
