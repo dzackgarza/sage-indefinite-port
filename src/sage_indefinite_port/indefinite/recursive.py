@@ -2081,31 +2081,64 @@ class EichlerRecursion:
         # outside a supplied proper subgroup G. Use the provider's owned
         # subgroup membership; only the full O(L) uses the ambient predicate.
         ambient_group = lattice.O() if ambient_generators is None else lattice.O().subgroup(generators)
+        if ambient_generators is not None and ambient_group.is_finite() is True:
+            # A generated subgroup's generic owned membership predicate may
+            # recognize only supplied generators and certified words, even
+            # when its finiteness is established. For a *proved finite*
+            # subgroup compute the complete matrix closure instead. Never
+            # infer membership in an infinite subgroup from a finite image.
+            from collections import deque
+            from sage.matrix.constructor import identity_matrix
+            from sage.rings.integer_ring import ZZ
+
+            matrices = tuple(_column_matrix(g) for g in generators)
+            identity = identity_matrix(ZZ, len(tuple(lattice.module_generating_set())))
+            def matrix_key(g):
+                return tuple(g.list())
+            finite_members = {matrix_key(identity)}
+            queue = deque([identity])
+            while queue:
+                current = queue.popleft()
+                for generator in matrices:
+                    product = current * generator
+                    key = matrix_key(product)
+                    if key not in finite_members:
+                        finite_members.add(key)
+                        queue.append(product)
+            ambient_contains = lambda g: matrix_key(g) in finite_members
+        else:
+            ambient_contains = lambda g: as_isometry(g) in ambient_group
         return JointDiscriminantCharacterImage(
             tuple(_column_matrix(g) for g in generators),
             lambda g: rho(as_isometry(g)),
             tuple((lambda g, chi=chi: chi(as_isometry(g))) for chi in signs),
             identities, level_modulus=level_modulus,
             rank=len(tuple(lattice.module_generating_set())),
-            ambient_contains=lambda g: as_isometry(g) in ambient_group,
+            ambient_contains=ambient_contains,
         )
 
     def joint_discriminant_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Exact owned integral membership in an actual joint-image preimage.
 
         All character and congruence factors are evaluated jointly, while
-        the owned ambient subgroup enforces membership beyond the finite
-        image. In particular, a proper generated ambient subgroup is not
-        replaced by the full inverse image of its finite reduction.
+        the actual integral ambient subgroup enforces membership beyond the
+        finite image. For a finite generated ambient subgroup this uses its
+        exact matrix closure, not the full inverse image of its reduction.
         """
         if isometry.domain() is not lattice or isometry.codomain() is not lattice:
             raise ValueError("membership requires an automorphism of the supplied lattice")
-        subgroup = self.joint_discriminant_character_preimage_subgroup(
-            lattice, allowed, determinant=determinant, real_spinor=real_spinor,
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
             field_spinor=field_spinor, positive_cone=positive_cone,
             field_map=field_map, form_multiplier=form_multiplier,
             level_modulus=level_modulus, ambient_generators=ambient_generators)
-        return isometry in subgroup
+        allowed = frozenset(allowed)
+        if allowed != image.subgroup_from_generators(allowed):
+            raise ValueError("allowed must be a subgroup of the actual joint image")
+        columns = _column_matrix(isometry)
+        if not image.ambient_contains(columns):
+            return False
+        return image.image(columns) in allowed
 
     def joint_discriminant_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
         r"""Owned kernel/section witnesses and exact word for preimage membership.
