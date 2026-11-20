@@ -1885,6 +1885,11 @@ class EichlerRecursion:
         permitted = frozenset(residue._key(residue.reduce(g)) for g in allowed)
         if residue._key(residue.image_one) not in permitted or not permitted <= residue.image_keys():
             raise ValueError("allowed must contain identity and lie in the actual level image")
+        if any(residue._key(residue.reduce(a) * residue.reduce(b)) not in permitted
+               for a in residue._lifts.values() for b in residue._lifts.values()
+               if residue._key(residue.reduce(a)) in permitted
+               and residue._key(residue.reduce(b)) in permitted):
+            raise ValueError("allowed is not a subgroup of the actual level image")
         target = joint.subgroup_from_membership(lambda key: key[0] in permitted)
         return self.joint_discriminant_character_preimage_factorization(
             lattice, isometry, target, level_modulus=modulus,
