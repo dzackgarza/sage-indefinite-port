@@ -347,22 +347,25 @@ your own implementation's acceptance criterion. A passing test checks an
 example, not the routine's full advertised domain.
 
 **Contributor responsibility — [CONTRIBUTING.md](CONTRIBUTING.md).** A
-mathematical implementation contributor may faithfully translate pinned
-upstream tests without changing their meaning and may run temporary diagnostic
-experiments. Responsibility for **new mathematical test specification** lies
-with an independently appointed mathematical test author; **mathematical
-admission** lies with a distinct independent reviewer; **mathematical
-implementation** lies with the implementing contributor. Upstream-test
-translations require fidelity review. A newly introduced mathematical
-assertion is not admissible until its independent specification and
-mathematical review have established its exact hypotheses, result, and
-deduction. The implementation contributor has neither of those authorities.
+mathematical implementation contributor may run existing accepted tests and
+temporary diagnostic experiments but does **not author or amend committed
+tests or their expected results for their own implementation**, including
+translations of pinned upstream tests. **Every test** must cite an exact
+authoritative source for its expected behavior and be independently written
+and independently reviewed. **Every test must undergo independent periodic
+re-review at each release and at least every 90 days**, explicitly attempting
+to detect mathematically false assertions. Test authorship, mathematical
+review, implementation, and final acceptance are distinct authorities.
+Upstream-test translations require independent source-fidelity review. No
+new mathematical assertion is admissible without independent mathematical
+specification and review of its exact hypotheses, result and deduction.
 
 The existing automated `ci/check_test_oracles.py` and `oracle-provenance`
-check only provenance formatting. They do not admit a mathematical test or
-establish its correctness. Acceptance requires an attributable independent
-mathematical decision under the governing contributor policy. Previously
-self-authored assertions remain diagnostics until that review occurs.
+check only provenance formatting. They do not admit a test or establish
+its correctness; **all tests**, including previously committed ones, require
+the independent authorship, current review, and source authority specified
+in CONTRIBUTING.md before supporting acceptance claims. Unreviewed tests
+remain diagnostics.
 
 Run one explicitly named pytest node with
 `just test-node 'tests/path.py::test_exact_mathematical_claim'`. The recipe
