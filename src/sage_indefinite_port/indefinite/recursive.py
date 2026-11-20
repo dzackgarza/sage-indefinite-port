@@ -1172,9 +1172,9 @@ class EichlerRecursion:
             rank=len(tuple(lattice.module_generating_set())),
         )
 
-    def congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, residue):
+    def congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, residue, *, ambient_generators=None):
         r"""Integral isometries fixing a coordinate residue modulo ``modulus``."""
-        image = self.congruence_image(lattice, modulus)
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.residue_vector_stabilizer(residue)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
@@ -1183,9 +1183,9 @@ class EichlerRecursion:
         lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_vector_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
-    def congruence_submodule_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, generators):
+    def congruence_submodule_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, generators, *, ambient_generators=None):
         r"""Integral setwise stabilizer of a submodule of ``L / modulus L``."""
-        image = self.congruence_image(lattice, modulus)
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.residue_submodule_stabilizer(generators)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
@@ -1199,9 +1199,9 @@ class EichlerRecursion:
         lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_flag_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
-    def congruence_flag_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, stages):
+    def congruence_flag_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, stages, *, ambient_generators=None):
         r"""Integral setwise stabilizer of a nested flag in ``L / modulus L``."""
-        image = self.congruence_image(lattice, modulus)
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.residue_flag_stabilizer(stages)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
@@ -1227,9 +1227,9 @@ class EichlerRecursion:
         lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).simultaneous_residue_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
-    def simultaneous_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, *, vectors=(), submodules=(), flags=(), colour_classes=None):
+    def simultaneous_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, *, vectors=(), submodules=(), flags=(), colour_classes=None, ambient_generators=None):
         r"""Integral stabilizer of simultaneous finite-level residue constraints."""
-        image = self.congruence_image(lattice, modulus)
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.simultaneous_residue_stabilizer(
             vectors=vectors, submodules=submodules, flags=flags, colour_classes=colour_classes
         )
@@ -1472,13 +1472,13 @@ class EichlerRecursion:
         lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).finite_index_sublattice_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
-    def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
+    def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis, *, ambient_generators=None):
         r"""Integral isometries preserving the specified finite-index sublattice.
 
         ``basis`` consists of coordinate rows, with ``modulus L`` contained
         in their span. The exact congruence image supplies the stabilizer.
         """
-        image = self.congruence_image(lattice, modulus)
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.finite_index_sublattice_stabilizer(basis)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
@@ -1553,9 +1553,9 @@ class EichlerRecursion:
         lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_colouring_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
-    def congruence_colouring_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, colour_classes):
+    def congruence_colouring_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, colour_classes, *, ambient_generators=None):
         r"""Integral stabilizer preserving each named residue-vector colour."""
-        image = self.congruence_image(lattice, modulus)
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.residue_colouring_stabilizer(colour_classes)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 

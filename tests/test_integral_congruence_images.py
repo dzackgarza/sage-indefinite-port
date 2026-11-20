@@ -452,6 +452,36 @@ def test_public_residue_transporters_respect_proper_ambient_subgroup():
         ambient, 4, ((2, 0), (0, 4)), ((4, 0), (0, 2)), **restriction) is None
 
 
+def test_public_residue_stabilizers_respect_proper_ambient_subgroup():
+    r"""Six stabilizer constructors use the specified integral ambient group.
+
+    ORACLE-FILE: references/oracles/hyperbolic_plane_residue_modules.md
+    ORACLE-LOCATOR: Paragraph beginning Every element of this proper subgroup
+    ORACLE-EXCERPT: stabilizers have index one in < -I >.
+    ORACLE-HYPOTHESES: Hyperbolic plane U, modulus four, ambient < -I >, coordinate-axis residue markings
+    ORACLE-EXPECTED: Each restricted setwise stabilizer has index one; full-group coordinate stabilizers have index two
+    ORACLE-DERIVATION: O(U)={I,-I,S,-S}; the restricted group fixes both axes while the full group exchanges them
+    """
+    from tests.acceptance.consumer import lattice
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = ambient.module_generators()
+    engine = EichlerRecursion()
+    restricted = {"ambient_generators": (ambient.O()((-e, -f)),)}
+    assert engine.congruence_stabilizer_generators(ambient, 4, (2, 0), **restricted)[0] == 1
+    assert engine.congruence_stabilizer_generators(ambient, 4, (2, 0))[0] == 2
+    assert engine.congruence_submodule_stabilizer_generators(ambient, 4, ((2, 0),), **restricted)[0] == 1
+    assert engine.congruence_flag_stabilizer_generators(
+        ambient, 4, (((2, 0),), ((1, 0),)), **restricted)[0] == 1
+    assert engine.congruence_colouring_stabilizer_generators(
+        ambient, 4, {"red": ((2, 0),)}, **restricted)[0] == 1
+    assert engine.simultaneous_congruence_stabilizer_generators(
+        ambient, 4, submodules=(((2, 0),),), **restricted)[0] == 1
+    assert engine.finite_index_sublattice_stabilizer_generators(
+        ambient, 4, ((2, 0), (0, 4)), **restricted)[0] == 1
+
+
 def test_public_lattice_composite_residue_submodule_stabilizer():
     from tests.acceptance.consumer import lattice
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
