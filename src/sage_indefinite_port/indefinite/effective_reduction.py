@@ -541,3 +541,86 @@ def orthogonal_marking_stabilizer_generators(gram, marking):
             raise ArithmeticError("finite-image gluing stabilizer generator failed verification")
         result.append(candidate)
     return tuple(result)
+
+
+def orthogonal_marking_setwise_stabilizer_generators(gram, marking):
+    r"""Exact integral generators preserving a nondegenerate marked submodule setwise.
+
+    Let `S` be the primitive saturation of the marked module `M`, and
+    `K=S^perp`. Every rational setwise stabilizer is block diagonal in
+    `S_Q (+) K_Q`, with factors in `O(S)` and `O(K)`. Put
+    `D=|det([S|K])|`, `d=[S:M]`. Integrality of the ambient extension
+    depends only on the block matrix modulo `D`, while preservation of
+    `M` depends only on its `S`-block modulo `d`. The actual image modulo
+    `lcm(D,d)` therefore determines an exact finite-index preimage.
+    Schreier generators of that preimage, transported to the original
+    lattice, generate the *entire* integral setwise stabilizer.
+    """
+    from sage_extensions.all import Lattices, ZZ as OwnedZZ
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
+    from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+    B, X = matrix(ZZ, gram), matrix(ZZ, marking)
+    n = B.nrows()
+    if B.det() == 0 or X.nrows() != n:
+        raise ValueError("setwise gluing requires a nondegenerate ambient and owned marking")
+    if X.rank() == 0:
+        L = Lattices(OwnedZZ)([[int(c) for c in row] for row in B.rows()])
+        return tuple(_column_matrix(g) for g in EichlerRecursion().orthogonal_group_generators(L))
+    S = X.transpose().saturation().transpose()
+    k = S.ncols()
+    gram_S = S.transpose()*B*S
+    if gram_S.det() == 0:
+        raise ValueError("the marked saturation must be nondegenerate")
+    coordinates = S.change_ring(QQ).solve_right(X.change_ring(QQ))
+    if coordinates.denominator() != 1:
+        raise ArithmeticError("marked submodule coordinates are not integral in its saturation")
+    coordinates = coordinates.change_ring(ZZ)
+    module = coordinates.transpose().row_module()
+    index = ZZ(1)
+    for divisor in coordinates.transpose().elementary_divisors():
+        if divisor:
+            index *= abs(ZZ(divisor))
+
+    category = Lattices(OwnedZZ)
+    LS = category([[int(c) for c in row] for row in gram_S.rows()])
+    S_generators = tuple(_column_matrix(g) for g in EichlerRecursion().orthogonal_group_generators(LS))
+    if k == n:
+        K = matrix(ZZ, n, 0)
+        K_generators = ()
+    else:
+        K, gram_K = _complement(B, S)
+        LK = category([[int(c) for c in row] for row in gram_K.rows()])
+        K_generators = tuple(_column_matrix(g) for g in EichlerRecursion().orthogonal_group_generators(LK))
+    r = n-k
+    generators = tuple(matrix.block_diagonal([g, identity_matrix(ZZ, r)], subdivide=False)
+                       for g in S_generators) + tuple(
+        matrix.block_diagonal([identity_matrix(ZZ, k), g], subdivide=False)
+        for g in K_generators)
+    F = S.augment(K)
+    inverse = F.change_ring(QQ).inverse()
+    modulus = abs(ZZ(F.det())).lcm(index)
+
+    def extend(g):
+        return F*g*inverse
+
+    def preserves_marking(g):
+        moved = (g[:k, :k]*coordinates).transpose()
+        return all(vector in module for vector in moved.rows())
+
+    if modulus == 1:
+        return tuple(extend(g).change_ring(ZZ) for g in generators)
+    image = IntegralCongruenceImage(generators, modulus, rank=n)
+    allowed = tuple(image.reduce(g) for g in image._lifts.values()
+                    if extend(g).denominator() == 1 and preserves_marking(g))
+    _, preimage_generators = image.preimage_generators(allowed)
+    result = []
+    for generator in preimage_generators:
+        candidate = extend(generator)
+        if candidate.denominator() != 1 or not preserves_marking(generator):
+            raise ArithmeticError("setwise gluing Schreier generator failed integral marking conditions")
+        candidate = candidate.change_ring(ZZ)
+        if abs(candidate.det()) != 1 or candidate.transpose()*B*candidate != B:
+            raise ArithmeticError("setwise gluing Schreier generator failed ambient isometry verification")
+        result.append(candidate)
+    return tuple(result)
