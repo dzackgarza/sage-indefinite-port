@@ -1178,9 +1178,9 @@ class EichlerRecursion:
         index, matrices = image.residue_vector_stabilizer(residue)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def congruence_vector_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+    def congruence_vector_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
         r"""Integral orthogonal transporter between residue vectors, or ``None``."""
-        lift = self.congruence_image(lattice, modulus).residue_vector_transporter(source, target)
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_vector_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
     def congruence_submodule_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, generators):
@@ -1189,14 +1189,14 @@ class EichlerRecursion:
         index, matrices = image.residue_submodule_stabilizer(generators)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def congruence_submodule_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+    def congruence_submodule_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
         r"""Integral orthogonal transporter of residue submodules, or ``None``."""
-        lift = self.congruence_image(lattice, modulus).residue_submodule_transporter(source, target)
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_submodule_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
-    def congruence_flag_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+    def congruence_flag_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
         r"""Owned integral transporter of residue-module flags, or ``None``."""
-        lift = self.congruence_image(lattice, modulus).residue_flag_transporter(source, target)
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_flag_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
     def congruence_flag_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, stages):
@@ -1222,9 +1222,9 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def simultaneous_congruence_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+    def simultaneous_congruence_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
         r"""Owned integral transporter of simultaneous finite-level marked data."""
-        lift = self.congruence_image(lattice, modulus).simultaneous_residue_transporter(source, target)
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).simultaneous_residue_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
     def simultaneous_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, *, vectors=(), submodules=(), flags=(), colour_classes=None):
@@ -1467,9 +1467,9 @@ class EichlerRecursion:
             generating_morphism=ambient.free_cover(generators),
         )
 
-    def finite_index_sublattice_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+    def finite_index_sublattice_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
         r"""Owned integral transporter of full-rank sublattices containing mL."""
-        lift = self.congruence_image(lattice, modulus).finite_index_sublattice_transporter(source, target)
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).finite_index_sublattice_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
     def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
@@ -1548,9 +1548,9 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def congruence_colouring_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target):
+    def congruence_colouring_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
         r"""Integral orthogonal transporter of labelled residue colour classes."""
-        lift = self.congruence_image(lattice, modulus).residue_colouring_transporter(source, target)
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_colouring_transporter(source, target)
         return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
 
     def congruence_colouring_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, colour_classes):
