@@ -82,3 +82,16 @@ def test_scalar_centralizer_retains_exact_gluing_stabilizer():
         tuple(matrix(ZZ, ((1, 0), (0, 1))).list()),
         tuple(matrix(ZZ, ((-1, 0), (0, -1))).list()),
     }
+
+
+def test_scalar_centralizer_pointwise_marking():
+    # Fixing e+f pointwise inside O(U) leaves I and the exchange S.
+    # The additional centralizer condition for -I changes nothing.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    e, f = lattice.module_generators()
+    negation = lattice.O()({label: -v for label, v in zip(
+        lattice.module_generating_set(), (e, f), strict=True)})
+    centralizer = CentralizerSubgroup(lattice, (negation,))
+    generators = centralizer.pointwise_stabilizer_generators((2 * (e + f),))
+    assert len(generators) == 2
+    assert all(g(e + f) == e + f for g in generators)

@@ -1061,7 +1061,10 @@ class CentralizerSubgroup:
         if self.lattice.O().is_finite() is True:
             return tuple(g for g in self._finite_elements()
                          if g in self and all(g(v) == v for v in vectors))
-        if not self.matrices and self.lattice.is_nondegenerate():
+        # Central scalar actions impose no extra commutation equations.
+        identity = identity_matrix(ZZ, len(self.frame))
+        scalar_actions = all(F == identity or F == -identity for F in self.matrices)
+        if scalar_actions and self.lattice.is_nondegenerate():
             # Fixing a possibly dependent/nonprimitive tuple is exactly
             # fixing the primitive saturation of its rational span.
             # When that span is nondegenerate, finite residue gluing of
