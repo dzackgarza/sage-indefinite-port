@@ -30,8 +30,12 @@ def test_zero_plane_has_exactly_one_nonzero_vector_orbit_per_content():
     group = lattice.O()
     for d in (1, 2, 3):
         representatives = tuple(group.vector_orbit_representatives(0, content=d))
-        assert representatives == (d * e,)
+        # The theorem specifies a single orbit, not which orbit member a
+        # particular enumeration is obliged to choose as its representative.
+        assert len(representatives) == 1
         assert gcd(*(int(c) for c in representatives[0])) == d
+        transporter = group.transporter(d * e, representatives[0])
+        assert transporter is not None and transporter(d * e) == representatives[0]
 
 
 def test_zero_plane_transporter_preserves_content_and_reaches_primitive_vectors():
@@ -49,10 +53,15 @@ def test_zero_plane_transporter_preserves_content_and_reaches_primitive_vectors(
 def test_zero_plane_point_stabilizer_contains_infinite_shear_and_sign():
     lattice = _zero_plane()
     e, f = tuple(lattice.module_generators())
-    generators = tuple(lattice.O().stabilizer(e).group_generators())
+    group = lattice.O()
+    stabilizer = group.stabilizer(e)
+    generators = tuple(stabilizer.group_generators())
+    assert generators
     assert all(g(e) == e for g in generators)
     # An element of the stabilizer is determined by f -> k*e + eps*f.
-    # The two displayed generators give k=1 and eps=-1, hence the full
-    # infinite stabilizer (and every power of its nontrivial shear).
-    assert any(g(f) == e + f for g in generators)
-    assert any(g(f) == -f for g in generators)
+    # Exact shear/sign membership is a group property, independently of
+    # which alternative complete generating family a provider may select.
+    shear = group((e, e + f))
+    sign = group((e, -f))
+    assert shear in stabilizer and sign in stabilizer
+    assert all((shear**k)(f) == k * e + f for k in (1, 2, 3, 4))
