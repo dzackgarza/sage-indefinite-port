@@ -1001,7 +1001,10 @@ class CentralFieldCommutant:
             return "hyperbolic", E, tuple(table.values()), binary_hyperbolic_unitary.form(d), [v, f], gram
         complement = self._orthogonal(self._vectors(lattice), [v, f], gram)
         trace = matrix(QQ, [[self.h(x, y, gram).trace() for y in complement] for x in complement])
-        if trace.is_negative_definite():
+        # Sage matrices provide is_positive_definite(), not the proposed
+        # is_negative_definite() operation. Negation is an exact equivalent
+        # test for the negative-definite rational trace form.
+        if (-trace).is_positive_definite():
             gram, f = -gram, -f
         units = self._orthonormal_basis(complement, gram)
         if units is None:

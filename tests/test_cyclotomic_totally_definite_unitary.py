@@ -1,4 +1,4 @@
-"""Compact cyclotomic unitary centralizers on indefinite trace lattices.
+"""Compact and noncompact cyclotomic unitary centralizers on indefinite trace lattices.
 
 The scalar form (zeta_5+zeta_5^-1)(x_1 * conjugate(y_1) +
 x_2 * conjugate(y_2)) is definite at each real place of Q(sqrt5),
@@ -6,6 +6,8 @@ but its two signatures are opposite. Its rational trace lattice has
 signature (4,4), so ordinary definite-lattice automorphism computation
 does not apply. The integral unitary group nevertheless has order 200.
 """
+
+import pytest
 
 from sage.matrix.constructor import matrix
 from sage.matrix.special import identity_matrix
@@ -94,3 +96,35 @@ def test_indefinite_eisenstein_binary_unitary_has_complete_public_generators():
     # A nontrivial unipotent element has infinite order over ZZ:
     # (1+N)^k = 1 + kN for N^2=0 and k != 0.
     assert any(M != one and (M - one)**2 == 0 for M in matrices)
+
+
+@pytest.mark.parametrize("middle_rank", (1, 2))
+def test_eisenstein_hyperbolic_unitary_centralizer_generators(middle_rank):
+    r"""U(H+I_m; Z[omega]) has complete public generators for m=1,2.
+
+    The port's source-faithful Hermitian unitary algorithm constructs the
+    full group through null-vector reduction and a finite monomial Levi
+    action. Its trace-lattice orthogonal centralizer must use this route
+    for the rank-six and rank-eight cases, not only the hand-normalized
+    binary hyperbolic or rank-ten ACT routes.
+    """
+    from sage_indefinite_port.indefinite.eisenstein_hyperbolic_unitary import (
+        OMEGA, lattice as hermitian_lattice,
+    )
+
+    hermitian = hermitian_lattice(middle_rank)
+    lattice = hermitian.trace_lattice()
+    scalar = hermitian.order_action(OMEGA)
+    rotation = lattice.O()(tuple(scalar(x) for x in lattice.module_generators()))
+    generators = tuple(lattice.O().centralizer(rotation).group_generators())
+    assert generators
+    assert all(g.domain() is lattice and g.codomain() is lattice for g in generators)
+    assert all(g * rotation == rotation * g for g in generators)
+
+    labels = tuple(lattice.module_generating_set())
+    matrices = [matrix(SageZZ, [
+        [int(g(v).to_vector()(label)) for v in lattice.module_generators()]
+        for label in labels
+    ]) for g in generators]
+    one = identity_matrix(SageZZ, 2 * (middle_rank + 2))
+    assert any(M != one and (M - one)**3 == 0 for M in matrices)
