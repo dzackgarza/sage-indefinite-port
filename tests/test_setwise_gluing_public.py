@@ -114,3 +114,16 @@ def test_scalar_centralizer_zero_marking_is_full_group():
             ((0, 1), (1, 0)), ((0, -1), (-1, 0)),
         )
     }
+
+
+def test_scalar_centralizer_nonprimitive_marked_transporter():
+    # In O(U), the exchange S carries 2e to 2f. The primitive content
+    # obstruction rules out a transporter from 2e to f.
+    lattice = Lattices(OwnedZZ)([[0, 1], [1, 0]])
+    e, f = lattice.module_generators()
+    negation = lattice.O()({label: -v for label, v in zip(
+        lattice.module_generating_set(), (e, f), strict=True)})
+    centralizer = CentralizerSubgroup(lattice, (negation,))
+    witness = centralizer.vector_equivalence_witness(2 * e, 2 * f)
+    assert witness is not None and witness(2 * e) == 2 * f
+    assert centralizer.vector_equivalence_witness(2 * e, f) is None

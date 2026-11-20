@@ -1037,7 +1037,17 @@ class CentralizerSubgroup:
             # dependent and degenerate equivariant markings exactly.
             return next((g for g in self._finite_elements()
                          if g in self and all(g(x) == y for x, y in zip(left, right))), None)
-        found = self._orbit(left).transporter(self._columns(right))
+        identity = identity_matrix(ZZ, len(self.frame))
+        if all(F == identity or F == -identity for F in self.matrices):
+            # Scalar commuting actions impose no restriction beyond O(L).
+            # The exact marked transporter handles nonprimitive, dependent
+            # and nondegenerate frames without constructing an equivariant
+            # orbit for an artificial nontrivial centralizer.
+            from sage_indefinite_port.indefinite.effective_reduction import orthogonal_transporter
+
+            found = orthogonal_transporter(self.gram, self._columns(left), self._columns(right))
+        else:
+            found = self._orbit(left).transporter(self._columns(right))
         if found is None:
             return None
         witness = self._element(found)
