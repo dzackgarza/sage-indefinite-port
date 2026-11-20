@@ -1653,6 +1653,30 @@ class EichlerRecursion:
             lattice, allowed, real_spinor=True, ambient_generators=ambient_generators,
         )
 
+    def congruence_preimage_factorization(self, lattice: Lattices.ParentMethods, modulus: int, isometry, allowed, *, ambient_generators=None):
+        r"""Exact kernel/section factorization and word in a level preimage.
+
+        ``allowed`` is a subgroup of the actual residue image. Return
+        ``(kernel, section, word)`` with ``g=kernel*section`` and the
+        kernel congruent to identity, or ``None`` for a nonmember.
+        The section word is in the specified ambient generators.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        permitted = frozenset(residue._key(residue.reduce(g)) for g in allowed)
+        if residue._key(residue.image_one) not in permitted or not permitted <= residue.image_keys():
+            raise ValueError("allowed must contain identity and lie in the actual level image")
+        target = joint.subgroup_from_membership(lambda key: key[0] in permitted)
+        return self.joint_discriminant_character_preimage_factorization(
+            lattice, isometry, target, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
     def congruence_preimage_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Owned inverse image of an arbitrary subgroup of the actual level image.
 
