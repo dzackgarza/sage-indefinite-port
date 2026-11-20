@@ -1250,8 +1250,8 @@ class EichlerRecursion:
             lattice, target_modulus, ambient_generators=ambient_generators,
         )
 
-    def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
-        r"""Exact joint preimage of multilevel residues and finite characters.
+    def _multilevel_joint_character_selection(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Actual joint finite image and subgroup selected by all level/character constraints.
 
         ``allowed_characters`` is a subgroup of the actual joint character
         image (without a congruence factor). All level constraints are
@@ -1294,25 +1294,62 @@ class EichlerRecursion:
             if all(target._key(projection(residue.reduce(witness))) in keys
                    for target, projection, keys in conditions):
                 allowed.append(key)
+        allowed = frozenset(allowed)
+        # Check that these conditions give a subgroup in the actual joint
+        # image, not merely in the product of their nominal finite targets.
+        if joint.subgroup_from_generators(allowed) != allowed:
+            raise ValueError("multilevel and character conditions do not define a subgroup")
+        return joint, allowed
+
+    def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Complete integral generators for the exact multilevel/character preimage.
+
+        All constraints factor through the single actual finite joint image
+        at their least common multiple. This includes the full integer
+        congruence kernel: the result is *not* a lift of just the generators
+        of the allowed residue subgroup.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators,
+        )
         index, matrices = joint.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
     def multilevel_joint_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Owned subgroup realizing all multilevel and character restrictions.
 
-        The subgroup is formed inside the explicitly generated ambient group
-        when provided, otherwise O(L). Its generators are the exact Schreier
-        preimage generators, not merely lifts of the finite allowed image.
+        Return the full owned *finite-codomain preimage* of the intersection
+        inside the explicitly generated ambient group, or O(L) when no proper
+        ambient group is supplied. The retained quotient and the complete
+        Schreier generators allow genuine marked orbit splitting, stabilizer
+        restrictions and transporters, not just testing membership in a bare
+        subgroup of generated matrices.
         """
-        _, generators = self.multilevel_joint_character_preimage_generators(
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        joint, allowed = self._multilevel_joint_character_selection(
             lattice, constraints, allowed_characters,
             determinant=determinant, real_spinor=real_spinor,
             field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
             form_multiplier=form_multiplier, ambient_generators=ambient_generators,
         )
-        ambient = (lattice.O() if ambient_generators is None
-                   else lattice.O().subgroup(tuple(ambient_generators)))
-        return ambient.subgroup(generators)
+        _, matrices = joint.preimage_generators(allowed)
+        generators = tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+        representation = self._joint_character_representation(lattice, joint, ambient_generators)
+        actual = representation.codomain()
+        target = actual.subgroup(tuple(
+            representation(_isometry_from_column_matrix(lattice, lattice, joint.section(key)))
+            for key in allowed
+        ))
+        ambient = representation.domain()
+        return representation.preimage_subgroup(
+            target,
+            stated_clause=lambda: "the selected joint level stabilizer and arithmetic character subgroup",
+            generating_morphism=ambient.free_cover(generators),
+        )
 
     def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis):
         r"""Integral isometries preserving the specified finite-index sublattice.

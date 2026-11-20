@@ -1067,11 +1067,34 @@ def test_multilevel_joint_character_preimage_is_owned_subgroup():
     )
     assert ambient.O().identity() in subgroup
     assert negative not in subgroup
+    assert subgroup.preimage_morphism().codomain().is_finite() is True
+    assert int(subgroup.index()) == 2
     whole = engine.multilevel_joint_character_preimage_subgroup(
         ambient, (), characters.image_keys(), determinant=True,
         ambient_generators=(negative,),
     )
     assert negative in whole
+    assert whole.preimage_morphism().codomain().is_finite() is True
+    assert int(whole.index()) == 1
+
+    # A full O(U) multilevel preimage is also the subgroup carrying its
+    # actual finite-codomain representation for marked orbit splitting.
+    full_character_image = engine.joint_discriminant_character_image(
+        ambient, determinant=True,
+    )
+    full = engine.multilevel_joint_character_preimage_subgroup(
+        ambient, conditions, full_character_image.image_keys(),
+        determinant=True,
+    )
+    assert full.supergroup() is ambient.O()
+    assert int(full.index()) == 4
+    assert full.preimage_morphism().codomain().is_finite() is True
+    from sage_extensions.all import Lattices, ZZ as OwnedZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    source = lattice([[0]])
+    category = CosliceCategory(Lattices(OwnedZZ), source)
+    marked = category(source.hom([e], codomain=ambient))
+    assert len(tuple(ambient.O().split_orbit(marked, full))) == 4
 
 
 def test_joint_preimage_factorization_returns_kernel_section_and_word():
