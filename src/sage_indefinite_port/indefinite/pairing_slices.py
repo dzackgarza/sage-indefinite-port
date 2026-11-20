@@ -648,7 +648,17 @@ class SubgroupVectorOrbits:
         return int(self.lattice.q(vector)) == int(self.square) and int(vector.content()) == 1
 
     def transporter(self, left, right):
-        return self.group.vector_equivalence_witness(left, right)
+        if hasattr(self.group, "vector_equivalence_witness"):
+            return self.group.vector_equivalence_witness(left, right)
+        if self.group.is_finite() is True:
+            # Arbitrary finite owned subgroups need not expose a bespoke
+            # vector-orbit method. Their complete element enumeration is
+            # itself an exact transporter decision, including nonnormal
+            # and user-generated subgroups of O(L).
+            return next((g for g in self.group if g(left) == right), None)
+        raise NotImplementedError(
+            "an infinite subgroup requires an exact vector-equivalence decision"
+        )
 
     def equivalent(self, left, right):
         return self.transporter(left, right) is not None
