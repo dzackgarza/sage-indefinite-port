@@ -794,6 +794,8 @@ class CentralizerSubgroup:
         self.labels = tuple(lattice.module_generating_set())
         self.gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in self.frame] for x in self.frame])
         self.isometries = tuple(isometries)
+        if any(F.domain() is not lattice or F.codomain() is not lattice for F in self.isometries):
+            raise ValueError("centralizer actions must be integral automorphisms of the original lattice")
         self.matrices = tuple(self._matrix(F) for F in self.isometries)
 
     def _matrix(self, element):
