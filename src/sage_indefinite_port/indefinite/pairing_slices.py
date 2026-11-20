@@ -10,7 +10,7 @@ index in general, :class:`CentralizerSubgroup` decides vector and tuple equivale
 equivariant marked transporter of `(L, F, v)` (:class:`CentralizerTupleOrbit`, over #54).
 """
 
-from itertools import count, product
+from itertools import count
 
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.modules.free_module_element import vector
@@ -580,13 +580,14 @@ class PointwiseStabilizerOrbits:
         return pointwise_transporter(self.lattice, self.fixed, left, right)
 
     def _shell(self, height):
+        from sage_indefinite_port.indefinite.recursive import _coordinate_box
+
         generators = tuple(self.lattice.module_generators())
-        for coordinates in product(range(-height, height + 1), repeat=len(generators)):
-            if max((abs(c) for c in coordinates), default=0) == height:
-                yield sum(
-                    (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, generators, strict=True)),
-                    self.lattice.zero(),
-                )
+        for coordinates in _coordinate_box(self.lattice, height):
+            yield sum(
+                (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, generators, strict=True)),
+                self.lattice.zero(),
+            )
 
     def __iter__(self):
         known = []
@@ -622,11 +623,13 @@ class SubgroupVectorOrbits:
         return self.transporter(left, right) is not None
 
     def __iter__(self):
+        from sage_indefinite_port.indefinite.recursive import _coordinate_box
+
         frame = tuple(self.lattice.module_generators())
         known = []
         for height in count(0):
-            for coordinates in product(range(-height, height + 1), repeat=len(frame)):
-                if max((abs(c) for c in coordinates), default=0) != height or not any(coordinates):
+            for coordinates in _coordinate_box(self.lattice, height):
+                if not any(coordinates):
                     continue
                 vector = sum(
                     (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, frame, strict=True)),
