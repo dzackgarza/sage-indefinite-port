@@ -73,6 +73,18 @@ def centralizer_transporter_in_box(gram, actions, marking, target, bound):
     bound = int(bound)
     if bound < 0:
         raise ValueError("the integral coordinate bound must be nonnegative")
+    if marking.nrows() == n and marking.ncols() == n and marking.det() != 0:
+        # A full-rank marking determines the transporter uniquely over Q:
+        # g X = Y implies g = Y X^-1. This applies equally to a
+        # nonprimitive full-rank marking; its index is irrelevant.
+        candidate = target.change_ring(QQ) * marking.change_ring(QQ).inverse()
+        if (candidate.denominator() == 1
+                and _entry_norm(candidate) <= bound):
+            g = candidate.change_ring(ZZ)
+            if (abs(g.det()) == 1 and g.transpose() * gram * g == gram
+                    and all(g * F == F * g for F in actions)):
+                return g
+        return None
 
     def candidates(column):
         # The effective Li--Margulis bound can exceed machine-sized range
@@ -156,6 +168,14 @@ def orthogonal_transporter(gram, marking, target):
     gram, marking, target = matrix(ZZ, gram), matrix(ZZ, marking), matrix(ZZ, target)
     if target.transpose() * gram * target != marking.transpose() * gram * marking:
         return None
+    if marking.nrows() == gram.nrows() and marking.ncols() == gram.nrows() and marking.det() != 0:
+        # No Li--Margulis complement is needed for a full-rank marking:
+        # the rational extension is unique and its integrality is exact.
+        candidate = target.change_ring(QQ) * marking.change_ring(QQ).inverse()
+        if candidate.denominator() != 1:
+            return None
+        g = candidate.change_ring(ZZ)
+        return g if abs(g.det()) == 1 and g.transpose() * gram * g == gram else None
     if separated_by_invariant(gram, marking, target, []):
         return None
     limit = orthogonal_transporter_bound(gram, marking, target)
