@@ -1205,20 +1205,23 @@ class EichlerRecursion:
         index, matrices = image.residue_flag_stabilizer(stages)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def joint_determinant_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int):
+    def joint_determinant_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
         r"""Actual joint determinant and level image of the integral orthogonal group."""
         from sage_indefinite_port.indefinite.congruence_images import JointDeterminantCongruenceImage
 
-        generators = self.orthogonal_group_generators(lattice)
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
         return JointDeterminantCongruenceImage(
             tuple(_column_matrix(g) for g in generators),
             modulus,
             rank=len(tuple(lattice.module_generating_set())),
         )
 
-    def joint_determinant_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+    def joint_determinant_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Integral generators for a subgroup of the actual joint level/sign image."""
-        image = self.joint_determinant_congruence_image(lattice, modulus)
+        image = self.joint_determinant_congruence_image(lattice, modulus, ambient_generators=ambient_generators)
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
