@@ -63,3 +63,6 @@ by the transposition of the first two coordinates has order two and
 index 24. It is nonnormal, since conjugating by the transposition of
 coordinates two and three gives a different transposition. The preimage
 of its level-three reduction is exactly H, with no additional elements.
+Inside O(I_3), the coordinate permutation subgroup S_3 has order six.
+Its reduction modulo three is also injective, and the same transposition
+subgroup H has index three in this explicitly generated ambient subgroup.
