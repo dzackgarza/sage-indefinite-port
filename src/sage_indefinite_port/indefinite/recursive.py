@@ -1555,17 +1555,21 @@ class EichlerRecursion:
         r"""Owned integral membership in the correlated multilevel preimage.
 
         A finite quotient alone does not decide membership in a proper
-        explicitly generated ambient group; delegate that decision to the
-        owned integral preimage rather than inspecting only the reduction.
+        explicitly generated ambient group. Check the actual integral
+        ambient membership before evaluating the correlated joint image.
         """
         if isometry.domain() is not lattice or isometry.codomain() is not lattice:
             raise ValueError("membership requires an automorphism of the supplied lattice")
-        return isometry in self.multilevel_joint_character_preimage_subgroup(
+        joint, allowed = self._multilevel_joint_character_selection(
             lattice, constraints, allowed_characters,
             determinant=determinant, real_spinor=real_spinor,
             field_spinor=field_spinor, positive_cone=positive_cone,
             field_map=field_map, form_multiplier=form_multiplier,
             ambient_generators=ambient_generators)
+        columns = _column_matrix(isometry)
+        if not joint.ambient_contains(columns):
+            return False
+        return joint.image(columns) in allowed
 
     def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
         r"""Complete integral generators for the exact multilevel/character preimage.
