@@ -75,6 +75,12 @@ def centralizer_transporter_in_box(gram, actions, marking, target, bound):
         raise ValueError("the integral coordinate bound must be nonnegative")
     if marking.rank() != target.rank():
         return None
+    if marking.transpose().elementary_divisors() != target.transpose().elementary_divisors():
+        # A unimodular ambient transformation preserves the Smith
+        # invariants of the marked column module, including its index in
+        # the primitive saturation. Equal Gram matrices alone do not
+        # detect this obstruction for isotropic markings.
+        return None
     relations = marking.change_ring(QQ).right_kernel_matrix()
     if target.change_ring(QQ) * relations.transpose() != 0:
         # An invertible integral transporter preserves every rational
@@ -196,6 +202,11 @@ def orthogonal_transporter(gram, marking, target):
     if marking.rank() != target.rank():
         # An invertible isometry preserves the rank of every marked frame,
         # even when its restricted Gram form is degenerate.
+        return None
+    if marking.transpose().elementary_divisors() != target.transpose().elementary_divisors():
+        # Smith invariants of the marking are unchanged by left
+        # multiplication with GL_n(Z). In particular a primitive null
+        # vector cannot be transported to a nonprimitive null vector.
         return None
     if marking.rank() < marking.ncols():
         # Dependent markings have a unique rational relation matrix on
