@@ -2003,7 +2003,7 @@ class EichlerRecursion:
         index, matrices = image.preimage_generators(allowed)
         return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
-    def positive_cone_congruence_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed):
+    def positive_cone_congruence_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
         r"""Owned inverse image of a level/component subgroup in O(L).
 
         The component sign is independent of determinant and normalized
@@ -2016,16 +2016,20 @@ class EichlerRecursion:
         splitting, stabilizer intersections and exact transporters.
         """
         allowed = frozenset(allowed)
-        legacy = self.joint_positive_cone_congruence_image(lattice, modulus)
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        legacy = self.joint_positive_cone_congruence_image(
+            lattice, modulus, ambient_generators=ambient_generators)
         legacy.preimage_generators(allowed)  # Exact subgroup validation.
         joint = self.joint_discriminant_character_image(
             lattice, positive_cone=True, level_modulus=modulus,
+            ambient_generators=ambient_generators,
         )
         selected = joint.subgroup_from_membership(
             lambda key: (key[0], key[-1]) in allowed
         )
         return self.joint_discriminant_character_preimage_subgroup(
             lattice, selected, positive_cone=True, level_modulus=modulus,
+            ambient_generators=ambient_generators,
         )
 
     def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
