@@ -72,7 +72,8 @@ def test_published_tits_building_orbit_counts(gram, stable, expected):
         2 white, 2 black, 3 consecutive edges; group explicitly O^+(L).
       * 2U(2)+A2: Example at 1497-1500, Fig. at 1450-1495:
         6 white, 9 black (6 outer + 3 inner), 18 edges
-        (12 perimeter + 3 inner spokes + 3 curved chords).
+        (12 perimeter segments + 3 curved chords, each split into two
+        distinct incidences by the black vertex lying on that chord).
 
     These are distinct arithmetic subgroups; do not substitute O(L).
     """
