@@ -185,9 +185,9 @@ def marked_transporter(lattice, source, target):
         return None
     frame = tuple(lattice.module_generators())
     zero_form = all(int(lattice.b(x, y)) == 0 for x in frame for y in frame)
-    if len(source) == int(lattice.rank()) or int(lattice.rank()) <= 2 or zero_form:
+    if len(source) == int(lattice.rank()) or int(lattice.rank()) <= 2 or zero_form or lattice.is_definite():
         columns = matrix(ZZ, [[int(c) for c in v] for v in source]).transpose()
-        if (int(lattice.rank()) <= 2 or zero_form
+        if (int(lattice.rank()) <= 2 or zero_form or lattice.is_definite()
                 or (columns.ncols() == columns.nrows() and columns.det() != 0)):
             # A full-rank marking, including a nonprimitive one, fixes a
             # unique rational ambient map. Decide its integrality and

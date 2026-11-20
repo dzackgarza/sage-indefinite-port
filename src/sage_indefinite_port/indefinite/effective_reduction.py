@@ -285,6 +285,21 @@ def orthogonal_transporter(gram, marking, target):
             return None
         g = candidate.change_ring(ZZ)
         return g if abs(g.det()) == 1 and g.transpose() * gram * g == gram else None
+    if gram.is_positive_definite() or (-gram).is_positive_definite():
+        # For a definite integral form the entire orthogonal group is
+        # finite. Enumerate its exact owned integral automorphisms;
+        # neither an indefinite complement nor the Li--Margulis bound
+        # applies to this case. This covers every marking rank and
+        # nonprimitive content without imposing primitive hypotheses.
+        from sage_extensions.all import Lattices, ZZ as OwnedZZ
+
+        lattice = Lattices(OwnedZZ)([[int(c) for c in row] for row in gram.rows()])
+        frame = tuple(lattice.module_generators())
+        for isometry in lattice.O():
+            candidate = matrix(ZZ, [[int(c) for c in isometry(v)] for v in frame]).transpose()
+            if candidate*marking == target:
+                return candidate
+        return None
     if gram.nrows() == 2 and gram.rank() == 1:
         # A primitive radical vector r extends to a unimodular basis
         # (u,r), in which B=diag(a,0), a != 0. Its entire integral
