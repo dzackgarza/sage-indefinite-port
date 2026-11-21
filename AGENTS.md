@@ -70,187 +70,93 @@ Repair only defects that block the required mathematical computations or their
 small correctness examples. Functional publication may be incremental; port
 completion requires the full upstream coverage specified above.
 
-The v1 boundary sets delivery priority, not the eventual functional scope.
+The v1 boundary sets delivery priority, not the eventual functional scope. The T9 published classifications are exact mathematical outputs in the functional phase, not optional long-tail timing or CI housekeeping.
 Cases unsupported by the pinned upstream, including higher-real-index forms
 of rational Witt index zero or one, remain explicit **post-v1 requirements**.
 Retain their inputs, required outputs and public consumers in the open backlog.
 An upstream limitation explains the additional implementation work; it does
 not cancel the requirement. These deferred cases do not gate v1 delivery.
 
-## Functional work selection
+## Functional work selection — one authoritative tree
 
-**Implement the user's entire sage-indefinite-port assignment, not a series of
-convenient examples.** There is exactly one committed, well-ordered functional
-queue: the numbered obligations below. It refines the order required by #4
-and #69; it does not replace their full mathematical contracts. `itree next`
-currently selects #69; #44 was closed on 19 November 2026. An obsolete
-handoff, issue comment, agent goal, earlier generated plan, test result or
-latest local discovery cannot select a different task.
+**The live GitHub issue tree is the single execution order.** Run
+`itree next dzackgarza/sage-indefinite-port` and perform the first open,
+unblocked **mathematical work unit**, not the first convenient example,
+recently touched file or red CI case. The historical 26-item flat checklist
+was removed because it placed extensions and optimization ahead of original
+port completion and contradicted the issue tree. Do not recreate a competing
+fixed checklist in prompts, handoffs, plans or agent memory.
 
-**Selection is deterministic:** work on the *first unchecked number* below.
-Complete every mathematical output, input domain, rank, branch, integral
-witness, exact group-generation/orbit/negative-decision requirement and public
-consumer belonging to that number before checking it or moving to the next.
-Its issue's full contract is binding, including requirements not summarized
-on the queue line. A successfully implemented special case or a pushed commit
-does not check the number off. Closed former issue numbers absorbed into #69
-do not imply that their larger retained contracts are complete.
+The root [#4](https://github.com/dzackgarza/sage-indefinite-port/issues/4)
+has these **ordered milestone-ledger phases**:
 
-**A real prerequisite is the only exception to executing the first unchecked
-number.** It must supply a specifically named mathematical input used by that
-number, have a concrete failing public example, and belong to an existing
-owner. Implement that prerequisite immediately, then return to the interrupted
-number; do not advance the queue or create a parallel discretionary backlog.
-Do not reassign priorities based on ease, curiosity, interesting failures,
-available tests, CI duration, or which piece of code is already open.
-Do not reinterpret a partially implemented algorithm as a new, smaller task
-whose completion permits switching to another issue.
+1. **T8 — Original pinned-source algorithm completion:**
+   [#91](https://github.com/dzackgarza/sage-indefinite-port/issues/91).
+   Complete the entire source-supported Lorentzian perfect-cell search (#15),
+   Allcock reflective edgewalk (#31), indefinite/Eichler recursion (#18),
+   exact integral isometry (#68), line stabilizers (#70), and complete
+   orthogonal-group generation (#72), through the public Sage/research
+   consumers. Source-supported rank-general isotropic flags (#44) have
+   recorded completion evidence, not permission to omit any still-missing
+   source branch. A branch supported upstream but missing in Sage is T8
+   mathematics regardless of a "v2" label.
+2. **T9 — Published mathematical computations and public consumer results:**
+   [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64).
+   Compute all 87 Enriques infinite integral subgroup cases (#80), the
+   *stable-subgroup* cusp/orbit classifications (#82), degree-2/4 K3 Type II
+   and root types (#83), classical polarization indices in degrees 2/6/10
+   (#93), and D-tower N14/N17/N19 component counts (#94). These are
+   **functionality obligations**, not optional late-stage performance
+   targets. The frozen source-based acceptance outputs and the one
+   published port/provider pair remain binding. The rank-13/17 frozen
+   isotropic cases were completed by #81/#90.
+3. **T10 — Required beyond-source arithmetic extensions:**
+   [#69](https://github.com/dzackgarza/sage-indefinite-port/issues/69).
+   The original #40–#62 mathematical contracts (apart from source-parity
+   #44) are active separate work-unit leaves. They remain fully required,
+   including low-Witt integral orthogonal groups, finite-image arithmetic
+   subgroups, nonprimitive/degenerate/equivariant markings, Clifford,
+   Hermitian and general arithmetic algorithms. Their historical absorption
+   into one grouping issue does not prove or waive any mathematical result.
+4. **T11 — Last-stage efficiency and long-tail refinement:**
+   [#92](https://github.com/dzackgarza/sage-indefinite-port/issues/92).
+   Only here undertake the separate #73–#78 resource-cost and performance
+   work, preserving all exact mathematical outputs and witnesses.
 
-**Fixed functional queue (in this order, first unchecked is active):**
+**Functional versus performance distinction.** A long-running computation
+is not automatically wrong or missing functionality. However, when a
+T8/T9-required effective group/orbit/transport algorithm does not exist
+or cannot compute the prescribed complete mathematical output because its
+construction necessarily enumerates an infeasible coset space, that is an
+**unfinished mathematical capability**. In particular, #80 requires
+complete integral \(\Gamma_h\) generators, not just a finite discriminant
+image or an optimized explicit Schreier enumeration. Distinguish
+algorithmic obstruction from an expensive but correct completed algorithm
+using an exact mathematical argument. Do not use a timeout as a substitute
+for either finding.
 
-1. [ ] **#42, Tier 0 — uniform finite-image arithmetic subgroups.** Complete
-   the *actual joint image* and exact owned integral preimages for
-   discriminant actions, determinant, normalized real and base-changed field
-   spinor, positive-cone component where defined, simultaneous/composite
-   congruence levels, nonnormal targets and explicitly generated ambient
-   subgroups. Supply full kernel/section words, subgroup generators,
-   membership, cosets, marked stabilizers and transporters through the public
-   `L.O()`/marked-group consumers. All factors must retain correlations;
-   neither finite images alone nor separate character kernels suffice.
-2. [ ] **#40/#55, Tier 0 — Witt-index-0/1 constructive orthogonal groups.**
-   Implement the complete effective Li–Margulis bound and full finite
-   integral generator search, exact positive isometries and certified
-   negative integral isometry decisions on higher-real-index lattices of
-   rational Witt index below two, without an assumed rational hyperbolic
-   plane. Both preserved low-Witt specimens and public `O(L)`/`Isom(L,M)`
-   must work. The existing lazy group iterator is not full generation.
-3. [ ] **#48, Tier 0 — content, nonprimitivity and odd forms.** Complete all
-   nonzero-/zero-norm content strata, actual primitive saturation and
-   nonprimitive sublattice/flag equivalence with stabilizers, and form
-   doubling with original-lattice discriminant and isometry semantics.
-4. [ ] **#62/#53, Tier 0 — general orbit quotients.** Complete exhaustive
-   duplicate-free canonical representatives and integral transporters on
-   arbitrary finite- and infinite-index `Gamma`-sets, including HNF
-   submodules, flags, Hermitian encodings and prescribed pairing slices.
-   Finite bounded searches must not be advertised as complete quotients.
-5. [ ] **#51/#58 (definite branches), Tier 0 — integral CM/Hermitian unitary
-   groups.** Complete all source-supported definite-at-every-place and
-   finite-order cyclotomic centralizers on the *original* order/module,
-   including mixed-place signs, nonmaximal and nonfree integral structures,
-   scalar kernels, actual discriminant images and the public group API.
-6. [ ] **#52, Tier 0 — Allcock–Carlson–Toledo `E^(4,1)`.** Complete the
-   exact source reflection/translation reduction, full `U` versus index-two
-   `Aut+`, projective and mod-theta congruence distinctions, primitive
-   Eisenstein-null/root orbit generators, stabilizers and transporters
-   through original trace-lattice public consumers.
-7. [ ] **#59, Tier 0 — indefinite Hermitian source algorithms.** Complete
-   Bestvina–Savin's actual Mendoza-spine ocean, integral/projective lifts,
-   Gaussian and all three Euclidean Picard groups, exact word reductions,
-   cusp stabilizers and original-order transporters; not just group matrices.
-8. [ ] **#60, Tier 0 — integral Hermitian parabolics.** Complete the full
-   nonabelian unipotent radical, center and actual integral/glued Levi image,
-   rank-general parabolic and partial-flag subgroups, witnesses, finite-index
-   intersections and original-module public consumers.
-9. [ ] **#43, Tier 1 — one full finite-double-coset algorithm for marked
-   actions.** Complete subgroup-correct splitting, setwise/pointwise
-   stabilizer generators and positive/negative transporters for *all* named
-   arrows, vectors, sublattices, configurations and flags, including
-   nonnormal finite images and arbitrary user-supplied `Gamma`.
-10. [ ] **#47, Tier 1 — complement and gluing.** Complete indefinite
-    integral nondegenerate embedding stabilizers and transporters, all
-    complement genera, discriminant-form glue compatibility, infinite
-    complement factors and exact restrictions to source-action groups.
-11. [ ] **#49, Tier 1 — simultaneous commuting involutions.** Complete
-    arbitrary-rank joint eigensublattice integral gluing, entire centralizer
-    generators, subgroup restrictions, original-lattice witnesses and exact
-    orbit actions, not independent-factor images.
-12. [ ] **#41/#61, Tier 1 — degenerate and equivariant marked objects.**
-    Complete all original-rank radical GL and shear actions, based/moving
-    degenerate Gram domains, nonprimitive mixed frames, arbitrary source
-    GL/diagram actions and full stabilizers/negative transport decisions.
-13. [ ] **#46, Tier 2 — Gram-constrained configurations.** Complete
-    primitive fixed-norm vector families, arbitrary-rank fixed-source
-    nondegenerate embeddings, moving/unbased orbit classification,
-    integral stabilizers and transporters across all complement classes.
-14. [ ] **#56, Tier 2 — bounded primitive Gram embeddings.** Implement the
-    Li–Margulis completion bounds and full orbit and isotropic-vector
-    reduction with proofs of exhaustion and exact integral witnesses;
-    consume #47 gluing rather than narrowing to rank one.
-15. [ ] **#40, Tier 2 — all low-Witt vector classes.** Use the completed
-    Tier-0 orthogonal group/isometry backend for fixed-norm and isotropic
-    vector/line classifications, complete orbit representatives, negative
-    equivalence and integral stabilizer generators in Witt indices 0/1.
-16. [ ] **#45, Tier 2 — quotient rational Tits building.** Complete flags
-    of all supported dimension sequences, all face maps with witnesses,
-    simplicial identities, face-stabilizer actions and incidence
-    multiplicities under full and specified arithmetic subgroups.
-17. [ ] **#50, Tier 2 — exact normalizers.** Complete finite nonabelian
-    subgroup and infinite cyclic normalizers, twisted conjugacy transporters,
-    full centralizer/inversion cosets and finite-index subgroup restrictions.
-18. [ ] **#57, Tier 3 — Clifford arithmetic.** Complete ranks 4, 5 and 6,
-    actual quaternion/Clifford orders, reduced-norm-one and full unit
-    extraction, rational/integral isometry decisions and full group outputs.
-19. [ ] **#51/#58, Tier 3 — remaining noncompact arithmetic unitary and
-    commutant-order branches.** Complete all unsupported number fields,
-    higher rank/anisotropic Hermitian forms, nonfree modules, centralizer
-    groups and exact equivariant transporters with original integral action.
-20. [ ] **#54, Tier 4 — general Grunewald–Segal arithmetic fallback.**
-    Complete A1/A2 effective group generation, arbitrary simultaneous
-    centralizers and tensor/marking stabilizers, exact positive and
-    negative integral transporters without semisimplicity or Witt
-    restrictions, and finite-index arithmetic subgroup intersections.
-21. [ ] **#15 — source-complete Lorentzian/perfect-cell/Allcock algorithms.**
-    Complete missing face/edgewalk branches, all prescribed source leaves,
-    exact reflective domain and finite-rank public consumers.
-22. [ ] **#18 — source-complete indefinite recursion.** Complete all pinned
-    source dispatches, general isotropic ranks/partial flags, integral
-    stabilizers and branch-wide public orbit/isometry consumers.
-23. [ ] **#68 — spinor-genus integral isometry.** Complete genuine
-    integral non-isometry decisions and positive witnesses beyond the
-    Conway–Sloane example, at the original public `Isom` carrier.
-24. [ ] **#72 — deterministic complete automorphism generation.** Retain
-    exact generated groups and source semantics without unseeded
-    process-dependent algorithmic outputs.
-25. [ ] **#70/#73–#77 — required last-phase optimizations.** Only after
-    full mathematical functionality: improve the source-exact integral
-    stabilizer/group and arithmetic heavy cases without losing kernels.
-26. [ ] **#64/#78/#80–#83 — final common-revision acceptance.** Complete
-    the *unchanged* published full corpus, stable `O+(N)` orbit counts,
-    Enriques 87 modular groups, K3 Type-II and related boundary cases,
-    all at one actual released port/provider revision. A test timeout,
-    fixture amendment or partial published family is not completion.
+**Prerequisite exception.** An otherwise later-phase capability can be
+worked on earlier *only* when a concrete active T8/T9 public operation
+mathematically depends on it: name the required input or algorithm, its
+actual callee/owner and an independently justified blocked example.
+Implement the complete required operation at its owner, then return to the
+earlier-phase mathematical obligation. Unrelated breadth, elegant
+generalization, repeated profiling or a newly discovered test is not a
+priority override. Maintain source hypotheses; a finite subgroup image
+alone never discharges infinite integral group generation.
 
-**Checkpoint discipline.** At each commit, leave the currently active
-number unchecked unless *its entire mathematical contract* has been
-implemented through the public interface; completed subcases stay part of
-that same number. Only check off a number in a commit containing the actual
-finished mathematical implementation and independent public checks (not a
-planning-only commit), then proceed to the next number. If source evidence
-shows that an obligation was fully implemented already, inspect the actual
-public path and the full domain before checking it. If a genuine mathematical
-dependency is discovered, implement it in place and record its necessary
-input relationship, without silently reordering this list. All 26 boxes,
-not just the next one, must be discharged to finish the user's entire task.
-
-The historical #42 checkmark in commit 0340017c relied in part on newly
-introduced implementation-side tests. Those tests are **not independent
-mathematical acceptance evidence**. Correctness of #42 and subsequent work
-must be established from the pinned upstream contract and any independently
-specified additional mathematical expectations, not retrospective
-implementer-authored oracle declarations.
-
-A prerequisite must name the dependent capability, the exact operation it
-consumes, and a small independently justified example that cannot complete
-without the repair. A shared module or a timeout in a larger specimen does not
-establish that dependency. Repair the smallest blocking operation, verify that
-example, then return to the dependent implementation.
-
-Issues #64 and #70 retain expensive-case and final-release obligations. Schedule
-performance work there after functional coverage, except for a demonstrated
-blocking prerequisite above. A terminal expensive run contributes its result to
-that issue; it does not automatically select another optimization or rerun.
-Choose subsequent work by missing functionality. Full release acceptance remains
-required after implementation. Publication uses the existing small branch checks.
+**Work-unit completion.** Each open leaf owns a coherent full mathematical
+deliverable and its exact public acceptance criteria. Complete every
+source branch, supported rank and marking, exact positive and negative
+decision, integral generator/stabilizer/transporter, independent
+mathematical oracle and required consumer in that leaf before marking it
+completed. Partial special cases are retained as evidence inside the
+same work unit, not permission to close it or advance. If a genuinely
+independently reviewable algorithm family merits splitting, move the
+entire original obligation to explicit leaf owners without weakening or
+losing any scope (as #15/#31 and #83/#93/#94 do). Issue changes do not
+substitute for mathematical implementation. Neither implementation-side
+self-tests nor a passing narrow sample certify a broader theorem.
 
 ## Sources of authority
 
@@ -280,15 +186,13 @@ Never overwrite or discard another checkout's dirty source. Use a dedicated
 worktree/branch for parallel work and integrate only demonstrated relevant diffs.
 
 The issue tree rooted at #4 supplies authoritative contracts and dependencies;
-the *single numbered queue above* supplies their fixed execution order.
-Do not replace it with a fresh agent plan or select a later issue because its
-example seems simpler. #69 is the first open itree work unit; do not
-reselect until its active obligations have been completely discharged.
-Milestone deadlines are forecasts, not completion evidence. Use
-`uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`
-only to confirm issue-tree ownership after completing the active queue unit,
-never to reshuffle the numbered list. A unit closes only when its entire accepted obligation is discharged;
-releasing a PR, a narrowed example, or a marker alone does not close it.
+the live itree preorder supplies their **only** execution order.
+Do not add an independent queue or select a later issue because it looks
+easier. After each completed mathematical work unit, rerun
+`itree next dzackgarza/sage-indefinite-port`. Milestone deadlines
+are forecasts, not completion evidence. A unit closes only when its
+entire accepted mathematical obligation is discharged; a PR, narrowed
+example, status document or test marker alone does not close it.
 
 ## Source-faithful implementation
 
@@ -402,7 +306,7 @@ code change.
 
 ## Tests and acceptance
 
-Run-time work follows [the suite triage](references/complexity/triage.md): the probe-backed suite estimate is the problem, and a fix counts only by the hours it removes from it. A saving of seconds counts only when it compounds over enough cases to remove hours. The suite is not run whole while the estimate exceeds 6 hours.
+Last-phase (T11) runtime work follows [the suite triage](references/complexity/triage.md): the probe-backed suite estimate is the problem, and a fix counts only by the hours it removes from it. A saving of seconds counts only when it compounds over enough cases to remove hours. The suite is not run whole while the estimate exceeds 6 hours.
 
 Every collected test has a time budget derived from the complexity theory of
 its algorithm, never from a measured runtime. [references/complexity](references/complexity/README.md)
