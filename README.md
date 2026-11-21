@@ -33,14 +33,14 @@ intact. Full upstream isotropic k-plane and flag functionality is required;
 general induction is implemented, with remaining public branch coverage tracked in #44.
 
 Milestones and test samples order delivery and verification; they do not
-reduce the required mathematics. Follow the **live ordered GitHub issue tree**
+reduce the required mathematics. Follow the **live ordered GitHub issue tree**, not a copied fixed queue,
 [#4](https://github.com/dzackgarza/sage-indefinite-port/issues/4), with
 [T8: v1 public algorithms](https://github.com/dzackgarza/sage-indefinite-port/milestone/9),
-[T9: unchanged final-pair acceptance](https://github.com/dzackgarza/sage-indefinite-port/milestone/10), and
-[T10: retained beyond-v1 arithmetic](https://github.com/dzackgarza/sage-indefinite-port/milestone/11).
-The actual unfinished v1 computational consumers are on
-[#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64) and its
-subissues, not in a copied status table here. Source-supported capabilities
+[T9: published mathematical computations and exact consumers](https://github.com/dzackgarza/sage-indefinite-port/milestone/10),
+[T10: retained beyond-v1 constructive arithmetic](https://github.com/dzackgarza/sage-indefinite-port/milestone/11), and
+[T11: final resource refinement and complete frozen acceptance](https://github.com/dzackgarza/sage-indefinite-port/milestone/12).
+The unfinished original published mathematical consumers are the focused issues under
+[#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64), including Enriques group generation, stable-subgroup orbits, K3 Type II, classical indices, and D-tower boundary components. The separate unchanged *full-corpus* final acceptance is [#95](https://github.com/dzackgarza/sage-indefinite-port/issues/95). Source-supported capabilities
 recorded in [#69](https://github.com/dzackgarza/sage-indefinite-port/issues/69)
 remain required for **full port completion** even where scheduled beyond a
 staged v1 milestone. [Full upstream coverage](AGENTS.md#full-upstream-coverage)
