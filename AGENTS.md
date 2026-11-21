@@ -8,7 +8,7 @@ CI use, and the host launchers.
 This project translates the specialized indefinite-form algorithms of the
 [committed pinned sources](references/vendor/README.md) into Sage/Python,
 consuming the mathematical operations of [research](https://github.com/dzackgarza/research).
-It is **a port of existing algorithms**, not an algorithm-design project.
+It is principally **a port of existing algorithms**, not a license for unsupported algorithm invention. A required published mathematical consumer for which the translated algorithm is provably ineffective still needs a complete, source-grounded effective mathematical construction (for example the infinite Enriques subgroup generation in #80); this is missing functionality, not a reason to defer its result as performance work.
 
 ## Work priority
 
@@ -121,7 +121,7 @@ has these **ordered milestone-ledger phases**:
 4. **T11 — Last-stage efficiency and long-tail refinement:**
    [#92](https://github.com/dzackgarza/sage-indefinite-port/issues/92).
    Only here undertake the separate #73–#78 resource-cost and performance
-   work, preserving all exact mathematical outputs and witnesses.
+   work **and #95 complete unchanged frozen-corpus certification on one published port/provider pair**, preserving all exact mathematical outputs and witnesses.
 
 **Functional versus performance distinction.** A long-running computation
 is not automatically wrong or missing functionality. However, when a
@@ -202,14 +202,16 @@ example, status document or test marker alone does not close it.
    `references/vendor/arxiv/2110.03784` for Allcock's edgewalk.
    Use the translation map for navigation; record exact source symbols/lines
    beside the corresponding implementation.
-2. Preserve the source algorithm's cases, mathematics, enumeration, stopping
-   rules, certificates and exact witnesses. Translate generic callees into
-   existing Sage/research operations. No alternative algorithms, bounded
-   heuristic shortcuts, basis-dependent stand-ins, ad-hoc facades or duplicate
-   arithmetic primitives in place of the specialized source route.
-   Account explicitly for an unavoidable representation/callee substitution
-   against its source contract. A mathematical departure needs a pinned-source
-   proof or counterexample on the owning issue.
+2. Preserve the pinned source algorithm's cases, mathematics, enumeration, stopping
+   rules, certificates and exact witnesses over its stated domain. Translate generic
+   callees into existing Sage/research operations. No bounded heuristic shortcuts,
+   basis-dependent stand-ins, ad-hoc facades or duplicate arithmetic primitives.
+   A different effective construction for a required published consumer is allowed
+   only where the source route genuinely does not discharge that computation: establish
+   the exact scope obstruction, verify the substitute algorithm against an authoritative
+   source or complete mathematical proof, and preserve the actual integral group/orbit
+   output and all source-supported branches. Record that mathematical justification
+   at its owning issue. A representation/callee substitution must remain source-faithful.
 3. **Do not compile or invoke** upstream C++ code. Production is native
    Sage/Python with exact standard backends and the formed-lattice preamble.
    Do not bypass the owned lattice, morphism, homset or tensor interfaces with
