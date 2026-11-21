@@ -95,7 +95,7 @@ has these **ordered milestone-ledger phases**:
    Complete the entire source-supported Lorentzian perfect-cell search (#15),
    Allcock reflective edgewalk (#31), indefinite/Eichler recursion (#18),
    exact integral isometry (#68), line stabilizers (#70), and complete
-   orthogonal-group generation (#72), through the public Sage/research
+   orthogonal-group generation through the public Sage/research
    consumers. Source-supported rank-general isotropic flags (#44) have
    recorded completion evidence, not permission to omit any still-missing
    source branch. A branch supported upstream but missing in Sage is T8
@@ -120,7 +120,7 @@ has these **ordered milestone-ledger phases**:
    into one grouping issue does not prove or waive any mathematical result.
 4. **T11 — Last-stage efficiency and long-tail refinement:**
    [#92](https://github.com/dzackgarza/sage-indefinite-port/issues/92).
-   Only here undertake the separate #73–#78 resource-cost and performance
+   Only here undertake #72 reproducible generator ordering, #73–#78 resource-cost and performance
    work **and #95 complete unchanged frozen-corpus certification on one published port/provider pair**, preserving all exact mathematical outputs and witnesses.
 
 **Functional versus performance distinction.** A long-running computation
