@@ -180,7 +180,7 @@ unresolved implementation step on the issue; do not enact its stale instructions
 
 A normal continuation starts with the next open work unit and its precise
 source/consumer, rather than repeat source-wide surveys, re-read the entire DAG,
-or reselect work. An issue comment is **not** proof that named people or agents remain
+or reselect work. An issue comment is not proof that named people or agents remain
 active. Separate branch tips can contain unmerged work without an active owner.
 Never overwrite or discard another checkout's dirty source. Use a dedicated
 worktree/branch for parallel work and integrate only demonstrated relevant diffs.
@@ -212,7 +212,7 @@ example, status document or test marker alone does not close it.
    source or complete mathematical proof, and preserve the actual integral group/orbit
    output and all source-supported branches. Record that mathematical justification
    at its owning issue. A representation/callee substitution must remain source-faithful.
-3. **Do not compile or invoke** upstream C++ code. Production is native
+3. Do not compile or invoke upstream C++ code. Production is native
    Sage/Python with exact standard backends and the formed-lattice preamble.
    Do not bypass the owned lattice, morphism, homset or tensor interfaces with
    raw matrices. Never introduce `Any` escapes, forged stubs,
@@ -319,7 +319,7 @@ The [frozen acceptance modules](tests/acceptance/) and
 [fixtures](tests/fixtures/) are not edited, deleted or weakened to make a
 port case pass. A legitimate fixture/API correction goes through #33 with its
 reason recorded before the change. Diagnostic probes belong outside the frozen
-suite; their local `.tmp/probe` history is optional and is **not** part of
+suite; their local `.tmp/probe` history is optional and is not part of
 the cloud checkout's required inputs.
 
 **Accepted criterion (2026-10-22, [#33 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665)):**
@@ -330,7 +330,7 @@ in the acceptance table on [#64](https://github.com/dzackgarza/sage-indefinite-p
 Record selected case IDs, covered and uncovered branches, ranks/signatures,
 passing results and the exact commit. A sample must not avoid a genuinely
 distinct case branch or alter any assertion. Full-corpus failures outside the
-sample remain defects to record, **not** reasons to declare the sample or
+sample remain defects to record, not reasons to declare the sample or
 the entire port correct. Long-tail exhaustive coverage does not gate the
 agreed milestones.
 
@@ -369,13 +369,13 @@ GitHub Actions; local Snap Docker, `sage-dev-develop`, the former
 - Local `just test-commit` checks only staged Python/JSON/TOML syntax;
   `just test-push` checks only outgoing committed syntax.
   Both delegate to [ai-review-ci](https://github.com/dzackgarza/ai-review-ci)
-  when installed. They **do not** run mypy, the full suite, formatters or
+  when installed. They do not run mypy, the full suite, formatters or
   mandatory PR review. An existing invalid source file can escape these
   *changed-files-only* checks; test the precise imported source for syntax
   when an acceptance import reports a parsing error.
 - Type debt belongs to [#36](https://github.com/dzackgarza/sage-indefinite-port/issues/36)
   after algorithms/consumers have settled. CI may report types/style/debt,
-  but during development such findings are retained, **nonblocking**
+  but during development such findings are retained, nonblocking
   diagnostics; they do not divert the current mathematical implementation.
 - At the recorded source revision there were no active `@unfinished`
   wrappers or acceptance xfails. Do not invent marker-removal work or infer
