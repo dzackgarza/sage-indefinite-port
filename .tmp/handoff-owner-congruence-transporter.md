@@ -1,3 +1,5 @@
+> **Last-phase record.** This note does not select work. The current handoff is [HANDOFF.md](HANDOFF.md).
+
 # Resolved record: the congruence transporter is GAP's orbit / action-homomorphism / word chain
 
 **Status: not an owner gap.** An earlier version of this file claimed the transporter in the image of `GL_k(Z)`

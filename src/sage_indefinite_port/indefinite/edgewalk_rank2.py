@@ -9,6 +9,7 @@ from __future__ import annotations
 from sage_extensions.all import Lattices
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
 from sage.matrix.constructor import matrix
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
@@ -122,17 +123,20 @@ class _OrientedBinaryCycle:
             if self.pairing(right, right) <= bound:
                 return right, self.canonical_companion(bound, right, left)
 
-    def cycle(self, bound: int, start: _Vector) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]] | None:
+    def start_point(self, start: _Vector) -> _Point:
         if start.parent() is not self.lattice or int(start.content()) != 1 or start.q() <= 0:
             raise ValueError("the cycle start must be a primitive positive vector of its lattice")
+        coordinates = self.coordinates(start)
+        return coordinates[0], coordinates[1]
+
+    def cycle(self, bound: int, start: _Vector) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]] | None:
+        initial_point = self.start_point(start)
         if bound <= 0:
             return None
-        coordinates = self.coordinates(start)
-        initial_point = coordinates[0], coordinates[1]
-        _gcd, first, second = SageZZ(int(coordinates[0])).xgcd(SageZZ(int(coordinates[1])))
+        _gcd, first, second = SageZZ(initial_point[0]).xgcd(SageZZ(initial_point[1]))
         companion = -int(second), int(first)
         # Shorter requires the q(start)-supplement, even when bound < q(start).
-        companion = self.canonical_companion(int(start.q()), initial_point, companion)
+        companion = self.canonical_companion(self.pairing(initial_point, initial_point), initial_point, companion)
         pair = self.reduced_start_pair(bound, initial_point, companion)
         if pair is None:
             return None
@@ -153,22 +157,47 @@ class _OrientedBinaryCycle:
                 gram = matrix(SageZZ, ((self.form[0], self.form[1]), (self.form[1], self.form[2])))
                 if period * gram * period.transpose() != gram or period.det() != 1:
                     raise ArithmeticError("the binary period is not an orientation-preserving isometry")
-                # The period rows are the images of the two coordinate basis
-                # vectors in `self.labels` order. The Isom constructor, however,
-                # consumes images in `module_generators()` order. Translate each
-                # actual generator through its coordinates rather than assuming
-                # these two iteration orders coincide.
-                images = []
-                for generator in self.lattice.module_generators():
-                    coordinates = self.coordinates(generator)
-                    image_coordinates = tuple(
-                        sum(coordinates[row] * int(period[row, column]) for row in range(2))
-                        for column in range(2)
-                    )
-                    images.append(self.point(image_coordinates))
-                return self.lattice.Isom(self.lattice)(tuple(images)), tuple(self.point(point) for point in representatives)
+                return self.result(period, tuple(representatives))
+
+    def result(self, period: Matrix_integer_dense, representatives: tuple[_Point, ...]) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]]:
+        """The period as an isometry of the lattice and the representatives as its vectors."""
+        # The period rows are the images of the two coordinate basis
+        # vectors in `self.labels` order. The Isom constructor, however,
+        # consumes images in `module_generators()` order. Translate each
+        # actual generator through its coordinates rather than assuming
+        # these two iteration orders coincide.
+        images = []
+        for generator in self.lattice.module_generators():
+            coordinates = self.coordinates(generator)
+            image_coordinates = tuple(sum(coordinates[row] * int(period[row, column]) for row in range(2)) for column in range(2))
+            images.append(self.point(image_coordinates))
+        return self.lattice.Isom(self.lattice)(tuple(images)), tuple(self.point(point) for point in representatives)
 
 
-def anisotropic_cycle(lattice: Lattices.ParentMethods, bound: Rational, start: _Vector) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]] | None:
-    """The positive oriented period and all primitive representatives after start."""
-    return _OrientedBinaryCycle(lattice).cycle(int(_rational(bound).floor()), start)
+class _FormBinaryCycle(_OrientedBinaryCycle):
+    """The oriented cycle of an edge plane read on its Gram coefficients (edgewalk.h:772, Anisotropic(Gwork, ...)).
+
+    The walk consumes only coordinates: the period as its integral row
+    matrix and the representatives as coordinate pairs, the data the
+    pinned source returns. The lattice-backed parent class wraps the same
+    result into the owned isometry and vectors.
+    """
+
+    def __init__(self, form: tuple[int, int, int]) -> None:
+        a, b, c = form
+        if a * c - b * b >= 0 or SageZZ(b * b - a * c).is_square():
+            raise ValueError("an oriented binary cycle needs an anisotropic form of signature (1,1)")
+        self.form = form
+
+    def start_point(self, start: _Point) -> _Point:
+        if SageZZ(start[0]).gcd(SageZZ(start[1])) != 1 or self.pairing(start, start) <= 0:
+            raise ValueError("the cycle start must be a primitive positive vector of its lattice")
+        return start
+
+    def result(self, period: Matrix_integer_dense, representatives: tuple[_Point, ...]) -> tuple[Matrix_integer_dense, tuple[_Point, ...]]:
+        return period, representatives
+
+
+def anisotropic_cycle(form: tuple[int, int, int], bound: Rational, start: _Point) -> tuple[Matrix_integer_dense, tuple[_Point, ...]] | None:
+    """The positive oriented period (integral row matrix) and all primitive representatives after start."""
+    return _FormBinaryCycle(form).cycle(int(_rational(bound).floor()), start)

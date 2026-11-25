@@ -18,9 +18,9 @@ from __future__ import annotations
 
 import weakref
 from math import gcd
-from random import choice, randrange, sample
+from random import Random
 
-from sage_extensions.all import Lattices
+from sage_extensions.all import Lattices, Modules
 from sage_extensions.categories.eichler_criterion import TwoUEichlerModel
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
 from sage_extensions.categories.modules.framed.formed.discriminant_modules import (
@@ -39,7 +39,7 @@ from sage_extensions.categories.sets.indexed_families import (
     IndexedFamily,
     finite_indexed_family,
 )
-from sage_extensions.tensors.tensor import _engine_component_matrix
+from sage_extensions.tensors.tensor import _engine_component_matrix, _engine_row_action_matrix
 from sage.graphs.graph import Graph
 from sage.groups.perm_gps.permgroup import PermutationGroup
 from sage.matrix.constructor import identity_matrix, matrix
@@ -53,6 +53,7 @@ from sage.structure.sage_object import SageObject
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer
 from sage_indefinite_port.indefinite.exact_isotropic import find_isotropic_exact
 from sage_indefinite_port.indefinite.indefinite_reduction import (
+    GENERATOR_SEED,
     _compute_indefinite_reduction,
     _gram_l1,
     _indefinite_lll,
@@ -103,23 +104,23 @@ def _owned_integer_square(ring, value) -> RingElement:
     return ring(integer)
 
 
-def _source_random_matrix_perturbation(rank: int):
+def _source_random_matrix_perturbation(rank: int, rng: Random):
     """GetRandomMatrixPerturbation (IndefiniteFormsFundamental.g:11-30).
 
     Random signed permutation, or one elementary entry replacement, exactly
     as in the pinned GAP source (including the diagonal replacement case).
     """
     step = identity_matrix(SageZZ, rank)
-    if randrange(2) == 0:
+    if rng.randrange(2) == 0:
         step = matrix(SageZZ, rank, rank)
-        for row, column in enumerate(sample(range(rank), rank)):
-            step[row, column] = choice((-1, 1))
+        for row, column in enumerate(rng.sample(range(rank), rank)):
+            step[row, column] = rng.choice((-1, 1))
     else:
-        step[randrange(rank), randrange(rank)] = choice((-1, 1))
+        step[rng.randrange(rank), rng.randrange(rank)] = rng.choice((-1, 1))
     return step
 
 
-def _source_find_isotropic(gram):
+def _source_find_isotropic(gram, rng: Random):
     """INDEF_FindIsotropic/FindIsotropic, pinned ApproximateModels.h:130-166
     and Isotropic.h:76-198,252-377.
 
@@ -151,7 +152,7 @@ def _source_find_isotropic(gram):
 
     if rank <= 2:
         # FindIsotropicExact: skip the LLL and reduction branches.
-        return raise_vector(find_isotropic_exact(gram))
+        return raise_vector(find_isotropic_exact(gram, rng))
 
     def easy_vector(form):
         # get_isotropic_easy_method, Isotropic.h:76-112.
@@ -191,23 +192,23 @@ def _source_find_isotropic(gram):
             if next_norm >= previous_norm:
                 break
             previous_norm = next_norm
-            perturbation = _random_signed_permutation(rank)
+            perturbation = _random_signed_permutation(rank, rng)
             step_transform = perturbation * step_transform
             step_working = perturbation * step_working * perturbation.transpose()
-        perturbation = _random_signed_permutation(rank)
+        perturbation = _random_signed_permutation(rank, rng)
         transform = perturbation * transform
         working = perturbation * working * perturbation.transpose()
 
-    reduction, reduced_gram, isotropic = _compute_indefinite_reduction(gram, look_for_isotropic=True)
+    reduction, reduced_gram, isotropic = _compute_indefinite_reduction(gram, rng, look_for_isotropic=True)
     if isotropic is not None:
         return raise_vector(isotropic)
-    exact_coordinates = find_isotropic_exact(reduced_gram)
+    exact_coordinates = find_isotropic_exact(reduced_gram, rng)
     if exact_coordinates is None:
         return None
     return raise_vector(reduction.transpose() * exact_coordinates)
 
 
-def _source_hyperbolic_pair(lattice: Lattices.ParentMethods):
+def _source_hyperbolic_pair(lattice: Lattices.ParentMethods, rng: Random):
     """GetHyperbolicPlane, polyhedral_common ApproximateModels.h:996-1180.
 
     The pinned C++ revision of IndefiniteForms.g:465-534 maintains a set
@@ -237,9 +238,9 @@ def _source_hyperbolic_pair(lattice: Lattices.ParentMethods):
         nonlocal perturbation
         repeats = 0
         while True:
-            perturbation *= _source_random_matrix_perturbation(rank)
+            perturbation *= _source_random_matrix_perturbation(rank, rng)
             changed_gram = perturbation * gram * perturbation.transpose()
-            selected = _source_find_isotropic(changed_gram)
+            selected = _source_find_isotropic(changed_gram, rng)
             if selected is None:
                 raise ValueError("the source isotropic search found no vector")
             original_row = selected * perturbation
@@ -387,11 +388,12 @@ class EichlerEnvelope:
             if not construction_lattice.is_even():
                 raise ArithmeticError("the kernel of the norm-parity homomorphism must be even")
 
-        first, first_partner = _source_hyperbolic_pair(construction_lattice)
+        rng = Random(GENERATOR_SEED)
+        first, first_partner = _source_hyperbolic_pair(construction_lattice, rng)
         first_plane = construction_lattice.subobject_on([first, first_partner])
         complement = first_plane.orthogonal_complement()
         complement_lattice = complement.inclusion().domain()
-        second, second_partner = _source_hyperbolic_pair(complement_lattice)
+        second, second_partner = _source_hyperbolic_pair(complement_lattice, rng)
         embed = complement.inclusion()
         second, second_partner = embed(second), embed(second_partner)
         planes = construction_lattice.subobject_on([first, first_partner, second, second_partner])
@@ -456,6 +458,15 @@ class EichlerEnvelope:
         self.fraction_map = fraction_map
 
     @cached_method
+    def is_integral_identification(self) -> bool:
+        r"""Whether phi identifies L with the whole integral envelope E."""
+        return self.rational_isometry.is_integral_on(
+            self.lattice, self.envelope
+        ) and self.rational_isometry.inverse().is_integral_on(
+            self.envelope, self.lattice
+        )
+
+    @cached_method
     def stabilizer_of_lattice(self) -> IntegralStructureAction:
         r"""The action of the rational group generated by A_E on the integral structures of E tensor Q, at phi(L)."""
         rational_envelope = self.rational_isometry.codomain()
@@ -464,7 +475,16 @@ class EichlerEnvelope:
         # base change of each integral isometry.
         generators = tuple(_isometry_from_row_matrix(rational_envelope, generator) for generator in OrbitCoverModel.source_generator_matrices(self.model))
         rational_lattice = self.rational_isometry.domain()
-        image = rational_envelope.integral_structure(tuple(self.rational_isometry(rational_lattice.module_generator(label)) for label in self.lattice.module_generating_set()))
+        lattice_labels = tuple(self.lattice.module_generating_set())
+        vectors = tuple(self.rational_isometry(rational_lattice.module_generator(label)) for label in lattice_labels)
+        restricted = rational_envelope.integral_structure(vectors).codomain()
+        # ApproximateModels.h:1309-1349 retains Embed on the supplied
+        # lattice basis. Keep that inclusion, rather than replace its domain
+        # by the canonical image module, so full Schreier factors act in L.
+        image = Modules(self.lattice.base_ring()).Mor(self.lattice, restricted)({
+            label: restricted.wrap(point)
+            for label, point in zip(lattice_labels, vectors, strict=True)
+        })
         # sigma = N phi is integral, so phi(L) lies in (1/N)E, which the integral
         # generators of A_E preserve: the stable containing module.
         inverse_scale = _owned_engine_element(
@@ -486,6 +506,11 @@ class EichlerEnvelope:
         :1374-1390); they are not re-admitted as words of the generated
         subgroup, whose membership the preamble does not decide.
         """
+        # ApproximateModels.h:1318-1332: if phi(L)=E, every A_E
+        # generator fixes the integral structure, so G_L=A_E and the
+        # source's right-coset transversal consists of the identity.
+        if self.is_integral_identification():
+            return (self.rational_isometry.codomain().O().one(),)
         coset_space = self.stabilizer_of_lattice().right_cosets()
         representative = coset_space.representative_map()
         return tuple(~representative(point) for point in coset_space)
@@ -792,16 +817,27 @@ class OrbitCoverModel:
         # unimodular, so every image is one of the listed classes, even when a
         # GRPeasy element moves a hyperbolic block of K onto a distinguished
         # U.  With y = k/d this is the vector of E-coordinates of g(k) modulo d.
-        labels = tuple(lattice.module_generating_set())
-
-        def residue(vector: Lattices.ElementMethods, order: RingElement) -> tuple[SageQQ, ...]:
-            coordinates = vector.to_vector()
+        def residue(coordinates, order: RingElement) -> tuple[SageQQ, ...]:
             modulus = int(order)
-            return tuple(SageQQ(int(coordinates(label)) % modulus) / modulus for label in labels)
+            return tuple(SageQQ(int(entry) % modulus) / modulus for entry in coordinates)
 
-        positions = {residue(inclusion(k), order): position for position, (order, k) in enumerate(lifts[point] for point in classes)}
+        orders = tuple(lifts[point][0] for point in classes)
+        lift_coordinates = tuple(lifts[point][1].to_vector() for point in classes)
+        # ApproximateModels.h:337-356 applies each easy generator's row
+        # matrix to the complete lifted class family before VectorModulo1.
+        # The based inclusion and isometry tensors supply those same exact
+        # matrices; linearity avoids rebuilding an owned image per class.
+        point_rows = matrix(
+            SageZZ, len(classes), len(complement_labels),
+            [int(coordinates(label)) for coordinates in lift_coordinates for label in complement_labels],
+        ) * _engine_row_action_matrix(inclusion).change_ring(SageZZ)
+        positions = {
+            residue(row, order): position
+            for position, (order, row) in enumerate(zip(orders, point_rows, strict=True))
+        }
         permutations = [
-            [positions[residue(isometry(inclusion(k)), order)] + 1 for order, k in (lifts[point] for point in classes)]
+            [positions[residue(row, order)] + 1
+             for order, row in zip(orders, point_rows * _engine_row_action_matrix(isometry).change_ring(SageZZ), strict=True)]
             for isometry in OrbitCoverModel.source_easy_generators(model)
         ]
         # DecomposeOrbitPoint_FullRepr (:394-400): one class per orbit of the
@@ -878,6 +914,14 @@ class OrbitCoverModel:
         """
         if self.envelope is None:
             return tuple(self.model.approximate_generating_family())
+        if not self.envelope.is_integral_identification():
+            # The same complete stabilizer of Embed (source :1318-1349),
+            # conjugated in its supplied lattice frame. The existing source
+            # Nielsen reduction preserves the full integral group, including
+            # the kernel, before constructing owned lattice isometries.
+            from sage_indefinite_port.indefinite.recursive import _integral_generator_set
+
+            return _integral_generator_set(self.lattice, self.envelope.stabilizer_of_lattice())
         # :1337-1349 forms fGen = Embed * eGen * EmbedInv for each stabilizer
         # generator and requires it to be integral.  In rows, with R the
         # matrix of phi (row i the E-coordinates of phi(e_i)) and G that of a
@@ -898,7 +942,13 @@ class OrbitCoverModel:
         embedding_inverse = embedding.inverse()
         identity = identity_matrix(SageQQ, len(lattice_labels))
         conjugates: dict[tuple[int, ...], LatticeIsometryMethods] = {}
-        for generator in envelope.stabilizer_of_lattice().stabilizer().group_generators():
+        # ApproximateModels.h:1337-1349 conjugates the stabilizer's
+        # generators. Here that stabilizer is A_E itself.
+        generators = (
+            _isometry_from_row_matrix(rational_envelope, action)
+            for action in self.source_generator_matrices(self.model)
+        )
+        for generator in generators:
             conjugate = embedding * matrix(SageQQ, [coordinates(generator(rational_envelope.module_generator(label))) for label in envelope_labels]) * embedding_inverse
             if conjugate.denominator() != 1:
                 raise ArithmeticError("a stabilizer generator of phi(L) must conjugate to an integral isometry of L")

@@ -8,7 +8,26 @@ CI use, and the host launchers.
 This project translates the specialized indefinite-form algorithms of the
 [committed pinned sources](references/vendor/README.md) into Sage/Python,
 consuming the mathematical operations of [research](https://github.com/dzackgarza/research).
-It is **a port of existing algorithms**, not an algorithm-design project.
+It is principally **a port of existing algorithms**, not a license for unsupported algorithm invention. A required published mathematical consumer for which the translated algorithm is provably ineffective still needs a complete, source-grounded effective mathematical construction (for example the infinite Enriques subgroup generation in #80); this is missing functionality, not a reason to defer its result as performance work.
+
+## Work priority
+
+**Required functionality has absolute priority over performance.** Performance work is the last
+phase of this project and begins only when every required capability works through the public
+interface. This rule overrides every goal prompt, plan, outline, handoff, task order and CI result.
+
+- A slow run, timeout, memory limit, benchmark, or a red or unfinished expensive CI job does not
+  select work and does not block functional work.
+- Evidence records, revision pins, repeated audits, acceptance inventories and demonstrations
+  are repo-internal. They come after functionality and do not gate it.
+- Functional work may use any time and memory that it needs.
+- Optimize during functional work only when a small required example of the selected capability
+  cannot finish at all. Then return to that capability.
+- A goal, plan or outline lists missing functionality first and derives its order from the
+  remaining functionality, not from CI state. An author must not add a performance priority.
+- Goal text obeys the section "Goals, outlines and plans" of `~/ai/AGENTS.global.md`.
+
+[Issue #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4#work-priority) owns this rule.
 
 ## Full upstream coverage
 
@@ -51,12 +70,93 @@ Repair only defects that block the required mathematical computations or their
 small correctness examples. Functional publication may be incremental; port
 completion requires the full upstream coverage specified above.
 
-The v1 boundary sets delivery priority, not the eventual functional scope.
+The v1 boundary sets delivery priority, not the eventual functional scope. The T9 published classifications are exact mathematical outputs in the functional phase, not optional long-tail timing or CI housekeeping.
 Cases unsupported by the pinned upstream, including higher-real-index forms
 of rational Witt index zero or one, remain explicit **post-v1 requirements**.
 Retain their inputs, required outputs and public consumers in the open backlog.
 An upstream limitation explains the additional implementation work; it does
 not cancel the requirement. These deferred cases do not gate v1 delivery.
+
+## Functional work selection — one authoritative tree
+
+**The live GitHub issue tree is the single execution order.** Run
+`itree next dzackgarza/sage-indefinite-port` and perform the first open,
+unblocked **mathematical work unit**, not the first convenient example,
+recently touched file or red CI case. The historical 26-item flat checklist
+was removed because it placed extensions and optimization ahead of original
+port completion and contradicted the issue tree. Do not recreate a competing
+fixed checklist in prompts, handoffs, plans or agent memory.
+
+The root [#4](https://github.com/dzackgarza/sage-indefinite-port/issues/4)
+has these **ordered milestone-ledger phases**:
+
+1. **T8 — Original pinned-source algorithm completion:**
+   [#91](https://github.com/dzackgarza/sage-indefinite-port/issues/91).
+   Complete the entire source-supported Lorentzian perfect-cell search (#15),
+   Allcock reflective edgewalk (#31), indefinite/Eichler recursion (#18),
+   exact integral isometry (#68), line stabilizers (#70), and complete
+   orthogonal-group generation through the public Sage/research
+   consumers. Source-supported rank-general isotropic flags (#44) have
+   recorded completion evidence, not permission to omit any still-missing
+   source branch. A branch supported upstream but missing in Sage is T8
+   mathematics regardless of a "v2" label.
+2. **T9 — Published mathematical computations and public consumer results:**
+   [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64).
+   Compute all 87 Enriques infinite integral subgroup cases (#80), the
+   *stable-subgroup* cusp/orbit classifications (#82), degree-2/4 K3 Type II
+   and root types (#83), classical polarization indices in degrees 2/6/10
+   (#93), and D-tower N14/N17/N19 component counts (#94). These are
+   **functionality obligations**, not optional late-stage performance
+   targets. The frozen source-based acceptance outputs and the one
+   published port/provider pair remain binding. The rank-13/17 frozen
+   isotropic cases were completed by #81/#90.
+3. **T10 — Required beyond-source arithmetic extensions:**
+   [#69](https://github.com/dzackgarza/sage-indefinite-port/issues/69).
+   The original #40–#62 mathematical contracts (apart from source-parity
+   #44) are active separate work-unit leaves. They remain fully required,
+   including low-Witt integral orthogonal groups, finite-image arithmetic
+   subgroups, nonprimitive/degenerate/equivariant markings, Clifford,
+   Hermitian and general arithmetic algorithms. Their historical absorption
+   into one grouping issue does not prove or waive any mathematical result.
+4. **T11 — Last-stage efficiency and long-tail refinement:**
+   [#92](https://github.com/dzackgarza/sage-indefinite-port/issues/92).
+   Only here undertake #72 reproducible generator ordering, #73–#78 resource-cost and performance
+   work **and #95 complete unchanged frozen-corpus certification on one published port/provider pair**, preserving all exact mathematical outputs and witnesses.
+
+**Functional versus performance distinction.** A long-running computation
+is not automatically wrong or missing functionality. However, when a
+T8/T9-required effective group/orbit/transport algorithm does not exist
+or cannot compute the prescribed complete mathematical output because its
+construction necessarily enumerates an infeasible coset space, that is an
+**unfinished mathematical capability**. In particular, #80 requires
+complete integral \(\Gamma_h\) generators, not just a finite discriminant
+image or an optimized explicit Schreier enumeration. Distinguish
+algorithmic obstruction from an expensive but correct completed algorithm
+using an exact mathematical argument. Do not use a timeout as a substitute
+for either finding.
+
+**Prerequisite exception.** An otherwise later-phase capability can be
+worked on earlier *only* when a concrete active T8/T9 public operation
+mathematically depends on it: name the required input or algorithm, its
+actual callee/owner and an independently justified blocked example.
+Implement the complete required operation at its owner, then return to the
+earlier-phase mathematical obligation. Unrelated breadth, elegant
+generalization, repeated profiling or a newly discovered test is not a
+priority override. Maintain source hypotheses; a finite subgroup image
+alone never discharges infinite integral group generation.
+
+**Work-unit completion.** Each open leaf owns a coherent full mathematical
+deliverable and its exact public acceptance criteria. Complete every
+source branch, supported rank and marking, exact positive and negative
+decision, integral generator/stabilizer/transporter, independent
+mathematical oracle and required consumer in that leaf before marking it
+completed. Partial special cases are retained as evidence inside the
+same work unit, not permission to close it or advance. If a genuinely
+independently reviewable algorithm family merits splitting, move the
+entire original obligation to explicit leaf owners without weakening or
+losing any scope (as #15/#31 and #83/#93/#94 do). Issue changes do not
+substitute for mathematical implementation. Neither implementation-side
+self-tests nor a passing narrow sample certify a broader theorem.
 
 ## Sources of authority
 
@@ -85,11 +185,14 @@ active. Separate branch tips can contain unmerged work without an active owner.
 Never overwrite or discard another checkout's dirty source. Use a dedicated
 worktree/branch for parallel work and integrate only demonstrated relevant diffs.
 
-The issue tree rooted at #4 is the work plan. Use
-`uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`
-only when selecting a new unit after completion or an evidenced dependency
-change. A unit closes only when its entire accepted obligation is discharged;
-releasing a PR, a narrowed example, or a marker alone does not close it.
+The issue tree rooted at #4 supplies authoritative contracts and dependencies;
+the live itree preorder supplies their **only** execution order.
+Do not add an independent queue or select a later issue because it looks
+easier. After each completed mathematical work unit, rerun
+`itree next dzackgarza/sage-indefinite-port`. Milestone deadlines
+are forecasts, not completion evidence. A unit closes only when its
+entire accepted mathematical obligation is discharged; a PR, narrowed
+example, status document or test marker alone does not close it.
 
 ## Source-faithful implementation
 
@@ -99,14 +202,16 @@ releasing a PR, a narrowed example, or a marker alone does not close it.
    `references/vendor/arxiv/2110.03784` for Allcock's edgewalk.
    Use the translation map for navigation; record exact source symbols/lines
    beside the corresponding implementation.
-2. Preserve the source algorithm's cases, mathematics, enumeration, stopping
-   rules, certificates and exact witnesses. Translate generic callees into
-   existing Sage/research operations. No alternative algorithms, bounded
-   heuristic shortcuts, basis-dependent stand-ins, ad-hoc facades or duplicate
-   arithmetic primitives in place of the specialized source route.
-   Account explicitly for an unavoidable representation/callee substitution
-   against its source contract. A mathematical departure needs a pinned-source
-   proof or counterexample on the owning issue.
+2. Preserve the pinned source algorithm's cases, mathematics, enumeration, stopping
+   rules, certificates and exact witnesses over its stated domain. Translate generic
+   callees into existing Sage/research operations. No bounded heuristic shortcuts,
+   basis-dependent stand-ins, ad-hoc facades or duplicate arithmetic primitives.
+   A different effective construction for a required published consumer is allowed
+   only where the source route genuinely does not discharge that computation: establish
+   the exact scope obstruction, verify the substitute algorithm against an authoritative
+   source or complete mathematical proof, and preserve the actual integral group/orbit
+   output and all source-supported branches. Record that mathematical justification
+   at its owning issue. A representation/callee substitution must remain source-faithful.
 3. Do not compile or invoke upstream C++ code. Production is native
    Sage/Python with exact standard backends and the formed-lattice preamble.
    Do not bypass the owned lattice, morphism, homset or tensor interfaces with
@@ -135,7 +240,80 @@ Continue independent port work against the frozen API rather than changing
 research source in the port worktree. Do not claim an upstream research
 operation is correct merely because its public name exists.
 
+## Mathematical implementation feedback loop
+
+**The inner loop is one mathematical obligation, not a test module, test
+family, CI tier, or acceptance suite.** Identify the pinned source operation,
+its exact hypotheses, and the smallest input on which the proposed behavior
+is nontrivial. Use its pinned upstream answer or an already independently
+accepted mathematical assertion as the expected result. If that answer is
+not established, refer the *question* to the separate mathematical test
+authority in [CONTRIBUTING.md](CONTRIBUTING.md); do not derive and approve
+your own implementation's acceptance criterion. A passing test checks an
+example, not the routine's full advertised domain.
+
+**Contributor responsibility — [CONTRIBUTING.md](CONTRIBUTING.md).** A
+mathematical implementation contributor may run existing accepted tests and
+temporary diagnostic experiments but does **not author or amend committed
+tests or their expected results for their own implementation**, including
+translations of pinned upstream tests. **Every test** must cite an exact
+authoritative source for its expected behavior and be independently written
+and independently reviewed. **Every test must undergo independent periodic
+re-review at each release and at least every 90 days**, explicitly attempting
+to detect mathematically false assertions. Test authorship, mathematical
+review, implementation, and final acceptance are distinct authorities.
+Upstream-test translations require independent source-fidelity review. No
+new mathematical assertion is admissible without independent mathematical
+specification and review of its exact hypotheses, result and deduction.
+
+**No automated oracle-enforcement machinery.** Do not introduce provenance
+scripts, Git hooks, CI gates, test-runner checks, or mandatory metadata
+parsers for mathematical oracles. Mathematical correctness is the
+responsibility of independently identified mathematical test authors and
+reviewers under CONTRIBUTING.md, not a syntactic provenance mechanism.
+**All tests**, including previously committed ones, require independent
+authorship, current mathematical review, and exact source authority before
+supporting acceptance claims. Unreviewed tests remain diagnostics.
+
+Run one explicitly named pytest node with
+`just test-node 'tests/path.py::test_exact_mathematical_claim'`. The recipe
+rejects bare files and selections expanding to more than one collected test,
+including an unqualified parametrized function; specify its exact parameter ID. Prefer a directly executable
+one-case witness of the actual public operation over a large imported
+fixture or an expensive integration case. If the smallest valid counterexample
+is expensive, keep that example; do not replace the required mathematics
+with a weaker claim merely to save time.
+
+For each source correction: establish the failure or missing branch on that
+single witness; implement the full source-supported construction; rerun the
+same node; then check the *few other nodes for genuinely distinct mathematical
+branches* touched by the change. For generator algorithms prove the family
+generates the complete group, not merely that each proposed generator
+preserves the form. For orbit enumerators prove exhaustiveness and pairwise
+inequivalence, not just that returned elements are legal. For transporters
+verify existence/nonexistence against an independent invariant, integral
+maps, both directions and the requested subgroup when applicable. For
+inductive routines prove the rank-general step separately from testing its
+smallest instance. Keep every essential hypothesis and do not infer
+completeness from lack of further examples in a search.
+
+**Do not run a whole test module, multi-module selection, acceptance family
+or CI workflow as a routine inner-loop step.** Broader integration tests run
+once when a demonstrated dependency or a completed coherent implementation
+needs them; frozen full acceptance is the separate final gate. The existing
+suite-complexity/budget records concern that later gate and do not determine
+what to implement or what to test in the hot loop. In particular, a long
+regression suite is never a prerequisite to making the next mathematical
+code change.
+
 ## Tests and acceptance
+
+Last-phase (T11) runtime work follows [the suite triage](references/complexity/triage.md): the probe-backed suite estimate is the problem, and a fix counts only by the hours it removes from it. A saving of seconds counts only when it compounds over enough cases to remove hours. The suite is not run whole while the estimate exceeds 6 hours.
+
+Every collected test has a time budget derived from the complexity theory of
+its algorithm, never from a measured runtime. [references/complexity](references/complexity/README.md)
+states the rules for a budget and owns the theory; a new or changed test gets
+its budget there before it lands.
 
 The [frozen acceptance modules](tests/acceptance/) and
 [fixtures](tests/fixtures/) are not edited, deleted or weakened to make a
@@ -156,8 +334,10 @@ sample remain defects to record, not reasons to declare the sample or
 the entire port correct. Long-tail exhaustive coverage does not gate the
 agreed milestones.
 
-GitHub [Acceptance](.github/workflows/acceptance.yml) runs the full frozen
-suite in sharded Sage jobs on every push using the
+GitHub [Acceptance](.github/workflows/acceptance.yml) runs only by manual
+dispatch (`gh workflow run Acceptance -f corpus=tier1`, `-f corpus=tier2` or `-f corpus=full`).
+A result does not select the next task. It runs the frozen
+suite in sharded Sage jobs using the
 `ghcr.io/dzackgarza/sage:develop` research image; the run
 installs the published `research` branch and records its commit.
 Only the fork's `Research environment image` workflow builds that image,
@@ -182,6 +362,10 @@ GitHub Actions; local Snap Docker, `sage-dev-develop`, the former
 - Commit each coherent source change, including WIP progress where required;
   identify the pinned source step or failed consumer. Push so CI tests the exact
   revision. Preserve all unrelated work and claim state.
+- Publish working mathematical implementations directly to `main` when the
+  repository permits it. A PR/branch containing only a queue, plan, receipt,
+  evidence or status change is not a substantive task. Never replace
+  completion of the first unchecked unit with a queue-administration session.
 - Local `just test-commit` checks only staged Python/JSON/TOML syntax;
   `just test-push` checks only outgoing committed syntax.
   Both delegate to [ai-review-ci](https://github.com/dzackgarza/ai-review-ci)

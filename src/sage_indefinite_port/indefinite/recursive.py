@@ -19,8 +19,12 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 """
 
 import itertools
+from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
-from math import gcd
+from math import gcd, isqrt
+
+import numpy as np
 
 from sage_extensions.all import GObjects, Lattices, Modules, Sets, ZZ
 from sage_extensions.categories.group.groups import OwnedGroups
@@ -31,6 +35,7 @@ from sage_extensions.categories.modules.orbit_spans import (
 from sage_extensions.categories.modules.pure.modules import (
     Modules,
     ModulesOverIntegralDomains,
+    _engine_matrix,
 )
 from sage_extensions.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
@@ -42,6 +47,7 @@ from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.special import diagonal_matrix
 from sage.rings.finite_rings.integer_mod_ring import Zmod
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.structure.parent import Parent
 
@@ -64,10 +70,257 @@ from sage_indefinite_port.invariants import (
 
 _UNTWIST = Lattices(ZZ).twist_functor(-1)
 
+type _IsotropicActionKey = tuple[
+    int, tuple[tuple[int, ...], ...], tuple[tuple[tuple[int, ...], ...], ...],
+    tuple[tuple[tuple[int, ...], ...], ...] | None, int,
+]
+
 
 def _untwisted(isometry: LatticeIsometryMethods, profile: AttackProfile) -> LatticeIsometryMethods:
     r"""An isometry of the signed view, as an isometry of the lattice itself."""
     return isometry if profile.sign == 1 else _UNTWIST(isometry)
+
+
+def _integral_stabilizer_family(action: IntegralStructureAction) -> Iterable[LatticeIsometryMethods]:
+    r"""Realize the provider's full Schreier family from its supplied factors.
+
+    GroupAction.g:869-886 supplies the integral stabilizer before the source
+    generator simplification. The provider retains its orbit, letters and
+    transversals and specifies ``t_(s.p)^-1 s t_p`` in orbit-major order.
+    The provider's ambient-group inclusion retains each factor's actual
+    rational isometry. Composites use owned isometry multiplication and
+    preserve every source family entry.
+    """
+    letters, transversals = action.stabilizer_schreier_factors()
+    g_set = action.finite_representation().g_set()
+    if g_set.cardinality() == 1:
+        yield from letters
+        return
+    points = tuple(g_set)
+    permutations = g_set.orbit_generator_permutations(points[0])
+    positions = {point: position for position, point in enumerate(points)}
+    inclusion = action.ambient_group_inclusion()
+    realized_letters = tuple(inclusion(letter) for letter in letters)
+    realized_transversals = tuple(inclusion(transversal) for transversal in transversals)
+    inverse_transversals = tuple(~transversal for transversal in realized_transversals)
+    for position, point in enumerate(points):
+        for letter, permutation in zip(realized_letters, permutations, strict=True):
+            image_position = positions[permutation(point)]
+            yield inverse_transversals[image_position] * letter * realized_transversals[position]
+
+
+def _rational_action_columns(lattice, generators, *, inclusion=None):
+    r"""Read the supplied maps in the lattice's retained rational framing."""
+    labels = tuple(lattice.module_generating_set())
+    if inclusion is None:
+        inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+    if inclusion.domain() is not lattice:
+        raise ValueError("the rational framing must retain the supplied integral lattice")
+    basis = tuple(inclusion(lattice.module_generator(label)).underlying_element() for label in labels)
+    field = inclusion.codomain().extension_ring()
+    frame = field.free_module(lattice.module_generating_set())
+    comparisons = {}
+    inverse_comparisons = {}
+    for generator in generators:
+        domain, codomain = generator.domain(), generator.codomain()
+        for endpoint in (domain, codomain):
+            if endpoint not in comparisons:
+                comparison = Modules(field).Mor(frame, endpoint)({
+                    label: endpoint(point) for label, point in zip(labels, basis, strict=True)
+                })
+                comparisons[endpoint] = _engine_matrix(comparison)
+        if codomain not in inverse_comparisons:
+            inverse_comparisons[codomain] = comparisons[codomain].inverse()
+        yield (
+            inverse_comparisons[codomain]
+            * _engine_matrix(generator.module_morphism())
+            * comparisons[domain]
+        )
+
+
+def _integral_stabilizer_action_columns(lattice, action):
+    r"""Every full integral Schreier action, with factors in one rational frame.
+
+    GroupAction.g:869-886 constructs the integral stabilizer before
+    MatrixGroupSimplification.h reduces its full matrix generators.
+    The provider supplies t_(s.p)^-1 s t_p and the exact orbit action.
+    Rational factors are composed before their product is admitted over ZZ.
+    """
+    g_set = action.finite_representation().g_set()
+    if g_set.cardinality() == 1:
+        for columns in _rational_action_columns(
+            lattice, _integral_stabilizer_family(action), inclusion=action.lattice_inclusion()
+        ):
+            yield columns.change_ring(SageZZ)
+        return
+    letters, transversals = action.stabilizer_schreier_factors()
+    inclusion = action.ambient_group_inclusion()
+    factors = itertools.chain(
+        (inclusion(letter) for letter in letters),
+        (inclusion(transversal) for transversal in transversals),
+    )
+    columns = tuple(_rational_action_columns(lattice, factors, inclusion=action.lattice_inclusion()))
+    letter_columns = columns[:len(letters)]
+    transversal_columns = columns[len(letters):]
+    inverse_transversals = tuple(transversal.inverse() for transversal in transversal_columns)
+    points = tuple(g_set)
+    permutations = g_set.orbit_generator_permutations(points[0])
+    positions = {point: position for position, point in enumerate(points)}
+    for position, point in enumerate(points):
+        for letter, permutation in zip(letter_columns, permutations, strict=True):
+            image_position = positions[permutation(point)]
+            yield (
+                inverse_transversals[image_position] * letter * transversal_columns[position]
+            ).change_ring(SageZZ)
+
+
+def _integral_generator_set(
+    lattice: Lattices.ParentMethods,
+    generators: Iterable[LatticeIsometryMethods] | IntegralStructureAction,
+) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Reduce full integral actions before constructing integral maps.
+
+    Pinned MatrixGroupSimplification.h:650-751 reduces pairs by products
+    and inverses; :1386-1487 applies this to the entrywise L1 norm.
+    These are invertible Nielsen transformations, so the integral kernel
+    survives even when several generators have the same finite image.
+    Native matrices are temporary exact basis actions; the result consists
+    of owned lattice isometries. A supplied integral-structure action
+    realizes its complete Schreier family in the common frame first.
+    """
+    labels = tuple(lattice.module_generating_set())
+    columns = (
+        _integral_stabilizer_action_columns(lattice, generators)
+        if isinstance(generators, IntegralStructureAction)
+        else _rational_action_columns(lattice, generators)
+    )
+    identity = tuple(int(row == column) for row in range(len(labels)) for column in range(len(labels)))
+    seen = {identity}
+    actions = {}
+    norm_counts = Counter()
+
+    def retire(key):
+        norm = actions.pop(key)[0]
+        norm_counts[norm] -= 1
+        if norm_counts[norm] == 0:
+            del norm_counts[norm]
+
+    # MatrixGroupSimplification.h:1495-1605 selects bounded integer
+    # arithmetic. Entrywise L1 is submultiplicative. If both directions
+    # of each pair have norm <= B, every product and partial dot sum has
+    # absolute sum <= B^2 <= 2^63-1. Larger pairs use Python integers.
+    machine_bound = isqrt(int(np.iinfo(np.int64).max))
+
+    def action_data(action):
+        # Fixed-size row-major keys preserve equality and lexicographic order.
+        key = tuple(action.ravel().tolist())
+        return key, int(np.add.reduce(np.abs(action), axis=None))
+
+    def normalized(action, inverse, direct_norm, inverse_norm):
+        dtype = np.dtype(np.int64) if max(direct_norm, inverse_norm) <= machine_bound else np.dtype("object")
+        action = np.asarray(action, dtype=dtype)
+        inverse = np.asarray(inverse, dtype=dtype)
+        # Choose a fixed representative of {g,g^-1} at equal complexity.
+        if inverse_norm < direct_norm:
+            return tuple(inverse.ravel().tolist()), (inverse_norm, inverse, action)
+        direct_key = tuple(action.ravel().tolist())
+        if inverse_norm == direct_norm:
+            inverse_key = tuple(inverse.ravel().tolist())
+            if inverse_key < direct_key:
+                return inverse_key, (inverse_norm, inverse, action)
+        return direct_key, (direct_norm, action, inverse)
+
+    for action_columns in columns:
+        engine_action = action_columns.transpose().change_ring(SageZZ)
+        action = np.asarray(tuple(map(int, engine_action.list())), dtype="object").reshape(len(labels), len(labels))
+        key, direct_norm = action_data(action)
+        if key in seen:
+            continue
+        seen.add(key)
+        engine_inverse = engine_action.inverse().change_ring(SageZZ)
+        inverse = np.asarray(tuple(map(int, engine_inverse.list())), dtype="object").reshape(len(labels), len(labels))
+        # Nielsen updates preserve the subgroup: both g and g^-1 remain
+        # words in the retained family after either action is retired.
+        seen.add(tuple(inverse.ravel().tolist()))
+        key, entry = normalized(action, inverse, direct_norm, int(np.add.reduce(np.abs(inverse), axis=None)))
+        if key in actions:
+            continue
+        actions[key] = entry
+        norm_counts[entry[0]] += 1
+        pending = [key]
+        # A newly inserted action must meet every retained action. An
+        # unchanged pair needs no second visit. Replacements strictly lower
+        # total L1 complexity, including when a repeated action disappears.
+        # Thus this worklist reaches the source's exhaustive pair reduction
+        # without constructing all pending pairs of a Schreier family.
+        while pending:
+            current = pending.pop()
+            if current not in actions:
+                continue
+            for other in tuple(actions):
+                if current not in actions:
+                    break
+                if other == current:
+                    continue
+                a_norm, a, a_inverse = actions[current]
+                b_norm, b, b_inverse = actions[other]
+                # The same four source products and their inverses, evaluated
+                # together. The L1 bound above certifies every integer product
+                # and reduction independently of this batching.
+                products = np.asarray((a, a_inverse, a, a_inverse, b_inverse, b_inverse, b, b)) @ np.asarray(
+                    (b, b, b_inverse, b_inverse, a_inverse, a, a_inverse, a)
+                )
+                norms = np.add.reduce(np.abs(products), axis=(1, 2))
+                # Equal integral actions have equal L1 norms. A product
+                # can change this source step only by shortening the pair
+                # or matching a retained action, so other full matrix keys
+                # need no materialization.
+                candidates = tuple(
+                    normalized(products[index], products[index + 4], int(norms[index]), int(norms[index + 4]))
+                    for index in range(4)
+                    if (
+                        min(int(norms[index]), int(norms[index + 4])) < max(a_norm, b_norm)
+                        or min(int(norms[index]), int(norms[index + 4])) in norm_counts
+                    )
+                )
+                if not candidates:
+                    continue
+                # The same source pair products can certify redundancy
+                # even when no L1 norm decreases. If c = a^eps*b^eta
+                # (up to inversion) is already retained independently of
+                # a and b, either a or b is a word in the other and c.
+                # Delete one using equality of the full integral actions;
+                # equality only in a finite quotient would lose kernels.
+                if any(key in actions and key not in (current, other) for key, _entry in candidates):
+                    retire(current if a_norm >= b_norm else other)
+                    continue
+                candidate_key, candidate = min(candidates, key=lambda item: (item[1][0], item[0]))
+                if candidate[0] >= max(a_norm, b_norm):
+                    continue
+                replaced = current if a_norm >= b_norm else other
+                retire(replaced)
+                if candidate_key != identity and candidate_key not in actions:
+                    actions[candidate_key] = candidate
+                    norm_counts[candidate[0]] += 1
+                    pending.append(candidate_key)
+
+    result = []
+    for key in actions:
+        # The stabilizer supplies an automorphism preserving this integral
+        # structure. Its full basis action has just been read exactly; use
+        # those images in the owned isometry homset instead of evaluating
+        # the rational expression again through integral restriction.
+        integral_images = {}
+        for position, source_label in enumerate(labels):
+            row = key[position * len(labels):(position + 1) * len(labels)]
+            integral_images[source_label] = lattice.linear_combination(
+                {
+                    label: lattice.base_ring()(coefficient)
+                    for label, coefficient in zip(labels, row, strict=True)
+                }
+            )
+        result.append(lattice.Isom(lattice)(integral_images))
+    return tuple(result)
 
 
 def _extend_perpendicular_isometry(
@@ -104,6 +357,26 @@ def _extend_perpendicular_isometry(
     rational_target = target.base_change(fraction_map)
     source_rationalize = ModulesOverIntegralDomains(source.base_ring())(source).generic_fibre_map()
     target_rationalize = ModulesOverIntegralDomains(target.base_ring())(target).generic_fibre_map()
+    extension = _extend_rational_perpendicular(
+        rational_source, rational_target,
+        tuple(source_rationalize(point).underlying_element() for point in source_basis),
+        tuple(target_rationalize(point).underlying_element() for point in images),
+    )
+    (denominator,) = tuple(extension.denominator_ideal(source, target).ideal_generators())
+    return extension, int(denominator)
+
+
+def _extend_rational_perpendicular(
+    rational_source: Lattices.ParentMethods, rational_target: Lattices.ParentMethods,
+    source_basis: tuple[Lattices.ElementMethods, ...], images: tuple[Lattices.ElementMethods, ...],
+) -> LatticeIsometryMethods:
+    r"""Invoke the pinned Witt extension in the supplied rational framings.
+
+    CombinedAlgorithms.h:314-332 LiftToFullAutomorphism changes the
+    ambient framing before invoking the same perpendicular extension.
+    """
+    field = rational_source.base_ring()
+    rank = len(source_basis)
     # The source's Subspace1 and Subspace2 are the rows of the two families.
     # Here they are the maps D -> L_Q and D -> M_Q out of the rational
     # lattice D on the basis, with the Gram pulled back along the first; the
@@ -111,18 +384,16 @@ def _extend_perpendicular_isometry(
     frame = field.free_module(rank)
     labels = tuple(frame.module_generating_set())
     gram = rational_source.gram_tensor().pullback(
-        Modules(field).Mor(frame, rational_source)(dict(zip(labels, (source_rationalize(point).underlying_element() for point in source_basis), strict=True)))
+        Modules(field).Mor(frame, rational_source)(dict(zip(labels, source_basis, strict=True)))
     )
     span = Lattices(field)([[gram[row, column] for column in range(rank)] for row in range(rank)])
     span_labels = tuple(span.module_generating_set())
     source_inclusion = Modules(field).Mor(span, rational_source)(
-        dict(zip(span_labels, (source_rationalize(point).underlying_element() for point in source_basis), strict=True))
+        dict(zip(span_labels, source_basis, strict=True))
     )
-    target_inclusion = Modules(field).Mor(span, rational_target)(dict(zip(span_labels, (target_rationalize(point).underlying_element() for point in images), strict=True)))
+    target_inclusion = Modules(field).Mor(span, rational_target)(dict(zip(span_labels, images, strict=True)))
     partial = span.Isom(span).identity()
-    extension = partial.witt_extension(source_inclusion, target_inclusion)
-    (denominator,) = tuple(extension.denominator_ideal(source, target).ideal_generators())
-    return extension, int(denominator)
+    return partial.witt_extension(source_inclusion, target_inclusion)
 
 
 def _column_matrix(isometry: LatticeIsometryMethods) -> Matrix_integer_dense:
@@ -200,6 +471,291 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
     return morphism_parent(tuple(images))
 
 
+
+def _fair_unimodular_matrices(n: int):
+    r"""Enumerate GL_n(Z) exactly by increasing elementary-generator word length.
+
+    Elementary row additions, basis swaps and a sign change generate
+    GL_n(Z).  Breadth-first enumeration is therefore exhaustive.  This
+    procedure must be called only after an independent *exact positive*
+    isometry decision; otherwise it need not terminate.
+    """
+    from collections import deque
+
+    identity = identity_matrix(SageZZ, n)
+    if n == 0:
+        # GL_0(ZZ) is the trivial group. In particular there is no first
+        # basis coordinate on which to apply the sign generator below.
+        yield identity
+        return
+    generators = []
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                for sign in (-1, 1):
+                    elementary = identity_matrix(SageZZ, n)
+                    elementary[i, j] = sign
+                    generators.append(elementary)
+    for i in range(n - 1):
+        swap = identity_matrix(SageZZ, n)
+        swap.swap_rows(i, i + 1)
+        generators.append(swap)
+    sign = identity_matrix(SageZZ, n)
+    sign[0, 0] = -1
+    generators.append(sign)
+    frontier = deque((identity,))
+    seen = {tuple(identity.list())}
+    while frontier:
+        candidate = frontier.popleft()
+        yield candidate
+        for generator in generators:
+            next_candidate = candidate * generator
+            key = tuple(next_candidate.list())
+            if key not in seen:
+                seen.add(key)
+                frontier.append(next_candidate)
+
+
+
+def _fair_unimodular_isometry_witness(source: Lattices.ParentMethods, target: Lattices.ParentMethods):
+    r"""First exact integral witness, after an independently certified positive decision."""
+    source_gram = _gram_in_label_order(source)
+    target_gram = _gram_in_label_order(target)
+    for candidate in _fair_unimodular_matrices(int(source_gram.nrows())):
+        if candidate * target_gram * candidate.transpose() == source_gram:
+            return _isometry_from_row_matrix(source, target, candidate)
+
+
+def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
+    r"""Fair, nontruncated enumeration of all integral isometries of a finite-rank lattice.
+
+    The output is a stream of owned O(L)-elements, not a finite generating
+    family.  Explicit arithmetic parametrizations and breadth-first
+    enumeration of complete group generators cover the specialized cases;
+    otherwise the generic GL_n(ZZ) matrix stream is exhaustive.  Infinite
+    orthogonal groups produce infinite streams, while the finite definite
+    and split binary branches terminate after their last element.
+    """
+    gram = _gram_in_label_order(lattice)
+    if int(gram.nrows()) == 0:
+        yield lattice.O().identity()
+        return
+    if int(gram.nrows()) == 1:
+        # GL_1(ZZ)={+1,-1}; both preserve every integral rank-one
+        # quadratic form, including the degenerate zero form.
+        yield _isometry_from_row_matrix(lattice, lattice, identity_matrix(SageZZ, 1))
+        yield _isometry_from_row_matrix(lattice, lattice, -identity_matrix(SageZZ, 1))
+        return
+    if not gram:
+        # For the zero form, O(L)=GL(L).  Use the maintained integral
+        # general-linear generating family, with inverses, instead of
+        # constructing the exponentially branching GL_n word search.
+        # This is a genuine group enumeration: all words and their
+        # inverses occur at finite breadth-first distance.
+        from collections import deque
+
+        linear = OwnedGroups().GL(int(lattice.rank()), lattice.base_ring())
+        forward = tuple(linear._to_engine(g).matrix().change_ring(SageZZ)
+                        for g in linear.group_generators())
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_row_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
+    if not lattice.is_nondegenerate() and int(lattice.rank()) >= 3:
+        # Reduce the radical to the final coordinates and extend the
+        # nondegenerate complement group by all integral radical shears
+        # and GL(R) actions.  This is the exact degenerate extension
+        # algorithm, not an ambient GL_n enumeration.  Its generators
+        # are complete whenever the complement group generators are.
+        from collections import deque
+
+        recursion = EichlerRecursion()
+        forward = tuple(_column_matrix(g) for g in recursion.orthogonal_group_generators(lattice))
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
+    if int(gram.nrows()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
+        # Every rational isometry of a split binary plane permutes its two
+        # rational null lines, scaling them by mutually inverse factors.
+        # For an integral unimodular isometry each primitive integral ray
+        # maps to a signed primitive ray; hence there are at most eight
+        # possibilities.  The pinned binary algorithm tests all eight.
+        from sage_indefinite_port.indefinite.lorentzian_cells import _binary_split_automorphisms
+
+        yield from _binary_split_automorphisms(lattice)
+        return
+    signature = tuple(map(int, lattice.signature_pair()))
+    # A recognized rationally anisotropic quaternion norm lattice has
+    # *complete* integral group generators (Voronoi units, the exactly
+    # computed order-normalizer quotient, and conjugation). Reuse that
+    # arithmetic presentation for the public element stream. This avoids
+    # the generic GL_4(Z) walk which can emit a few elements but never
+    # notices the group generators and loses the exact Cayley words.
+    # The determinant prefilter is an invariant of its Gram presentation;
+    # all other Witt-zero forms retain the fair general GL(Z) fallback.
+    quaternion_generators = (
+        _witt_zero_generators(lattice)
+        if (lattice.is_nondegenerate() and not lattice.is_definite()
+            and int(lattice.rank()) == 4 and int(lattice.witt_index()) == 0
+            and abs(gram.det()) == 144)
+        else None
+    )
+    # For an integral Hilbert model of rational Witt index one, Vaserstein's
+    # generators, the full integral cusp stabilizer and the exact cusp links
+    # generate O(L). The preceding recognized_model is now an *exact*
+    # integral isometry decision, not merely a bounded coordinate heuristic.
+    hilbert_generators = (
+        _witt_one_generators(lattice)
+        if (lattice.is_nondegenerate() and not lattice.is_definite()
+            and int(lattice.rank()) == 4 and int(lattice.witt_index()) == 1)
+        else None
+    )
+    if lattice.is_nondegenerate() and not lattice.is_definite() and (
+        quaternion_generators is not None
+        or hilbert_generators is not None
+        or
+        int(lattice.rank()) == 2
+        or (int(lattice.witt_index()) > 0 and (min(signature) == 1 or int(lattice.witt_index()) >= 2))
+    ):
+        # The pinned indefinite generation step supplies the full integral
+        # orthogonal group in every supported signature: Lorentzian leaves
+        # use the perfect-domain algorithm; higher Witt index uses the
+        # approximate-model covering plus exact pointed stabilizer.  In
+        # either case enumerate the resulting Cayley graph, not GL_n(ZZ).
+        # The signed-view convention is undone on every generator below.
+        from collections import deque
+
+        # A group generating family is not generally a *monoid*
+        # generating family.  In particular an infinite-order Pell period
+        # and its negative powers must both occur in the enumeration.
+        # Include inverse matrices explicitly before traversing words.
+        if quaternion_generators is not None:
+            forward = tuple(_column_matrix(g) for g in quaternion_generators)
+        elif hilbert_generators is not None:
+            forward = tuple(_column_matrix(g) for g in hilbert_generators)
+        elif int(lattice.rank()) == 2:
+            # The rank-two arithmetic edgewalk is the exact provider for
+            # both split and anisotropic indefinite binary forms; the
+            # higher-rank Eichler generation step requires a rational
+            # isotropic vector and is not applicable to anisotropic planes.
+            forward = tuple(_column_matrix(g) for g in lorentzian_orthogonal_group_generators(lattice))
+        else:
+            forward = tuple(_column_matrix(g)
+                            for g in EichlerRecursion().orthogonal_group_generators(lattice))
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
+    if int(gram.nrows()) == 2 and gram.rank() == 1:
+        # A rank-one radical in a binary lattice is primitive.  Choose a
+        # unimodular basis with the radical last; every isometry in that
+        # basis is [[epsilon, b], [0, delta]] (row convention), where
+        # epsilon,delta=+/-1 and b ranges over ZZ.  Unlike a generic
+        # GL_2 word search this gives every isometry once, by an explicit
+        # arithmetic parametrization, and reaches every shear fairly.
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        reduced_gram = _gram_in_label_order(reduced)
+        if reduced_gram[0, 1] or reduced_gram[1, 0] or reduced_gram[1, 1]:
+            raise ArithmeticError("binary radical reduction did not put the radical last")
+        from itertools import count
+
+        transport = _column_matrix(reduction.isometry)
+        inverse_transport = transport.inverse().change_ring(SageZZ)
+        for height in count(0):
+            shears = (0,) if height == 0 else (-height, height)
+            for shear in shears:
+                for first_sign in (-1, 1):
+                    for radical_sign in (-1, 1):
+                        rows = matrix(SageZZ, [[first_sign, shear], [0, radical_sign]])
+                        reduced_map = _isometry_from_row_matrix(reduced, reduced, rows)
+                        yield _isometry_from_column_matrix(
+                            lattice, lattice,
+                            transport * _column_matrix(reduced_map) * inverse_transport,
+                        )
+        return
+    if lattice.is_definite():
+        # Closure of the exact definite O(L) generators is finite.  Matrix
+        # multiplication takes place in the same labelled integral basis
+        # as the owned isometry constructor; no heuristic cutoff is used.
+        from collections import deque
+
+        generators = tuple(_column_matrix(g) for g in lattice.O().group_generators())
+        identity = identity_matrix(SageZZ, int(gram.nrows()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
+    for candidate in _fair_unimodular_matrices(int(gram.nrows())):
+        if candidate * gram * candidate.transpose() == gram:
+            yield _isometry_from_row_matrix(lattice, lattice, candidate)
+
+
+def _norm_fibre_has_local_obstruction(gram, square: int, *, primitive: bool) -> bool:
+    r"""Certify norm-fibre emptiness by integral-value and local congruences.
+
+    For primitive vectors the residue must remain nonzero modulo the
+    underlying prime.  Exhaustive tests are bounded to 10000 tuples.
+    """
+    rank = int(gram.nrows())
+    value_ideal = 0
+    for i in range(rank):
+        value_ideal = gcd(value_ideal, _integer(gram[i, i]))
+        for j in range(i + 1, rank):
+            value_ideal = gcd(value_ideal, 2 * _integer(gram[i, j]))
+    if value_ideal and int(square) % value_ideal:
+        return True
+    for modulus, prime in ((2, 2), (3, 3), (4, 2), (8, 2), (9, 3), (5, 5), (7, 7), (25, 5)):
+        if modulus ** rank > 10000:
+            continue
+        if not any(
+            sum(int(gram[i, j]) * x[i] * x[j] for i in range(rank) for j in range(rank)) % modulus == int(square) % modulus
+            for x in itertools.product(range(modulus), repeat=rank)
+            if not primitive or any(value % prime for value in x)
+        ):
+            return True
+    return False
+
+
 def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
     r"""The integer coordinate tuples of a lattice with `max |entry| = height`, in a fixed order.
 
@@ -208,26 +764,60 @@ def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
     than one box at a time.
     """
     rank = int(lattice.rank())
+    height = int(height)
+    if height < 0:
+        return
     if height == 0:
         yield tuple(0 for _ in range(rank))
         return
-    ranges = [range(-height, height + 1)] * rank
-    for coordinates in itertools.product(*ranges):
+    if not rank:
+        return
+    # Python's product(range(-h,h+1),...) queries range lengths and fails
+    # for 2h+1 > sys.maxsize. An unbounded-integer odometer retains the
+    # same lexicographic order with constant auxiliary space and never
+    # materializes a coordinate shell.
+    coordinates = [-height] * rank
+    while True:
         if max(abs(entry) for entry in coordinates) == height:
-            yield coordinates
+            yield tuple(coordinates)
+        for position in range(rank - 1, -1, -1):
+            if coordinates[position] < height:
+                coordinates[position] += 1
+                coordinates[position + 1:] = [-height] * (rank - position - 1)
+                break
+        else:
+            return
+
+
+def _rectangular_coordinate_box(bounds):
+    r"""Lexicographic integer points in an arbitrary finite coordinate box, streamed."""
+    bounds = tuple(int(bound) for bound in bounds)
+    if any(bound < 0 for bound in bounds):
+        return
+    if not bounds:
+        yield ()
+        return
+    coordinates = [-bound for bound in bounds]
+    while True:
+        yield tuple(coordinates)
+        for position in range(len(bounds) - 1, -1, -1):
+            if coordinates[position] < bounds[position]:
+                coordinates[position] += 1
+                coordinates[position + 1:] = [-b for b in bounds[position + 1:]]
+                break
+        else:
+            return
 
 
 def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:
     r"""The generators ``h`` of O(R) carried to L by ``transport: R -> L``, each built once from ``P H P^-1``.
 
     source: IndefiniteForms.g:1487 ``Inverse(RecRed.B) * eGen1 * RecRed.B``.
-    Each conjugate is constructed from the images of the generators of L, so
-    later evaluations do not compose the three maps again.
+    Owned composition is the product of the framed matrices, so each
+    conjugate retains the matrix P H P^-1.
     """
-    lattice = transport.codomain()
-    change = _column_matrix(transport)
-    inverse = change.inverse().change_ring(SageZZ)
-    return tuple(_isometry_from_column_matrix(lattice, lattice, change * _column_matrix(generator) * inverse) for generator in generators)
+    inverse = ~transport
+    return tuple(transport * generator * inverse for generator in generators)
 
 
 def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsometryMethods, source_transport: LatticeIsometryMethods) -> LatticeIsometryMethods:
@@ -236,9 +826,95 @@ def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsome
     source: IndefiniteForms.g:1389 ``Inverse(RecRed2.B) * test * RecRed1.B`` and
     :1419 (the degenerate extension ``Inverse(FullBasis2) * TheEquivTest * FullBasis1``).
     """
-    source, target = source_transport.codomain(), target_transport.codomain()
-    columns = _column_matrix(target_transport) * _column_matrix(witness) * _column_matrix(source_transport).inverse().change_ring(SageZZ)
-    return _isometry_from_column_matrix(source, target, columns)
+    return target_transport * witness * ~source_transport
+
+
+def _witt_zero_generators(lattice):
+    r"""Return ``O(L)`` generators for ``L`` isometric to the norm lattice of ``ZZ<1,i,j,k>`` of ``(-1, 3)``, or ``None``."""
+    from sage.matrix.constructor import matrix as sage_matrix
+
+    from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi, orthogonal_group_generators
+
+    recognized = _witt_zero_model_isometry(lattice)
+    if recognized is None:
+        return None
+    model, transport = recognized
+    source = model.lattice()
+    frame = tuple(source.module_generators())
+    columns = sage_matrix([[int(c) for c in transport(v)] for v in frame]).transpose()
+    inverse = columns.inverse()
+    labels = tuple(lattice.module_generating_set())
+    target = tuple(lattice.module_generators())
+    result = []
+    for generator in orthogonal_group_generators(model, QuaternionVoronoi(-1, 3), model.normalizer_classes_in_box(3)):
+        on_model = sage_matrix([[int(c) for c in generator(v)] for v in frame]).transpose()
+        moved = columns * on_model * inverse
+        result.append(
+            lattice.O()(
+                {
+                    label: sum(
+                        (lattice.scalar_multiple(int(c), g) for c, g in zip(moved.column(j), target, strict=True)),
+                        lattice.zero(),
+                    )
+                    for j, label in enumerate(labels)
+                }
+            )
+        )
+    return tuple(result)
+
+
+def _witt_zero_model_isometry(lattice):
+    r"""Recognize the ``(-1,3)`` quaternion norm lattice in *any* integral basis.
+
+    A bounded coordinate-box test is not an isometry decision: a unimodular
+    change of basis can have arbitrarily large entries. Reduce the supplied
+    lattice integrally, decide whether its reduced form is isometric to the
+    model, and only on a certified positive verdict search for a full
+    integral transporter. The first small box is an optimization; if it
+    fails, fair GL_r(ZZ) enumeration terminates by the positive decision.
+    The returned morphism is always ``model.lattice() -> lattice``.
+    """
+    from sage_indefinite_port.indefinite.li_margulis import is_isometric_in_box
+    from sage_indefinite_port.indefinite.quaternion_lattices import QuaternionNormLattice
+
+    if int(lattice.module_rank()) != 4 or int(lattice.witt_index()) != 0:
+        return None
+    model = QuaternionNormLattice(-1, 3, 2)
+    source = model.lattice()
+    reduced = indefinite_reduced_presentation(lattice)
+    if source.Isom(reduced.reduced).is_empty() is not False:
+        return None
+    short = is_isometric_in_box(source, reduced.reduced, 3)
+    if short is None:
+        short = _fair_unimodular_isometry_witness(source, reduced.reduced)
+    return model, reduced.isometry * short
+
+
+def _witt_one_generators(lattice):
+    r"""Return isometries generating ``O(L)`` from the Hilbert modular model, or ``None``.
+
+    For every real quadratic maximal order: Vaserstein's generation of ``SL_2(O)`` by elementary matrices plus
+    the exact cusp links (:func:`recognized_generators`).
+    """
+    from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_generators
+
+    matrices = recognized_generators(lattice)
+    if matrices is None:
+        return None
+    frame = tuple(lattice.module_generators())
+    labels = tuple(lattice.module_generating_set())
+    return tuple(
+        lattice.O()(
+            {
+                label: sum(
+                    (lattice.scalar_multiple(int(c), g) for c, g in zip(m.column(j), frame, strict=True)),
+                    lattice.zero(),
+                )
+                for j, label in enumerate(labels)
+            }
+        )
+        for m in matrices
+    )
 
 
 @dataclass(frozen=True)
@@ -388,8 +1064,9 @@ class RadicalCongruenceImage:
         `{D in GL_k(Z) : r D = r (mod modulus)}`, which is infinite and contains the congruence kernel
         `{D : D = 1 (mod modulus), r D = r}`. Agreement with `stabilizer_order` modulo the modulus is precisely a
         statement about that finite image and says nothing about the kernel, so no downstream claim of full
-        integral stabilizer generation may rest on this method. Generating the integral inverse image needs the
-        kernel as well, and that is a separate obligation which is **not** supplied here.
+        integral stabilizer generation may rest on this method. For the complete integral inverse image, including
+        its principal congruence kernel, use
+        :meth:`EichlerRecursion.radical_integral_row_stabilizer_generators`.
         """
         point, _ = self._orbit_gap(row)
         group = self.group.gap()
@@ -511,6 +1188,1478 @@ class EichlerRecursion:
         # every recursive orthogonal-group and lattice-equivalence request.
         self._groupoid = IsometryGroupoidCache()
         self._models: dict[Lattices.ParentMethods, OrbitCoverModel] = {}
+        self._isotropic_actions: dict[_IsotropicActionKey, IntegralStructureAction] = {}
+
+    def congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
+        r"""Actual finite image of ``O(lattice)`` on ``L / modulus L`` (#42).
+
+        Uses the complete constructive integral orthogonal generators and the
+        lattice's coordinate-label order. Composite moduli are supported.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
+        return IntegralCongruenceImage(
+            tuple(_column_matrix(g) for g in generators),
+            modulus,
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, residue, *, ambient_generators=None):
+        r"""Integral isometries fixing a coordinate residue modulo ``modulus``."""
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.residue_vector_stabilizer(residue)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def congruence_vector_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
+        r"""Integral orthogonal transporter between residue vectors, or ``None``."""
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_vector_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
+    def congruence_submodule_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, generators, *, ambient_generators=None):
+        r"""Integral setwise stabilizer of a submodule of ``L / modulus L``."""
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.residue_submodule_stabilizer(generators)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def congruence_submodule_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
+        r"""Integral orthogonal transporter of residue submodules, or ``None``."""
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_submodule_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
+    def congruence_flag_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
+        r"""Owned integral transporter of residue-module flags, or ``None``."""
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_flag_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
+    def congruence_flag_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, stages, *, ambient_generators=None):
+        r"""Integral setwise stabilizer of a nested flag in ``L / modulus L``."""
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.residue_flag_stabilizer(stages)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def joint_determinant_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
+        r"""Actual joint determinant and level image of the integral orthogonal group."""
+        from sage_indefinite_port.indefinite.congruence_images import JointDeterminantCongruenceImage
+
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
+        return JointDeterminantCongruenceImage(
+            tuple(_column_matrix(g) for g in generators),
+            modulus,
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_determinant_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Integral generators for a subgroup of the actual joint level/sign image."""
+        image = self.joint_determinant_congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def simultaneous_congruence_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
+        r"""Owned integral transporter of simultaneous finite-level marked data."""
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).simultaneous_residue_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
+    def simultaneous_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, *, vectors=(), submodules=(), flags=(), colour_classes=None, ambient_generators=None):
+        r"""Integral stabilizer of simultaneous finite-level residue constraints."""
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.simultaneous_residue_stabilizer(
+            vectors=vectors, submodules=submodules, flags=flags, colour_classes=colour_classes
+        )
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def multilevel_congruence_transporter(self, lattice: Lattices.ParentMethods, constraints, *, ambient_generators=None):
+        r"""Integral transporter satisfying correlated markings at several levels.
+
+        Each constraint is ``(level, source_data, target_data)``. A local
+        transporter coset is computed inside the actual image at that level;
+        its pullback to the common level is intersected with every other
+        transporter coset. This yields an exact positive lift or negative
+        finite-image certificate, including nonnormal stabilizers.
+        """
+        from math import lcm
+
+        constraints = tuple(constraints)
+        if not constraints:
+            raise ValueError("at least one congruence level is required")
+        if any(int(level) < 2 for level, _, _ in constraints):
+            raise ValueError("each congruence level must be at least two")
+        modulus = lcm(*(int(level) for level, _, _ in constraints))
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        compatible = set(image.image_keys())
+        for level, source, target_data in constraints:
+            reduced, projection = image.project_to_level(int(level))
+            transporter = reduced.simultaneous_residue_transporter(source, target_data)
+            if transporter is None:
+                return None
+            stabilizer = reduced.simultaneous_residue_stabilizer_keys(**source)
+            permitted = {reduced._key(reduced.reduce(transporter) * reduced.reduce(reduced._lifts[key]))
+                         for key in stabilizer}
+            compatible = {key for key in compatible
+                          if reduced._key(projection(image.reduce(image._lifts[key]))) in permitted}
+            if not compatible:
+                return None
+        lift = image._lifts[min(compatible)]
+        return _isometry_from_column_matrix(lattice, lattice, lift)
+
+    def multilevel_congruence_stabilizer_generators(self, lattice: Lattices.ParentMethods, constraints, *, ambient_generators=None):
+        r"""Exact simultaneous stabilizer of residue constraints at several levels.
+
+        ``constraints`` consists of pairs ``(modulus, keyword_data)``, where
+        keyword data describes vectors, submodules, flags or colour classes.
+        Pull all conditions back to their least-common-multiple level and
+        construct a single Schreier preimage in the actual reduction image.
+        """
+        from math import lcm
+
+        constraints = tuple(constraints)
+        if not constraints:
+            raise ValueError("at least one congruence level is required")
+        modulus = 1
+        for level, _ in constraints:
+            if int(level) < 2:
+                raise ValueError("each congruence level must be at least two")
+            modulus = lcm(modulus, int(level))
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        allowed = set(image.image_keys())
+        for level, data in constraints:
+            target, projection = image.project_to_level(int(level))
+            subgroup = target.simultaneous_residue_stabilizer_keys(**data)
+            allowed = {key for key in allowed
+                       if target._key(projection(image.reduce(image._lifts[key]))) in subgroup}
+        index, matrices = image.preimage_generators(image.reduce(image._lifts[key]) for key in allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def multilevel_congruence_stabilizer_subgroup(self, lattice: Lattices.ParentMethods, constraints, *, ambient_generators=None):
+        r"""Owned simultaneous residue stabilizer for several congruence levels.
+
+        Constraints are pulled back to their least common multiple and
+        intersected in the actual integral image, with no character-kernel
+        restriction. This retains correlations across different levels.
+        """
+        from math import lcm
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        constraints = tuple(constraints)
+        if not constraints:
+            raise ValueError("at least one congruence level is required")
+        if any(int(level) < 2 for level, _ in constraints):
+            raise ValueError("each congruence level must be at least two")
+        modulus = lcm(*(int(level) for level, _ in constraints))
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        conditions = []
+        for level, data in constraints:
+            target, projection = residue.project_to_level(int(level))
+            conditions.append((target, projection, target.simultaneous_residue_stabilizer_keys(**data)))
+        allowed = joint.subgroup_from_membership(
+            lambda key: all(
+                target._key(projection(residue.reduce(joint.section(key)))) in keys
+                for target, projection, keys in conditions
+            )
+        )
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
+    def relative_congruence_kernel_generators(self, lattice: Lattices.ParentMethods, source_modulus: int, target_modulus: int, *, ambient_generators=None):
+        r"""Owned generators for the kernel of reduction to a divisor level.
+
+        The ambient group is the generated integral O(L). Its actual image
+        at the source level is used to lift the complete kernel of the
+        projection onto the target-level image.
+        """
+        image = self.congruence_image(lattice, source_modulus, ambient_generators=ambient_generators)
+        index, matrices = image.relative_level_kernel(target_modulus)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def relative_congruence_kernel_subgroup(self, lattice: Lattices.ParentMethods, source_modulus: int, target_modulus: int, *, ambient_generators=None):
+        r"""Owned inverse image of the kernel of reduction from m to d.
+
+        For d dividing m, the inverse image in the integral ambient group
+        equals its principal level-d subgroup; the source level controls
+        the admissibility of the specified finite quotient map.
+        """
+        from sage.rings.integer_ring import ZZ
+
+        source_modulus = ZZ(source_modulus)
+        target_modulus = ZZ(target_modulus)
+        if target_modulus < 2 or source_modulus % target_modulus:
+            raise ValueError("target level must be a divisor >= 2 of the source level")
+        return self.principal_congruence_subgroup(
+            lattice, target_modulus, ambient_generators=ambient_generators,
+        )
+
+    def _multilevel_joint_character_selection(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Actual joint finite image and subgroup selected by all level/character constraints.
+
+        ``allowed_characters`` is a subgroup of the actual joint character
+        image (without a congruence factor). All level constraints are
+        imposed in the *same* actual joint image at their lcm level, so
+        correlations between characters and congruence conditions survive.
+        """
+        from math import lcm
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+        # The selected generators are consumed by two distinct joint images:
+        # one at the common level and one at the unreduced character level.
+        # Preserve a one-shot generator family exactly once, or the second
+        # image is falsely computed from the trivial subgroup.
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        constraints = tuple(constraints)
+        modulus = 1
+        for level, _ in constraints:
+            if int(level) < 2:
+                raise ValueError("each congruence level must be at least two")
+            modulus = lcm(modulus, int(level))
+        joint = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier,
+            level_modulus=modulus if constraints else None,
+            ambient_generators=ambient_generators,
+        )
+        allowed_characters = frozenset(allowed_characters)
+        character_image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators,
+        )
+        if allowed_characters != character_image.subgroup_from_generators(allowed_characters):
+            raise ValueError("allowed characters must be an actual subgroup")
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank) if constraints else None
+        conditions = []
+        for level, data in constraints:
+            target, projection = residue.project_to_level(int(level))
+            conditions.append((target, projection, target.simultaneous_residue_stabilizer_keys(**data)))
+        allowed = []
+        for key, witness in joint._lifts.items():
+            if (key[1:] if constraints else key) not in allowed_characters:
+                continue
+            if all(target._key(projection(residue.reduce(witness))) in keys
+                   for target, projection, keys in conditions):
+                allowed.append(key)
+        allowed = frozenset(allowed)
+        # Check that these conditions give a subgroup in the actual joint
+        # image, not merely in the product of their nominal finite targets.
+        if joint.subgroup_from_generators(allowed) != allowed:
+            raise ValueError("multilevel and character conditions do not define a subgroup")
+        return joint, allowed
+
+    def multilevel_joint_character_restricted_transporter(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, ambient_transporter, stabilizer_generators, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Correct an integral marked transporter inside a joint arithmetic preimage.
+
+        Right corrections come from the *integral* marking stabilizer,
+        not the ambient joint finite image. Return an owned witness or
+        ``None`` when no allowed arithmetic correction exists.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        if ambient_transporter.domain() is not lattice or ambient_transporter.codomain() is not lattice:
+            raise ValueError("ambient transporter must be an automorphism of the supplied lattice")
+        stabilizer_generators = tuple(stabilizer_generators)
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in stabilizer_generators):
+            raise ValueError("stabilizer generators must be automorphisms of the supplied lattice")
+        witness = joint.restricted_transporter(
+            allowed, _column_matrix(ambient_transporter),
+            tuple(_column_matrix(g) for g in stabilizer_generators))
+        return None if witness is None else _isometry_from_column_matrix(lattice, lattice, witness)
+
+    def multilevel_joint_character_marked_stabilizer_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, stabilizer_generators, representative, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Integral marked stabilizer under correlated multilevel restrictions.
+
+        The supplied generators generate the full integral stabilizer of
+        the original mark, not merely its finite image. Schreier is done
+        in this integral stabilizer, since the joint congruence kernel
+        need not preserve the mark.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        stabilizer_generators = tuple(stabilizer_generators)
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in stabilizer_generators):
+            raise ValueError("stabilizer generators must be automorphisms of the supplied lattice")
+        index, matrices = joint.conjugate_stabilizer_generators(
+            allowed, tuple(_column_matrix(g) for g in stabilizer_generators), representative)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def multilevel_joint_character_double_cosets(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Exact double cosets of a multilevel arithmetic subgroup and K.
+
+        Return integral representatives and the full integral preimage
+        generators of each finite intersection ``H intersect r*K*r^-1``.
+        These preimages are finite-quotient stabilizers, not necessarily
+        stabilizers of a geometric marking. Both subgroups live in the
+        *same correlated joint image* at the common congruence level.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        right = frozenset(right_subgroup)
+        if right != joint.subgroup_from_generators(right):
+            raise ValueError("right_subgroup must be a subgroup of the actual joint image")
+        result = []
+        for key, lift in joint.double_coset_representatives(allowed, right):
+            index, generators = joint.double_coset_stabilizer_preimage(allowed, right, key)
+            result.append((_isometry_from_column_matrix(lattice, lattice, lift), index,
+                           tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in generators)))
+        return tuple(result)
+
+    def multilevel_joint_character_right_cosets(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Actual correlated multilevel cosets and owned integral transporters.
+
+        Return ``(cosets, act, transporter)`` for the right action of the
+        generated *joint finite image* on the left cosets of the selected
+        multilevel/character subgroup. ``act`` accepts an actual joint-image
+        key, not an unverified integral matrix. The transporter returns an
+        integral lattice automorphism, including for nonnormal targets.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        cosets, _ = joint.right_coset_action(allowed)
+        order = {key: i for i, key in enumerate(joint._lifts)}
+
+        def canonical(key):
+            return min((joint._multiply(h, key) for h in allowed), key=order.__getitem__)
+
+        positions = {canonical(key): i for i, key in enumerate(cosets)}
+
+        def act(index, key):
+            if not 0 <= index < len(cosets):
+                raise IndexError("coset index out of range")
+            if key not in joint.image_keys():
+                raise ValueError("key is outside the actual joint image")
+            return positions[canonical(joint._multiply(cosets[index], key))]
+
+        def transporter(source_index, target_index):
+            if not 0 <= source_index < len(cosets) or not 0 <= target_index < len(cosets):
+                raise IndexError("coset index out of range")
+            source = joint.section(cosets[source_index])
+            target = joint.section(cosets[target_index])
+            lift = source.inverse() * target
+            assert act(source_index, joint.image(lift)) == target_index
+            return _isometry_from_column_matrix(lattice, lattice, lift)
+
+        return cosets, act, transporter
+
+    def multilevel_joint_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Exact kernel/section word for simultaneous level and character constraints.
+
+        Return ``(kernel, section, word)`` for a member, with the kernel
+        trivial in the *whole actual joint image* at the least common
+        multiple level, and ``None`` for a nonmember. All constraints and
+        characters are checked in one correlated finite image.
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("factorization requires an automorphism of the supplied lattice")
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        result = joint.preimage_factorization(_column_matrix(isometry), allowed)
+        if result is None:
+            return None
+        kernel, section, word = result
+        return (_isometry_from_column_matrix(lattice, lattice, kernel),
+                _isometry_from_column_matrix(lattice, lattice, section), word)
+
+    def multilevel_joint_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Owned integral membership in the correlated multilevel preimage.
+
+        A finite quotient alone does not decide membership in a proper
+        explicitly generated ambient group. Check the actual integral
+        ambient membership before evaluating the correlated joint image.
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("membership requires an automorphism of the supplied lattice")
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators)
+        columns = _column_matrix(isometry)
+        if not joint.ambient_contains(columns):
+            return False
+        return joint.image(columns) in allowed
+
+    def multilevel_joint_character_preimage_generators(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Complete integral generators for the exact multilevel/character preimage.
+
+        All constraints factor through the single actual finite joint image
+        at their least common multiple. This includes the full integer
+        congruence kernel: the result is *not* a lift of just the generators
+        of the allowed residue subgroup.
+        """
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            ambient_generators=ambient_generators,
+        )
+        index, matrices = joint.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def multilevel_joint_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, constraints, allowed_characters, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, ambient_generators=None):
+        r"""Owned subgroup realizing all multilevel and character restrictions.
+
+        Return the full owned *finite-codomain preimage* of the intersection
+        inside the explicitly generated ambient group, or O(L) when no proper
+        ambient group is supplied. The retained quotient and the complete
+        Schreier generators allow genuine marked orbit splitting, stabilizer
+        restrictions and transporters, not just testing membership in a bare
+        subgroup of generated matrices.
+        """
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        joint, allowed = self._multilevel_joint_character_selection(
+            lattice, constraints, allowed_characters,
+            determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier, ambient_generators=ambient_generators,
+        )
+        _, matrices = joint.preimage_generators(allowed)
+        generators = tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+        representation = self._joint_character_representation(lattice, joint, ambient_generators)
+        actual = representation.codomain()
+        target = actual.subgroup(tuple(
+            representation(_isometry_from_column_matrix(lattice, lattice, joint.section(key)))
+            for key in allowed
+        ))
+        ambient = representation.domain()
+        return representation.preimage_subgroup(
+            target,
+            stated_clause=lambda: "the selected joint level stabilizer and arithmetic character subgroup",
+            generating_morphism=ambient.free_cover(generators),
+        )
+
+    def finite_index_sublattice_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
+        r"""Owned integral transporter of full-rank sublattices containing mL."""
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).finite_index_sublattice_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
+    def finite_index_sublattice_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, basis, *, ambient_generators=None):
+        r"""Integral isometries preserving the specified finite-index sublattice.
+
+        ``basis`` consists of coordinate rows, with ``modulus L`` contained
+        in their span. The exact congruence image supplies the stabilizer.
+        """
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.finite_index_sublattice_stabilizer(basis)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def finite_index_sublattice_stabilizer_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, basis, *, ambient_generators=None):
+        r"""Owned setwise stabilizer of a full-rank sublattice containing mL."""
+        from sage.matrix.constructor import matrix
+        from sage.rings.integer_ring import ZZ
+
+        rows = matrix(ZZ, basis)
+        rank = len(tuple(lattice.module_generating_set()))
+        if rows.dimensions() != (rank, rank) or rows.det() == 0:
+            raise ValueError("sublattice basis must be square and full rank")
+        if any(x not in ZZ for x in (ZZ(modulus) * rows.inverse()).list()):
+            raise ValueError("modulus times the ambient lattice must lie in the sublattice")
+        return self.simultaneous_congruence_stabilizer_subgroup(
+            lattice, modulus, submodules=(tuple(rows.rows()),),
+            ambient_generators=ambient_generators,
+        )
+
+    def joint_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
+        r"""Actual joint image of level reduction and normalized real spinor sign.
+
+        Uses the provider's ``O_plus`` character with the Gritsenko--Hulek--
+        Sankaran ``-b/2`` reflection normalization, not determinant or
+        positive-cone component preservation.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import JointSignCongruenceImage
+
+        character = lattice.O_plus().preimage_morphism()
+
+        def sign(columns):
+            isometry = _isometry_from_column_matrix(lattice, lattice, columns)
+            return 1 if character(isometry).is_one() else -1
+
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
+        return JointSignCongruenceImage(
+            tuple(_column_matrix(g) for g in generators),
+            modulus, sign, rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_real_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Integral generators of a joint level/real-spinor inverse image."""
+        image = self.joint_real_spinor_congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def joint_determinant_real_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
+        r"""Actual image of level, determinant and normalized real-spinor signs."""
+        from sage_indefinite_port.indefinite.congruence_images import JointTwoSignsCongruenceImage
+
+        character = lattice.O_plus().preimage_morphism()
+
+        def spinor(columns):
+            isometry = _isometry_from_column_matrix(lattice, lattice, columns)
+            return 1 if character(isometry).is_one() else -1
+
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
+        return JointTwoSignsCongruenceImage(
+            tuple(_column_matrix(g) for g in generators), modulus,
+            lambda g: int(g.det()), spinor,
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_determinant_real_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Integral preimage generators for a subgroup of the actual triple image."""
+        image = self.joint_determinant_real_spinor_congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def congruence_colouring_transporter(self, lattice: Lattices.ParentMethods, modulus: int, source, target, *, ambient_generators=None):
+        r"""Integral orthogonal transporter of labelled residue colour classes."""
+        lift = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators).residue_colouring_transporter(source, target)
+        return None if lift is None else _isometry_from_column_matrix(lattice, lattice, lift)
+
+    def congruence_colouring_stabilizer_generators(self, lattice: Lattices.ParentMethods, modulus: int, colour_classes, *, ambient_generators=None):
+        r"""Integral stabilizer preserving each named residue-vector colour."""
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.residue_colouring_stabilizer(colour_classes)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def joint_field_spinor_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, field_map=None, form_multiplier=None, *, ambient_generators=None):
+        r"""Actual finite generated image of level and field-spinor square classes.
+
+        The field-spinor normalization is exactly that of the provider's
+        ``spinor_norm``; unlike the real-spinor sign this retains full
+        square classes, including the finite image in an infinite target.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import JointFieldSpinorCongruenceImage
+
+        character = lattice.spinor_norm(field_map, form_multiplier)
+
+        def spinor(columns):
+            isometry = _isometry_from_column_matrix(lattice, lattice, columns)
+            return character(isometry)
+
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
+        return JointFieldSpinorCongruenceImage(
+            tuple(_column_matrix(g) for g in generators), modulus,
+            spinor, character.codomain().one(),
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_field_spinor_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, field_map=None, form_multiplier=None, *, ambient_generators=None):
+        r"""Integral generators of a subgroup of the actual joint field-spinor image."""
+        image = self.joint_field_spinor_congruence_image(lattice, modulus, field_map, form_multiplier, ambient_generators=ambient_generators)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def joint_determinant_field_spinor_image(self, lattice: Lattices.ParentMethods, modulus: int, field_map=None, form_multiplier=None, *, ambient_generators=None):
+        r"""Actual joint level, determinant and field-spinor image."""
+        from sage_indefinite_port.indefinite.congruence_images import JointDeterminantFieldSpinorImage
+
+        character = lattice.spinor_norm(field_map, form_multiplier)
+        def spinor(columns):
+            return character(_isometry_from_column_matrix(lattice, lattice, columns))
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
+        return JointDeterminantFieldSpinorImage(
+            tuple(_column_matrix(g) for g in generators), modulus, spinor,
+            character.codomain().one(), rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def field_spinor_kernel_generators(self, lattice: Lattices.ParentMethods, field_map=None, form_multiplier=None, *, ambient_generators=None):
+        r"""Exact integral generators of the field-spinor kernel.
+
+        The finite generated spinor image is computed using the joint level
+        model at modulus two and then *all* reduction classes with trivial
+        spinor are retained. Thus no level-two restriction is imposed.
+        """
+        image = self.joint_field_spinor_congruence_image(
+            lattice, 2, field_map, form_multiplier, ambient_generators=ambient_generators)
+        one = image.identity[1]
+        allowed = (key for key in image.image_keys() if key[1] == one)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def field_spinor_kernel_subgroup(self, lattice: Lattices.ParentMethods, field_map=None, form_multiplier=None, *, ambient_generators=None):
+        r"""Owned kernel of the field spinor character in the actual image.
+
+        No congruence condition is imposed, including at level two.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, field_spinor=True, field_map=field_map,
+            form_multiplier=form_multiplier, ambient_generators=ambient_generators,
+        )
+        one = image.identity[-1]
+        allowed = image.subgroup_from_membership(lambda key: key[-1] == one)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, field_spinor=True, field_map=field_map,
+            form_multiplier=form_multiplier, ambient_generators=ambient_generators,
+        )
+
+    def determinant_kernel_subgroup(self, lattice: Lattices.ParentMethods, *, ambient_generators=None):
+        r"""Owned determinant-one subgroup inside the specified integral group."""
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=True, ambient_generators=ambient_generators,
+        )
+        allowed = image.subgroup_from_membership(lambda key: key[-1] == 1)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, determinant=True, ambient_generators=ambient_generators,
+        )
+
+    def real_spinor_kernel_subgroup(self, lattice: Lattices.ParentMethods, *, ambient_generators=None):
+        r"""Owned kernel of the normalized real-spinor character.
+
+        This is not the determinant kernel or the positive-cone subgroup.
+        The provider's O_plus character fixes the reflection normalization.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, real_spinor=True, ambient_generators=ambient_generators,
+        )
+        allowed = image.subgroup_from_membership(lambda key: key[-1] == 1)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, real_spinor=True, ambient_generators=ambient_generators,
+        )
+
+    def congruence_double_coset_stabilizers(self, lattice: Lattices.ParentMethods, modulus: int, left_subgroup, right_subgroup, *, ambient_generators=None):
+        r"""Exact integral stabilizer generators for each level double coset.
+
+        Return ``(representative, index, generators)``. The index is in
+        the explicitly specified ambient integral group, not a nominal
+        general linear group over the residue ring.
+        """
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        result = []
+        for residue, lift in image.double_coset_representatives(left_subgroup, right_subgroup):
+            intersection = image.double_coset_intersection(left_subgroup, right_subgroup, residue)
+            index, generators = image.preimage_generators(
+                image.reduce(image._lifts[key]) for key in intersection)
+            result.append((_isometry_from_column_matrix(lattice, lattice, lift), index,
+                           tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in generators)))
+        return tuple(result)
+
+    def congruence_double_coset_representatives(self, lattice: Lattices.ParentMethods, modulus: int, left_subgroup, right_subgroup, *, ambient_generators=None):
+        r"""Exact finite-level double cosets with owned integral witnesses."""
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        return tuple((residue, _isometry_from_column_matrix(lattice, lattice, lift))
+                     for residue, lift in image.double_coset_representatives(left_subgroup, right_subgroup))
+
+    def congruence_right_cosets(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Owned coset transporters and finite right action of an actual level image.
+
+        The action accepts only integral automorphisms of the specified
+        ambient group. A matching finite reduction does not certify
+        membership in a proper generated integral subgroup.
+        """
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators)
+        cosets, finite_action = image.right_coset_action(allowed)
+
+        def act(index, isometry):
+            if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+                raise ValueError("coset action requires an automorphism of the supplied lattice")
+            columns = _column_matrix(isometry)
+            if not joint.ambient_contains(columns):
+                raise ValueError("coset action requires an element of the specified ambient group")
+            return finite_action(index, image.reduce(columns))
+
+        def transporter(source_index, target_index):
+            lift = image.right_coset_transporter(allowed, source_index, target_index)
+            return _isometry_from_column_matrix(lattice, lattice, lift)
+
+        return cosets, act, transporter
+
+    def congruence_preimage_factorization(self, lattice: Lattices.ParentMethods, modulus: int, isometry, allowed, *, ambient_generators=None):
+        r"""Exact kernel/section factorization and word in a level preimage.
+
+        ``allowed`` is a subgroup of the actual residue image. Return
+        ``(kernel, section, word)`` with ``g=kernel*section`` and the
+        kernel congruent to identity, or ``None`` for a nonmember.
+        The section word is in the specified ambient generators.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        permitted = frozenset(residue._key(residue.reduce(g)) for g in allowed)
+        if residue._key(residue.image_one) not in permitted or not permitted <= residue.image_keys():
+            raise ValueError("allowed must contain identity and lie in the actual level image")
+        if any(residue._key(residue.reduce(a) * residue.reduce(b)) not in permitted
+               for a in residue._lifts.values() for b in residue._lifts.values()
+               if residue._key(residue.reduce(a)) in permitted
+               and residue._key(residue.reduce(b)) in permitted):
+            raise ValueError("allowed is not a subgroup of the actual level image")
+        target = joint.subgroup_from_membership(lambda key: key[0] in permitted)
+        return self.joint_discriminant_character_preimage_factorization(
+            lattice, isometry, target, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
+    def congruence_preimage_membership(self, lattice: Lattices.ParentMethods, modulus: int, isometry, allowed, *, ambient_generators=None):
+        r"""Exact membership in an owned congruence preimage.
+
+        Membership requires both the exact integral ambient-group predicate
+        and membership of the reduction in the specified actual subgroup.
+        The finite-image condition alone is insufficient for a proper
+        generated ambient group.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("membership requires an automorphism of the supplied lattice")
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators)
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        permitted = frozenset(residue._key(residue.reduce(g)) for g in allowed)
+        if residue._key(residue.image_one) not in permitted or not permitted <= residue.image_keys():
+            raise ValueError("allowed must be a subgroup of the actual level image")
+        if any(residue._key(residue.reduce(a) * residue.reduce(b)) not in permitted
+               for a in residue._lifts.values() for b in residue._lifts.values()
+               if residue._key(residue.reduce(a)) in permitted
+               and residue._key(residue.reduce(b)) in permitted):
+            raise ValueError("allowed must be a subgroup of the actual level image")
+        columns = _column_matrix(isometry)
+        if not joint.ambient_contains(columns):
+            return False
+        return residue._key(residue.reduce(columns)) in permitted
+
+    def congruence_preimage_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Owned inverse image of an arbitrary subgroup of the actual level image.
+
+        ``allowed`` contains residue matrices, not nominal GL elements or
+        discriminant-character keys. Nonnormal subgroups are supported;
+        their Schreier generators and exact finite quotient action are
+        retained by the joint-discriminant preimage owner. All
+        discriminant classes remain unrestricted.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        permitted = frozenset(residue._key(residue.reduce(g)) for g in allowed)
+        if residue._key(residue.image_one) not in permitted or not permitted <= residue.image_keys():
+            raise ValueError("allowed must contain identity and lie in the actual level image")
+        if any(residue._key(residue.reduce(a) * residue.reduce(b)) not in permitted
+               for a in residue._lifts.values() for b in residue._lifts.values()
+               if residue._key(residue.reduce(a)) in permitted
+               and residue._key(residue.reduce(b)) in permitted):
+            raise ValueError("allowed is not a subgroup of the actual level image")
+        target = joint.subgroup_from_membership(lambda key: key[0] in permitted)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, target, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+
+    def principal_congruence_subgroup_generators(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
+        r"""Generators of the principal level kernel in the specified integral group.
+
+        With ``ambient_generators`` omitted this is the full kernel in
+        ``O(L)``. Otherwise it is the kernel in the subgroup generated by
+        those integral automorphisms, not the ambient full-group kernel.
+        """
+        image = self.congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.preimage_generators((image.image_one,))
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def principal_congruence_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
+        r"""Owned kernel of reduction modulo ``modulus`` in the specified ambient group.
+
+        Retain every discriminant class: the discriminant factor in the joint
+        representation is auxiliary and must not impose a stable-kernel condition.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        identity_level = image.identity[0]
+        allowed = image.subgroup_from_membership(lambda key: key[0] == identity_level)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
+    def simultaneous_congruence_stabilizer_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, *, vectors=(), submodules=(), flags=(), colour_classes=None, ambient_generators=None):
+        r"""Owned inverse image of simultaneous residue stabilizers in O(L).
+
+        The selected residue stabilizer is intersected with the *actual*
+        integral image, not with the full automorphism group of L/mL.
+        Discriminant actions remain unrestricted.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import IntegralCongruenceImage
+
+        joint = self.joint_discriminant_character_image(
+            lattice, level_modulus=modulus, ambient_generators=ambient_generators,
+        )
+        residue = IntegralCongruenceImage(joint.generators, modulus, rank=joint.rank)
+        permitted = residue.simultaneous_residue_stabilizer_keys(
+            vectors=vectors, submodules=submodules, flags=flags,
+            colour_classes=colour_classes,
+        )
+        allowed = joint.subgroup_from_membership(lambda key: key[0] in permitted)
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, allowed, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
+    def joint_positive_cone_congruence_image(self, lattice: Lattices.ParentMethods, modulus: int, *, ambient_generators=None):
+        r"""Actual joint image of congruence reduction and positive-cone component."""
+        from sage_indefinite_port.indefinite.congruence_images import JointSignCongruenceImage
+
+        # Calling the provider predicate enforces its exact signature (1,n)
+        # hypothesis and selected positive-cone convention.
+        lattice.O_component()  # Enforce the provider's exact signature hypothesis.
+
+        def sign(columns):
+            isometry = _isometry_from_column_matrix(lattice, lattice, columns)
+            return 1 if isometry.preserves_positive_cone() else -1
+
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient generators must be automorphisms of the supplied lattice")
+        return JointSignCongruenceImage(
+            tuple(_column_matrix(g) for g in generators), modulus, sign,
+            rank=len(tuple(lattice.module_generating_set())),
+        )
+
+    def joint_positive_cone_congruence_preimage_generators(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Integral generators of a subgroup of the actual level/component image."""
+        image = self.joint_positive_cone_congruence_image(lattice, modulus, ambient_generators=ambient_generators)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def positive_cone_congruence_subgroup(self, lattice: Lattices.ParentMethods, modulus: int, allowed, *, ambient_generators=None):
+        r"""Owned inverse image of a level/component subgroup in O(L).
+
+        The component sign is independent of determinant and normalized
+        real spinor; retain the actual joint level/component correlations.
+        The legacy two-factor keys ``(mod-m reduction, cone sign)`` select
+        the same subgroup inside the *actual* joint image, with all
+        discriminant classes unrestricted. Return the owned finite-quotient
+        preimage, not a bare subgroup of matrix generators: the former
+        carries the finite representation required for marked orbit
+        splitting, stabilizer intersections and exact transporters.
+        """
+        allowed = frozenset(allowed)
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        legacy = self.joint_positive_cone_congruence_image(
+            lattice, modulus, ambient_generators=ambient_generators)
+        legacy.preimage_generators(allowed)  # Exact subgroup validation.
+        joint = self.joint_discriminant_character_image(
+            lattice, positive_cone=True, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+        selected = joint.subgroup_from_membership(
+            lambda key: (key[0], key[-1]) in allowed
+        )
+        return self.joint_discriminant_character_preimage_subgroup(
+            lattice, selected, positive_cone=True, level_modulus=modulus,
+            ambient_generators=ambient_generators,
+        )
+
+    def joint_discriminant_character_image(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Actual joint discriminant, determinant, spinor, component and level image.
+
+        Uses the original discriminant-form action (quadratic if L is even,
+        bilinear otherwise) supplied by the provider. The real-spinor
+        character has the provider's normalized ``-b/2`` convention. The
+        field-spinor factor uses the provider's selected base change and
+        form multiplier; only its *generated* square-class image is finite,
+        not necessarily its full square-class target. All factors are
+        enumerated jointly, preserving correlations in the actual image.
+        The positive-cone component sign is defined only in signature (1,n);
+        it is a distinct character from determinant and normalized real
+        spinor, and is appended after the field-spinor factor. The provider
+        selects its own positive-cone convention and enforces the signature.
+        """
+        from sage_indefinite_port.indefinite.congruence_images import JointDiscriminantCharacterImage
+
+        if not field_spinor and (field_map is not None or form_multiplier is not None):
+            raise ValueError("field_map/form_multiplier require field_spinor=True")
+        rho = lattice.discriminant_representation()
+        signs = []
+        identities = [rho.codomain().one()]
+        if determinant:
+            signs.append(lambda g: int(g.determinant()))
+            identities.append(1)
+        if real_spinor:
+            spinor = lattice.O_plus().preimage_morphism()
+            signs.append(lambda g: 1 if spinor(g).is_one() else -1)
+            identities.append(1)
+        if field_spinor:
+            spinor_field = lattice.spinor_norm(field_map, form_multiplier)
+            signs.append(lambda g: spinor_field(g))
+            identities.append(spinor_field.codomain().one())
+        if positive_cone:
+            lattice.O_component()  # Provider's exact signature (1,n) hypothesis.
+            signs.append(lambda g: 1 if g.preserves_positive_cone() else -1)
+            identities.append(1)
+
+        def as_isometry(columns):
+            return _isometry_from_column_matrix(lattice, lattice, columns)
+
+        generators = (self.orthogonal_group_generators(lattice) if ambient_generators is None
+                      else tuple(ambient_generators))
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in generators):
+            raise ValueError("ambient subgroup generators must be integral automorphisms of the supplied lattice")
+        # An element with the prescribed finite character can still lie
+        # outside a supplied proper subgroup G. Use the provider's owned
+        # subgroup membership; only the full O(L) uses the ambient predicate.
+        ambient_group = lattice.O() if ambient_generators is None else lattice.O().subgroup(generators)
+        exact_ambient_membership = False
+        finite_ambient = (ambient_generators is not None
+                          and (lattice.is_definite() or ambient_group.is_finite() is True))
+        if finite_ambient:
+            # A generated subgroup's generic owned membership predicate may
+            # recognize only supplied generators and certified words, even
+            # when its finiteness is established. For a *proved finite*
+            # subgroup compute the complete matrix closure instead. Never
+            # infer membership in an infinite subgroup from a finite image.
+            from collections import deque
+            from sage.matrix.constructor import identity_matrix
+            from sage.rings.integer_ring import ZZ
+
+            matrices = tuple(_column_matrix(g) for g in generators)
+            identity = identity_matrix(ZZ, len(tuple(lattice.module_generating_set())))
+            def matrix_key(g):
+                return tuple(g.list())
+            finite_members = {matrix_key(identity)}
+            finite_lifts = [identity]
+            queue = deque([identity])
+            while queue:
+                current = queue.popleft()
+                for generator in matrices:
+                    product = current * generator
+                    key = matrix_key(product)
+                    if key not in finite_members:
+                        finite_members.add(key)
+                        finite_lifts.append(product)
+                        queue.append(product)
+            ambient_contains = lambda g: matrix_key(g) in finite_members
+        elif ambient_generators is not None and len(generators) == 1:
+            # For a cyclic quasi-unipotent A with U=A^m=I+N and N^r=0,
+            # every A^k is A^s U^t for 0<=s<m and t in Z. The binomial
+            # theorem gives U^t=I+sum_j binom(t,j)N^j for every t in Z.
+            # The nonzero powers N,...,N^(r-1) are Q-linearly independent
+            # (otherwise the minimal polynomial of N has degree < r).
+            # Thus the coefficient of N recovers k uniquely; checking
+            # the whole polynomial decides exact integral membership.
+            # This is not a finite-image proxy or a word-search cutoff.
+            generator_matrix = _column_matrix(generators[0])
+            from sage.matrix.constructor import identity_matrix
+            from sage.rings.rational_field import QQ as SageQQ
+            from sage.all import cyclotomic_polynomial
+            from math import lcm
+
+            one = identity_matrix(SageZZ, generator_matrix.nrows())
+            # Every eigenvalue of a quasi-unipotent integer matrix is a
+            # root of unity. An eigenvalue of order m contributes Phi_m
+            # of degree phi(m)<=n, hence m<=4*n*n+2. Factor the exact
+            # characteristic polynomial and take the lcm of the orders
+            # of all cyclotomic irreducible factors. Unlike an arbitrary
+            # power cutoff, this detects every quasi-unipotent matrix.
+            rank = generator_matrix.nrows()
+            factors = tuple(f for f, _ in generator_matrix.charpoly().factor())
+            orders = []
+            for factor in factors:
+                order = next((m for m in range(1, 4*rank*rank+3)
+                              if cyclotomic_polynomial(m) == factor), None)
+                if order is None:
+                    break
+                orders.append(order)
+            period = lcm(*orders) if len(orders) == len(factors) else None
+            nilpotent = (generator_matrix**period - one if period is not None
+                         else generator_matrix - one)
+            powers = []
+            power = nilpotent
+            for _ in range(generator_matrix.nrows()):
+                if not power:
+                    break
+                powers.append(power)
+                power = power*nilpotent
+            if period is not None and not power:
+                basis = (matrix(SageQQ, [p.list() for p in powers]).transpose()
+                         if powers else None)
+                residue_inverses = tuple(generator_matrix**(-s) for s in range(period))
+
+                def unipotent_contains(g):
+                    candidate = matrix(SageZZ, g)
+                    for inverse_residue in residue_inverses:
+                        difference = candidate*inverse_residue - one
+                        if not powers:
+                            if not difference:
+                                return True
+                            continue
+                        try:
+                            coefficients = basis.solve_right(vector(SageQQ, difference.list()))
+                        except ValueError:
+                            continue
+                        exponent = coefficients[0]
+                        if exponent.denominator() != 1:
+                            continue
+                        exponent = SageZZ(exponent)
+                        expected = matrix(SageZZ, one)
+                        coefficient = SageZZ(1)
+                        for j, power_j in enumerate(powers, 1):
+                            coefficient = coefficient*(exponent-j+1)//j
+                            expected += coefficient*power_j
+                        if expected == candidate*inverse_residue:
+                            return True
+                    return False
+
+                ambient_contains = unipotent_contains
+                exact_ambient_membership = True
+            elif (rank == 2 and generator_matrix.det() == 1
+                  and abs(generator_matrix.trace()) > 2):
+                # For A in SL_2(Z) with |tr(A)|>2, its eigenvalues are
+                # real reciprocal numbers of absolute value >1 and <1.
+                # Consequently |tr(A^k)| is strictly increasing for
+                # k>=0. This gives an exact logarithmic search for |k|;
+                # equality to A^k or A^-k decides membership in <A>.
+                # No finite congruence quotient can replace this test.
+                def hyperbolic_contains(g):
+                    candidate = matrix(SageZZ, g)
+                    target_trace = abs(candidate.trace())
+                    if candidate == one:
+                        return True
+                    if target_trace <= 2:
+                        return False
+                    lower, upper = 0, 1
+                    while abs((generator_matrix**upper).trace()) < target_trace:
+                        lower, upper = upper, 2*upper
+                    while lower + 1 < upper:
+                        middle = (lower+upper)//2
+                        if abs((generator_matrix**middle).trace()) < target_trace:
+                            lower = middle
+                        else:
+                            upper = middle
+                    power_matrix = generator_matrix**upper
+                    return candidate == power_matrix or candidate == power_matrix.inverse()
+
+                ambient_contains = hyperbolic_contains
+                exact_ambient_membership = True
+            else:
+                ambient_contains = lambda g: as_isometry(g) in ambient_group
+        elif ambient_generators is not None and len(generators) == 2 and int(lattice.rank()) == 2:
+            # If A is hyperbolic in SL_2(Z), R is an integral involution,
+            # and RAR=A^-1, then <A,R> is the infinite dihedral group:
+            # each word reduces to A^k or A^k R. The absolute trace of
+            # A^k strictly increases with |k|, so both normal forms have
+            # exact finite membership decisions by binary search.
+            from sage.matrix.constructor import identity_matrix
+
+            matrices = tuple(_column_matrix(g) for g in generators)
+            one = identity_matrix(SageZZ, 2)
+            choices = ((matrices[0], matrices[1]), (matrices[1], matrices[0]))
+            normal_form = next(((a, r) for a, r in choices
+                                if a.det() == 1 and abs(a.trace()) > 2
+                                and r*r == one and r*a*r == a.inverse()), None)
+            if normal_form is not None:
+                hyperbolic, reflection = normal_form
+
+                def dihedral_contains(g):
+                    candidate = matrix(SageZZ, g)
+                    for tested in (candidate, candidate*reflection):
+                        if tested == one:
+                            return True
+                        trace = abs(tested.trace())
+                        if trace <= 2:
+                            continue
+                        lower, upper = 0, 1
+                        while abs((hyperbolic**upper).trace()) < trace:
+                            lower, upper = upper, 2*upper
+                        while lower + 1 < upper:
+                            middle = (lower+upper)//2
+                            if abs((hyperbolic**middle).trace()) < trace:
+                                lower = middle
+                            else:
+                                upper = middle
+                        power = hyperbolic**upper
+                        if tested == power or tested == power.inverse():
+                            return True
+                    return False
+
+                ambient_contains = dihedral_contains
+                exact_ambient_membership = True
+            else:
+                ambient_contains = lambda g: as_isometry(g) in ambient_group
+        elif ambient_generators is not None and len(generators) > 1:
+            # If A_i=I+N_i and N_i*N_j=0 for all ordered pairs, then
+            # every integral word is I+sum k_i N_i and conversely each
+            # such integer combination is a product of powers of the
+            # supplied generators. Membership is therefore exactly a
+            # row-lattice membership problem over ZZ, not a word search.
+            from sage.matrix.constructor import identity_matrix
+
+            one = identity_matrix(SageZZ, int(lattice.rank()))
+            nilpotents = tuple(_column_matrix(g)-one for g in generators)
+            if all(a*b == 0 for a in nilpotents for b in nilpotents):
+                module = matrix(SageZZ, [n.list() for n in nilpotents]).row_module()
+
+                def abelian_unipotent_contains(g):
+                    candidate = matrix(SageZZ, g)
+                    return (candidate.dimensions() == one.dimensions()
+                            and vector(SageZZ, (candidate-one).list()) in module)
+
+                ambient_contains = abelian_unipotent_contains
+                exact_ambient_membership = True
+            else:
+                ambient_contains = lambda g: as_isometry(g) in ambient_group
+        else:
+            ambient_contains = lambda g: as_isometry(g) in ambient_group
+        image = JointDiscriminantCharacterImage(
+            tuple(_column_matrix(g) for g in generators),
+            lambda g: rho(as_isometry(g)),
+            tuple((lambda g, chi=chi: chi(as_isometry(g))) for chi in signs),
+            identities, level_modulus=level_modulus,
+            rank=len(tuple(lattice.module_generating_set())),
+            ambient_contains=ambient_contains,
+        )
+        if finite_ambient:
+            image._finite_ambient_lifts = tuple(finite_lifts)
+        if exact_ambient_membership:
+            image._exact_ambient_membership = True
+        return image
+
+    def joint_discriminant_character_preimage_membership(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Exact owned integral membership in an actual joint-image preimage.
+
+        All character and congruence factors are evaluated jointly, while
+        the actual integral ambient subgroup enforces membership beyond the
+        finite image. For a finite generated ambient subgroup this uses its
+        exact matrix closure, not the full inverse image of its reduction.
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("membership requires an automorphism of the supplied lattice")
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            level_modulus=level_modulus, ambient_generators=ambient_generators)
+        allowed = frozenset(allowed)
+        if allowed != image.subgroup_from_generators(allowed):
+            raise ValueError("allowed must be a subgroup of the actual joint image")
+        columns = _column_matrix(isometry)
+        if not image.ambient_contains(columns):
+            return False
+        return image.image(columns) in allowed
+
+    def joint_discriminant_character_preimage_factorization(self, lattice: Lattices.ParentMethods, isometry, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Owned kernel/section witnesses and exact word for preimage membership.
+
+        Returns ``None`` for a nonmember of the arithmetic preimage; a
+        positive result consists of two owned integral automorphisms whose
+        product is the supplied isometry, and a generator-index section word.
+        """
+        if isometry.domain() is not lattice or isometry.codomain() is not lattice:
+            raise ValueError("factorization requires an automorphism of the supplied lattice")
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        result = image.preimage_factorization(_column_matrix(isometry), allowed)
+        if result is None:
+            return None
+        kernel, section, word = result
+        return (_isometry_from_column_matrix(lattice, lattice, kernel),
+                _isometry_from_column_matrix(lattice, lattice, section), word)
+
+    def joint_discriminant_character_preimage_generators(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Integral preimage generators for an actual joint discriminant subgroup."""
+        image = self.joint_discriminant_character_image(lattice, determinant=determinant, real_spinor=real_spinor, field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map, form_multiplier=form_multiplier, level_modulus=level_modulus, ambient_generators=ambient_generators)
+        index, matrices = image.preimage_generators(allowed)
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def _joint_character_representation(self, lattice: Lattices.ParentMethods, image, ambient_generators=None):
+        r"""Faithful finite regular-action realization of the actual joint image.
+
+        Return a *preamble group morphism* with codomain the genuine image of
+        the integer automorphisms, never a product of independent character
+        targets or the ambient symmetric group on the image keys. Both
+        public representation and exact subgroup preimage share this one
+        construction, including the finite-codomain and image-section
+        data consumed by marked orbit splitting and Schreier stabilizers.
+        """
+        from sage_extensions.categories.group.g_sets import FiniteGSets
+        from sage_extensions.categories.sets.finite_ordered_sets import finite_ordered_set
+
+        generators = None if ambient_generators is None else tuple(ambient_generators)
+        if generators is not None and hasattr(image, "_finite_ambient_lifts"):
+            # The general generated-subgroup predicate may not recognize a
+            # newly constructed product, even for a proved finite subgroup.
+            # Realize that finite group by its exact integral membership
+            # predicate, retaining its generating morphism and enumeration.
+            ambient = lattice.O().predicate_subgroup(
+                lambda g: image.ambient_contains(_column_matrix(g)),
+                lambda: "the specified finite integral orthogonal subgroup",
+                generating_morphism=lattice.O().free_cover(generators),
+                cardinality_decision=lambda: len(image._finite_ambient_lifts),
+                enumeration=lambda: (
+                    _isometry_from_column_matrix(lattice, lattice, m)
+                    for m in image._finite_ambient_lifts),
+            )
+        elif generators is not None and hasattr(image, "_exact_ambient_membership"):
+            # The cyclic matrix membership predicate is an exact
+            # integral equation, so the owned preimage must use it rather
+            # than the provider's undecided generic generated-subgroup
+            # membership. The supplied free cover certifies generation.
+            ambient = lattice.O().predicate_subgroup(
+                lambda g: image.ambient_contains(_column_matrix(g)),
+                lambda: "the specified exact cyclic integral subgroup",
+                generating_morphism=lattice.O().free_cover(generators),
+            )
+        else:
+            ambient = lattice.O() if generators is None else lattice.O().subgroup(generators)
+        points = finite_ordered_set(tuple(image._lifts))
+        action = FiniteGSets(ambient)(
+            points,
+            lambda g, key: image._multiply(image.image(_column_matrix(g)), key),
+        )
+        permutation = action.permutation_representation()
+        actual = permutation.codomain().subgroup(tuple(
+            permutation(_isometry_from_column_matrix(lattice, lattice, g))
+            for g in image.generators
+        ))
+        return ambient.Mor(actual).elementwise(
+            lambda g: actual(permutation(g))
+        )
+
+    def joint_discriminant_character_representation(self, lattice: Lattices.ParentMethods, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""The exact owned morphism from O(L) (or supplied subgroup) onto its joint arithmetic image.
+
+        Its actual finite codomain retains all discriminant, level,
+        determinant, normalized real-spinor, field-spinor and positive-cone
+        correlations. Every target subgroup has an exact integral preimage
+        with its complete kernel, and the morphism supplies the finite
+        quotient and owned image section used by public marked actions.
+        """
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            level_modulus=level_modulus, ambient_generators=ambient_generators,
+        )
+        return self._joint_character_representation(lattice, image, ambient_generators)
+
+    def joint_discriminant_character_preimage_subgroup(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Return an *owned group* realizing the exact joint finite-image inverse image.
+
+        The actual finite joint image is represented faithfully by its left
+        regular action, using the provider's finite G-set and group morphism
+        owners. The target is the *actual image subgroup* of that permutation
+        group, not the whole symmetric group: double cosets must exclude
+        permutations which never arise from an integral isometry. A supplied
+        proper ambient group G remains the source of this finite morphism.
+
+        The provider's ``preimage_subgroup`` retains both the exact subgroup
+        predicate and the finite quotient needed by marked orbit/transport
+        consumers. Its complete Schreier generating epimorphism is selected
+        from the computed preimage words, not merely a membership filter.
+        """
+        allowed = frozenset(allowed)
+        ambient_generators = None if ambient_generators is None else tuple(ambient_generators)
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        _, matrices = image.preimage_generators(allowed)
+        representation = self._joint_character_representation(lattice, image, ambient_generators)
+        ambient = representation.domain()
+        generators = tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+        target = representation.codomain().subgroup(tuple(
+            representation(_isometry_from_column_matrix(lattice, lattice, image.section(key)))
+            for key in image.image_keys() if key in allowed
+        ))
+        return representation.preimage_subgroup(
+            target,
+            stated_clause=lambda: "preimage of the selected subgroup under the actual joint discriminant and character image",
+            generating_morphism=ambient.free_cover(generators),
+        )
+
+    def joint_discriminant_right_cosets(self, lattice: Lattices.ParentMethods, allowed, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Exact right action and owned transporters of actual joint-image cosets.
+
+        Return coset keys, an action by actual-image keys, and integral
+        transporters. The action is defined on the *finite image*, not on
+        arbitrary matrices with unverified membership in a proper ambient
+        subgroup. In particular it retains all correlations between the
+        discriminant, level and arithmetic-character components.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone,
+            field_map=field_map, form_multiplier=form_multiplier,
+            level_modulus=level_modulus, ambient_generators=ambient_generators)
+        subgroup = frozenset(allowed)
+        cosets, _ = image.right_coset_action(subgroup)
+        order = {key: i for i, key in enumerate(image._lifts)}
+
+        def representative(value):
+            return min((image._multiply(h, value) for h in subgroup), key=order.__getitem__)
+
+        positions = {representative(value): j for j, value in enumerate(cosets)}
+
+        def finite_action(index, key):
+            if key not in image.image_keys():
+                raise ValueError("key is outside the actual joint image")
+            if not 0 <= index < len(cosets):
+                raise IndexError("coset index out of range")
+            return positions[representative(image._multiply(cosets[index], key))]
+
+        def transporter(source_index, target_index):
+            if not 0 <= source_index < len(cosets) or not 0 <= target_index < len(cosets):
+                raise IndexError("coset index out of range")
+            source = image.section(cosets[source_index])
+            target = image.section(cosets[target_index])
+            lift = source.inverse() * target
+            assert finite_action(source_index, image.image(lift)) == target_index
+            return _isometry_from_column_matrix(lattice, lattice, lift)
+
+        return cosets, finite_action, transporter
+
+    def joint_discriminant_double_coset_representatives(self, lattice: Lattices.ParentMethods, left_subgroup, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Actual joint-character double cosets, with integral isometry witnesses.
+
+        The two subgroups are given as collections of keys in the generated
+        joint finite image, not in the nominal product target. The returned
+        witnesses are owned lattice automorphisms.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        return tuple((key, _isometry_from_column_matrix(lattice, lattice, witness),
+                      image.double_coset_intersection(left_subgroup, right_subgroup, key))
+                     for key, witness in image.double_coset_representatives(left_subgroup, right_subgroup))
+
+    def joint_discriminant_double_coset_stabilizers(self, lattice: Lattices.ParentMethods, left_subgroup, right_subgroup, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Double-coset witnesses and full integral stabilizer generators.
+
+        Each entry is ``(representative, index, generators)`` with owned
+        isometries. The index is relative to the supplied ambient group.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        result = []
+        for key, witness in image.double_coset_representatives(left_subgroup, right_subgroup):
+            index, generators = image.double_coset_stabilizer_preimage(
+                left_subgroup, right_subgroup, key
+            )
+            result.append((
+                _isometry_from_column_matrix(lattice, lattice, witness), index,
+                tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in generators),
+            ))
+        return tuple(result)
+
+    def joint_discriminant_marked_stabilizer_generators(self, lattice: Lattices.ParentMethods, left_subgroup, stabilizer_generators, representative, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Generators of the *actual* marked stabilizer ``Gamma intersect gPg^-1``.
+
+        The supplied ``stabilizer_generators`` must generate the ambient
+        stabilizer P of the marking. Schreier is performed in P, so the
+        kernel of the finite character is not incorrectly presumed to
+        stabilize the marking. ``representative`` is an actual-image key.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in stabilizer_generators):
+            raise ValueError("stabilizer generators must be automorphisms of the supplied lattice")
+        index, matrices = image.conjugate_stabilizer_generators(
+            left_subgroup, tuple(_column_matrix(g) for g in stabilizer_generators), representative
+        )
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def joint_discriminant_restricted_transporter(self, lattice: Lattices.ParentMethods, allowed, ambient_transporter, stabilizer_generators, *, determinant=False, real_spinor=False, field_spinor=False, positive_cone=False, field_map=None, form_multiplier=None, level_modulus=None, ambient_generators=None):
+        r"""Correct an ambient marked transporter to an exact subgroup witness.
+
+        The stabilizer is the *right correction group* for the supplied
+        ambient transporter. Return an owned integral isometry or ``None``
+        when no correction has image in the selected arithmetic subgroup.
+        """
+        image = self.joint_discriminant_character_image(
+            lattice, determinant=determinant, real_spinor=real_spinor,
+            field_spinor=field_spinor, positive_cone=positive_cone, field_map=field_map,
+            form_multiplier=form_multiplier, level_modulus=level_modulus,
+            ambient_generators=ambient_generators,
+        )
+        if ambient_transporter.domain() is not lattice or ambient_transporter.codomain() is not lattice:
+            raise ValueError("ambient transporter must be an automorphism of the supplied lattice")
+        stabilizer_generators = tuple(stabilizer_generators)
+        if any(g.domain() is not lattice or g.codomain() is not lattice for g in stabilizer_generators):
+            raise ValueError("stabilizer generators must be automorphisms of the supplied lattice")
+        witness = image.restricted_transporter(
+            allowed, _column_matrix(ambient_transporter),
+            tuple(_column_matrix(g) for g in stabilizer_generators),
+        )
+        return None if witness is None else _isometry_from_column_matrix(lattice, lattice, witness)
+
+    def stable_orthogonal_generators(self, lattice: Lattices.ParentMethods):
+        r"""Constructive generators of the discriminant kernel ``O~(L)``."""
+        image = self.joint_discriminant_character_image(lattice)
+        index, matrices = image.preimage_generators((image.identity,))
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
+
+    def stable_positive_orthogonal_generators(self, lattice: Lattices.ParentMethods):
+        r"""Constructive generators of ``ker(discriminant) intersect O^+(L)``."""
+        image = self.joint_discriminant_character_image(lattice, real_spinor=True)
+        index, matrices = image.preimage_generators((image.identity,))
+        return index, tuple(_isometry_from_column_matrix(lattice, lattice, g) for g in matrices)
 
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
@@ -798,6 +2947,11 @@ class EichlerRecursion:
         return tuple(inclusion(kernel.module_generator(label)) for label in kernel.module_generating_set())
 
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
+        if int(lattice.rank()) == 0:
+            # O(0) is trivial. In particular, PARI's definite qfauto
+            # normalization divides by the gcd of the empty Gram matrix,
+            # so it is not an algorithm for this boundary object.
+            return ()
         if lattice.is_definite():
             # IndefiniteForms.g:1275-1310 INDEF_FORM_AutomorphismGroup_Memoize
             # covers the definite kernel (:1435) too: a group computed
@@ -808,7 +2962,20 @@ class EichlerRecursion:
                 cached = self._groupoid.cached_group(lattice)
                 if cached is not None:
                     return cached
-            definite_generators = tuple(lattice.O().group_generators())
+            # PARI qfauto is sensitive to the Gram presentation: a badly
+            # conditioned perpendicular complement can overflow its stack
+            # even though the lattice's finite orthogonal group is small.
+            # Reduce the *integral* definite Gram before invoking the
+            # provider's exact qfauto kernel, then conjugate its generators
+            # through the certified unimodular LLL isometry.
+            reduction = lattice.lll_reduction()
+            reduced = reduction.reduced
+            reduced_generators = self._groupoid.cached_group(reduced) if cacheable else None
+            if reduced_generators is None:
+                reduced_generators = tuple(reduced.O().group_generators())
+                if cacheable:
+                    self._groupoid.record_group(reduced, reduced_generators)
+            definite_generators = _conjugated(reduction.isometry, reduced_generators)
             if cacheable:
                 self._groupoid.record_group(lattice, definite_generators)
             return definite_generators
@@ -830,6 +2997,34 @@ class EichlerRecursion:
             match profile.positive_index:
                 case 1:
                     generators = lorentzian_orthogonal_group_generators(profile.signed_view)
+                case _ if int(profile.signed_view.module_rank()) == 4 and int(profile.signed_view.witt_index()) == 0 and (
+                    witt_zero := _witt_zero_generators(profile.signed_view)
+                ) is not None:
+                    generators = witt_zero
+                case _ if int(profile.signed_view.module_rank()) == 4 and int(profile.signed_view.witt_index()) == 1 and (
+                    witt_one := _witt_one_generators(profile.signed_view)
+                ) is not None:
+                    generators = witt_one
+                case _ if int(profile.signed_view.witt_index()) < 2:
+                    # The source's approximate model requires Witt index >= 2.
+                    # Li–Margulis, GAFA 26 (2016), Theorem 2 provides a
+                    # *complete* finite coefficient bound for O(B,ZZ) at
+                    # every nonsingular indefinite rank >= 3, independent
+                    # of rational Witt index. The port evaluates a certified
+                    # dimension-only majorant and exhausts precisely that
+                    # finite box. This is a terminating fallback, not a
+                    # partial enumeration or a finite-index subgroup.
+                    # Specialized quaternion/Hilbert routes above remain
+                    # selected where they offer practical exact generators.
+                    from sage_indefinite_port.indefinite.li_margulis import (
+                        default_constants,
+                        orthogonal_group_generators as li_margulis_generators,
+                    )
+
+                    generators = li_margulis_generators(
+                        profile.signed_view,
+                        default_constants(int(profile.signed_view.module_rank())),
+                    )
                 case _:
                     generators = self._generation_step(profile.signed_view)
             reduced_generators = tuple(_untwisted(generator, profile) for generator in generators)
@@ -886,7 +3081,23 @@ class EichlerRecursion:
         return witness
 
     def _indefinite_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
+        r"""An isometry between reduced indefinite lattices, or None.
+
+        source: IndefiniteForms.g:1320-1359 and ApproximateModels.h:1305-1390.
+
+        Documented departure (#68): over ZZ at rank at least 3 the verdict is
+        decided before the covering search by genus and spinor-genus equality.
+        Eichler-Kneser (Kneser 1956; Cassels, Rational Quadratic Forms, Ch. 11,
+        Thm. 1.3 and Cor.; Conway-Sloane, SPLAG Ch. 15 Sec. 9): an indefinite
+        genus of rank at least 3 has one class per spinor genus. The source
+        reaches a negative verdict only by exhausting the covering family; for
+        a same-genus pair of large 2-adic index (diag(1,-2,-64,128) and the
+        other class of its genus) its coset expansion exceeds 10^6 cosets and
+        does not finish. The positive witness keeps the source covering route,
+        which must then succeed.
+        """
         cacheable = source.base_ring() == ZZ and target.base_ring() == ZZ
+        spinor_decided = cacheable and source.module_rank() >= 3
         if cacheable:
             known, cached = self._groupoid.cached_isometry(source, target)
             if known:
@@ -894,6 +3105,32 @@ class EichlerRecursion:
         source_profile = AttackProfile.from_lattice(source)
         target_profile = AttackProfile.from_lattice(target)
         signed_source, signed_target = source_profile.signed_view, target_profile.signed_view
+        if source_profile.positive_index >= 2 and (int(source.witt_index()) < 2 or int(target.witt_index()) < 2):
+            decision = source.Isom(target).is_empty()
+            if decision is True:
+                result = None
+            elif decision is False:
+                result = _fair_unimodular_isometry_witness(source, target)
+            else:
+                raise ArithmeticError("low-Witt integral isometry decision is not exact")
+            if cacheable:
+                self._groupoid.record_isometry(source, target, result)
+            return result
+        if spinor_decided:
+            # Departure from IndefiniteForms.g:1320-1359 and
+            # ApproximateModels.h:1305-1390 (#68): the source decides a
+            # same-genus pair only by exhausting the covering family, whose
+            # coset expansion exceeds 10^6 cosets at large 2-adic index.
+            # Eichler-Kneser (Kneser 1956; Cassels, Rational Quadratic Forms,
+            # Ch. 11, Thm. 1.3 and Cor.; SPLAG Ch. 15 Sec. 9): an indefinite
+            # genus of rank >= 3 has one class per spinor genus. So distinct
+            # genera or spinor genera give None, and otherwise the covering
+            # search below must find a witness.
+            from sage_extensions.categories.lattice_engines import isometric_within_genus
+
+            if source.genus() != target.genus() or not isometric_within_genus(source, target):
+                self._groupoid.record_isometry(source, target, None)
+                return None
         match source_profile.positive_index:
             case 1:
                 witness = lorentzian_isometry(signed_source, signed_target)
@@ -914,6 +3151,8 @@ class EichlerRecursion:
                     (isometry for candidate in covering if (isometry := self.pointed_isometry(vector, candidate)) is not None),
                     None,
                 )
+        if spinor_decided:
+            assert witness is not None, "Eichler-Kneser: one spinor genus is one class, so the covering search must find a witness"
         result = None if witness is None else _untwisted(witness, source_profile)
         if cacheable:
             self._groupoid.record_isometry(source, target, result)
@@ -945,7 +3184,8 @@ class EichlerRecursion:
         return IntegralStructureAction(rational.O().subgroup(extensions), inclusion).with_stable_containing_bound(containing)
 
     def isotropic_stabilizer_action(
-        self, isotropic: tuple[Lattices.ElementMethods, ...], radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...]
+        self, isotropic: tuple[Lattices.ElementMethods, ...], radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...],
+        *, quotient_generators: tuple[LatticeIsometryMethods, ...] | None = None, extension_denominator: int = 1,
     ) -> IntegralStructureAction:
         r"""The stabilizer problem of the primitive totally isotropic J = span(isotropic), at L.
 
@@ -962,10 +3202,44 @@ class EichlerRecursion:
         they generate is the stabilizer of J (with its marking). Every element preserves N, so the
         orbit span of L is computed inside L/D for D = 2 d^2 e^2 a, where d is that denominator,
         e = |disc K| and a = |coker(L -> J^*)| (issue #18); leaving that module raises.
+
+        Supplied quotient generators replace O(K); the empty family fixes K
+        pointwise. Lorentzian.g:225-249 permits the common denominator d in
+        its saturated kernel module. Include a prescribed rational lift's
+        denominator when this action corrects that lift in its quotient fibre.
         """
         lattice = isotropic[0].parent()
+        labels = tuple(lattice.module_generating_set())
+        if extension_denominator < 1:
+            raise ValueError("the isotropic extension denominator must be positive")
         reduction = lattice.primitive_isotropic_subobject(*isotropic).isotropic_reduction()
         quotient = reduction.quotient_lattice()
+        quotient_labels = tuple(quotient.module_generating_set())
+        if quotient_generators is not None and any(
+            generator.domain() is not quotient or generator.codomain() is not quotient
+            for generator in quotient_generators
+        ):
+            raise ValueError("the supplied quotient generators must act on this isotropic reduction")
+        quotient_key = None if quotient_generators is None else tuple(
+            tuple(tuple(_integer(generator(point).to_vector()(label)) for label in quotient_labels) for point in quotient.module_generators())
+            for generator in quotient_generators
+        )
+
+        def coordinates(point: Lattices.ElementMethods) -> tuple[int, ...]:
+            if point.parent() is not lattice:
+                raise ValueError("an isotropic stabilizer action needs all basis images in its ambient lattice")
+            row = point.to_vector()
+            return tuple(_integer(row(label)) for label in labels)
+
+        key = (
+            id(lattice), tuple(coordinates(point) for point in isotropic),
+            tuple(tuple(coordinates(point) for point in images) for images in radical_images),
+            quotient_key, extension_denominator,
+        )
+        cached = self._isotropic_actions.pop(key, None)
+        if cached is not None:
+            self._isotropic_actions[key] = cached
+            return cached
         perpendicular = reduction.orthogonal_complement().inclusion()
         frame = reduction.coordinate_frame()
         labels = tuple(quotient.module_generating_set())
@@ -979,7 +3253,8 @@ class EichlerRecursion:
         # Images of the basis (J, then the frame lifts), in that order.
         frame = tuple(lifts[label] for label in labels)
         image_families = []
-        for isometry in self.orthogonal_group_generators(quotient):
+        reduced_generators = self.orthogonal_group_generators(quotient) if quotient_generators is None else quotient_generators
+        for isometry in reduced_generators:
             image_families.append((*isotropic, *(lift(isometry(quotient.module_generator(label))) for label in labels)))
         for radical in radical_images:
             image_families.append((*radical, *frame))
@@ -987,7 +3262,7 @@ class EichlerRecursion:
             for point in isotropic:
                 image_families.append((*isotropic, *(lifted + point if position == sheared else lifted for position, lifted in enumerate(frame))))
         extended = [_extend_perpendicular_isometry(reduction, reduction, basis, images) for images in image_families]
-        denominator = SageZZ.one()
+        denominator = SageZZ(extension_denominator)
         for _isometry, entry_denominator in extended:
             denominator = denominator.lcm(entry_denominator)
         # Lorentzian.g:115-249 supplies 1 + T/d for every generator T of the
@@ -1014,28 +3289,25 @@ class EichlerRecursion:
         # Unlike the rational coordinate complement, the pairing L -> J^*
         # determines the invariant index a in D=2d^2e^2a intrinsically.
         isotropic_inclusion = reduction.isotropic_embedding()
-        # The pairing L -> I^* is i^* composed with the metric map,
-        # where i: I -> L. Dualization is represented on the opposite
-        # category, so its input is the reversed arrow op(L) -> op(I).
-        dualization = Modules(lattice.base_ring()).dualization()
-        opposite = dualization.domain()
-        opposite_inclusion = opposite.Mor(opposite.object(lattice), opposite.object(isotropic_inclusion.domain()))(isotropic_inclusion)
-        pairing = dualization(opposite_inclusion) * lattice.metric_map()
+        # The pairing L -> I^* has matrix (b(e_i, i(f_j))) in integral
+        # generator bases. Construct this matrix directly: the opposite
+        # module category need not accept a lattice embedding as one of its
+        # own arrows, whereas these pairings are intrinsic to the lattice.
+        isotropic_basis = tuple(isotropic_inclusion(point)
+                               for point in isotropic_inclusion.domain().module_generators())
+        ambient_basis = tuple(lattice.module_generators())
+        pairing_matrix = matrix(SageZZ, [
+            [_integer(lattice.b(point, isotropic)) for isotropic in isotropic_basis]
+            for point in ambient_basis
+        ])
         # Here pairing is a map between finite free ZZ-modules L -> J*. Its
         # cokernel is finite, and its order is the product of the nonzero Smith
         # entries of its coordinate matrix. Compute that exact index from these
         # presentations: the generic provider's index() currently delegates to
         # cardinality() on a represented torsion module whose construction does
         # not yet supply a decided finite cardinality.
-        pairing_domain_labels = tuple(pairing.domain().module_generating_set())
-        pairing_codomain_labels = tuple(pairing.codomain().module_generating_set())
-        pairing_rows = tuple(
-            tuple(pairing(pairing.domain().module_generator(label)).to_vector()(target_label) for target_label in pairing_codomain_labels)
-            for label in pairing_domain_labels
-        )
-        pairing_matrix = matrix(SageZZ, pairing_rows)
         pairing_rank = int(pairing_matrix.rank())
-        if pairing_rank != len(pairing_codomain_labels):
+        if pairing_rank != len(isotropic_basis):
             raise ArithmeticError("the isotropic pairing L -> J* must have finite cokernel")
         smith = pairing_matrix.smith_form()[0]
         pairing_index = SageZZ.one()
@@ -1047,14 +3319,162 @@ class EichlerRecursion:
             lambda label: space.wrap(rational.scalar_multiple(scale, inclusion(lattice.module_generator(label)).underlying_element()))
         )
         action = IntegralStructureAction(rational.O().subgroup(tuple(generators)), inclusion)
+        # The source's scalar dilation bounds the orbit span but need not
+        # itself be invariant under nonintegral rational generators. Close
+        # the orbit inside that finite bound before supplying a stable module.
         span = OrbitSpanConstructions(lattice.base_ring())(action.ambient_action_functor(), inclusion, containing=containing)
-        return action.with_stable_containing_bound(span.inclusion())
+        result = action.with_stable_containing_bound(span.inclusion())
+        # Invariant comparison, extension and integral correction consume
+        # the same source f_stab datum. Retain the two current actions, with
+        # their exact bases and allowed radical images, rather than rebuild
+        # their Witt lifts and stable modules. Each action retains L through
+        # its inclusion, so a live key cannot be reused for another parent.
+        self._isotropic_actions[key] = result
+        while len(self._isotropic_actions) > 2:
+            del self._isotropic_actions[next(iter(self._isotropic_actions))]
+        return result
 
     def line_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
-        r"""Generators of Aut((L, Zv)) for primitive isotropic v: Gamma = {+-1} on the line."""
+        r"""Generators of Aut((L, Zv)) for nonzero isotropic v, via its primitive saturation."""
         lattice = vector.parent()
+        if vector == lattice.zero() or vector.q() != lattice.base_ring().zero():
+            raise ValueError("a line stabilizer requires a nonzero isotropic vector")
+        if int(vector.content()) > 1:
+            # Stab(Z(c*v)) = Stab(Zv) for every nonzero integer c.
+            return self.line_stabilizer_generators(vector.primitive_part())
+        if self.vector_lies_in_radical(vector):
+            # The radical is characteristic. Its exact pointed stabilizer
+            # is already the split C+R block group; central -id_L adds
+            # the missing sign and gives the entire moving-line group.
+            minus = _isometry_from_row_matrix(
+                lattice, lattice, -identity_matrix(SageZZ, int(lattice.rank()))
+            )
+            return (*self.pointed_automorphism_generators(vector), minus)
+        if not lattice.is_nondegenerate():
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            gram = _gram_in_label_order(reduced)
+            n, size = int(gram.rank()), int(gram.nrows())
+            labels = tuple(reduced.module_generating_set())
+            coordinates = (~reduction.isometry)(vector).to_vector()
+            x = tuple(_integer(coordinates(label)) for label in labels[:n])
+            r = tuple(_integer(coordinates(label)) for label in labels[n:])
+            if n and gcd(*x) > 1:
+                # Write v=(c*x0,r), x0 primitive. Pointwise fixation is
+                # x0*A=x0, r*D=r (mod c), x0*B=(r-r*D)/c.
+                # The GL(R) congruence stabilizer has index at most c^k.
+                # Use the owned *integral* finite-index Schreier algorithm,
+                # not the finite residue-image stabilizer: the latter
+                # omits the infinite congruence kernel. The free shear
+                # kernel is Hom(C/Zx0,R); -id_L adds the line reversal.
+                c = gcd(*x)
+                x0 = tuple(entry // c for entry in x)
+                k = size - n
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                projected = complement.linear_combination({
+                    label: complement.base_ring()(entry)
+                    for label, entry in zip(c_labels, x0, strict=True) if entry
+                })
+                _, _, change = matrix(SageZZ, [x0]).smith_form()
+                blocks = []
+                for generator in self.pointed_automorphism_generators(projected):
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    blocks.append(block)
+                linear = OwnedGroups().GL(k, reduced.base_ring())
+
+                def radical_matrix(generator):
+                    return linear._to_engine(generator).matrix()
+
+                def preserves_residue(generator):
+                    action = radical_matrix(generator)
+                    return all((sum(r[i] * _integer(action[i, j]) for i in range(k)) - r[j]) % c == 0
+                               for j in range(k))
+
+                stabilizer = linear.predicate_subgroup(
+                    preserves_residue, lambda: f"stabilizer of radical residue {r} modulo {c}"
+                )
+                for generator in stabilizer.finite_index_schreier_generators(
+                    index_bound=c ** k, generators=linear.group_generators()
+                ):
+                    action = radical_matrix(generator)
+                    block = identity_matrix(SageZZ, size)
+                    for i in range(k):
+                        for j in range(k):
+                            block[n + i, n + j] = _integer(action[i, j])
+                    for j in range(k):
+                        delta = (r[j] - sum(r[i] * _integer(action[i, j]) for i in range(k))) // c
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, 0]) * delta
+                    blocks.append(block)
+                for i in range(1, n):
+                    for j in range(k):
+                        block = identity_matrix(SageZZ, size)
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, i])
+                        blocks.append(block)
+                blocks.append(-identity_matrix(SageZZ, size))
+                return _conjugated(reduction.isometry, tuple(
+                    _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
+                ))
+            if n and gcd(*x) == 1:
+                # For L=C+R, every isometry is [A B; 0 D]. If x is
+                # primitive, choose u with x*u=1. The shear T=[I u*r;
+                # 0 I] carries (x,0) to (x,r). Its line stabilizer is
+                # T^-1 (Stab_O(C)(Zx) x GL(R) semidirect Hom(C/Zx,R)) T.
+                # This is exact: xB=0 is the sole constraint on B for
+                # (x,0) to span its own line.
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                projected = complement.linear_combination({
+                    label: complement.base_ring()(entry)
+                    for label, entry in zip(c_labels, x, strict=True) if entry
+                })
+                _, _, change = matrix(SageZZ, [x]).smith_form()
+                shear = identity_matrix(SageZZ, size)
+                for i in range(n):
+                    for j, entry in enumerate(r):
+                        shear[i, n + j] = int(change[i, 0]) * entry
+                blocks = []
+                for generator in self.line_stabilizer_generators(projected):
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    blocks.append(block)
+                radical_rank = size - n
+                general_linear = OwnedGroups().GL(radical_rank, reduced.base_ring())
+                for generator in general_linear.group_generators():
+                    action = general_linear._to_engine(generator).matrix()
+                    block = identity_matrix(SageZZ, size)
+                    for i in range(radical_rank):
+                        for j in range(radical_rank):
+                            block[n + i, n + j] = _integer(action[i, j])
+                    blocks.append(block)
+                for i in range(1, n):
+                    for j in range(radical_rank):
+                        block = identity_matrix(SageZZ, size)
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, i])
+                        blocks.append(block)
+                reduced_generators = tuple(_isometry_from_row_matrix(
+                    reduced, reduced, shear.inverse() * block * shear
+                ) for block in blocks)
+                return _conjugated(reduction.isometry, reduced_generators)
         action = self.isotropic_stabilizer_action((vector,), ((-vector,),))
-        return tuple(lattice.integral_isometry(generator) for generator in action.stabilizer().group_generators())
+        # The source supplies a stable containing module, so this is the
+        # finite residue action (GroupAction.g:813-900), independently of
+        # whether the rational arithmetic group itself is finite.
+        return _integral_generator_set(lattice, action)
 
     def pointwise_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of `Aut((L, v))`, the **pointwise** stabilizer `{g : g(v) = v}` (issues #53 and #62).
@@ -1145,11 +3565,14 @@ class EichlerRecursion:
             raise ArithmeticError("the candidate does not carry the source marking onto the target marking")
 
     def levi_image(self, vector: Lattices.ElementMethods) -> Parent:
-        r"""H, the image of Aut((L, Zv)) in O(K), K = v-perp/v, generated by the images of its computed generators."""
+        r"""H, the actual integral parabolic image on K = v-perp/v.
+
+        The isotropic-reduction owner computes the image, its membership
+        predicate, and its lift section. Do not replace this with a subgroup
+        generated by a potentially incomplete finite stabilizer resolution.
+        """
         reduction = vector.parent().primitive_isotropic_subobject(vector).isotropic_reduction()
-        levi = reduction.levi_action()
-        parabolic = reduction.parabolic_subgroup()
-        return reduction.quotient_lattice().O().subgroup(tuple(levi(parabolic(generator)) for generator in self.line_stabilizer_generators(vector)))
+        return reduction.levi_image()
 
     def _radical_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An isometry of `L` carrying the radical vector `source` onto `target`, or `None` (issues #41 and #62).
@@ -1327,6 +3750,66 @@ class EichlerRecursion:
             general_linear_order=int(GL(radical_rank, residue_ring).order()),
         )
 
+    def radical_integral_row_stabilizer_generators(self, lattice, modulus: int, row):
+        r"""Index and complete integral generators of ``{D in GL(R,Z) : row*D=row (mod m)}``.
+
+        This is the *full infinite inverse image* of the finite row
+        stabilizer, not just lifted generators of that finite subgroup.
+        In particular it contains the entire principal congruence kernel
+        of ``GL(R,Z)``. The actual integral finite image can be smaller than
+        ``GL(R,Z/m)``, since integral determinants are ±1; its order is
+        computed by :meth:`radical_congruence_image`, not inferred from
+        the larger finite general-linear group.
+
+        The radical is a free abelian module with zero pairing, so
+        ``O(R[0]) = GL(R,Z)`` *exactly*. We use the provider's owned
+        ``O(R[0]).congruence_vector_stabilizer``: it computes the actual
+        finite action, the finite stabilizer and the complete Schreier
+        preimage including its kernel. The provider uses column actions;
+        transposing its integral matrices changes to this port's row-right
+        convention ``row*D``. Transpose reverses multiplication but
+        preserves the generated set of all group words, hence the returned
+        matrices generate precisely the desired integral stabilizer.
+        """
+        image = self.radical_congruence_image(lattice, modulus)
+        rank = image.radical_rank
+        row = tuple(int(entry) for entry in row)
+        if len(row) != rank:
+            raise ValueError(f"a radical row must have {rank} entries, got {len(row)}")
+        radical = Lattices(ZZ)([[0] * rank for _ in range(rank)])
+        marked = _from_column(radical, row)
+        stabilizer = radical.O().congruence_vector_stabilizer(modulus, marked)
+        generators = tuple(_column_matrix(generator).transpose()
+                           for generator in stabilizer.group_generators())
+        residue = vector(Zmod(modulus), row)
+        for generator in generators:
+            if abs(int(generator.det())) != 1 or residue * generator.change_ring(Zmod(modulus)) != residue:
+                raise ArithmeticError("the provider's integral Schreier generator does not fix the radical residue")
+        index = int(stabilizer.index())
+        if index * image.stabilizer_order(row) != image.order:
+            raise ArithmeticError("the full integral preimage index disagrees with the actual finite radical image")
+        return index, generators
+
+    def radical_stabilizer_congruence_image(self, lattice, modulus: int, fixed_row):
+        r"""Actual mod-c image of the integral GL(R) stabilizer of a nonzero radical row.
+
+        Its finite generators are reductions of complete integral stabilizer
+        generators, with exact lifts retained for transporter words.  This
+        is generally smaller than the stabilizer of the row modulo c in
+        GL_k(Z/c), so using the latter would invent integral witnesses.
+        """
+        rank = len(fixed_row)
+        lifts = self._radical_stabilizer_of_row(fixed_row)
+        residue_ring = Zmod(modulus)
+        generators = tuple(matrix(residue_ring, [[int(g[i, j]) % modulus for j in range(rank)]
+            for i in range(rank)]) for g in lifts)
+        full = self.radical_congruence_image(lattice, modulus)
+        return RadicalCongruenceImage(
+            modulus=modulus, radical_rank=rank,
+            group=MatrixGroup(list(generators)), generators=generators,
+            lifts=lifts, general_linear_order=full.general_linear_order,
+        )
+
     def _mixed_marking_residue_obstruction(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> bool:
         r"""Whether the radical-residue condition admits a carrier; `False` is a **proved** obstruction (issue #41).
 
@@ -1412,8 +3895,7 @@ class EichlerRecursion:
         correction = self._radical_pointed_isometry(image, target)
         if correction is None:
             return None
-        columns = _column_matrix(correction) * _column_matrix(transport)
-        composed = _isometry_from_column_matrix(source_lattice, target_lattice, columns)
+        composed = correction * transport
         if composed(source) != target:
             raise ArithmeticError("the composed radical isometry does not carry the marking onto its image")
         if composed.domain() is not source_lattice or composed.codomain() is not target_lattice:
@@ -1465,6 +3947,50 @@ class EichlerRecursion:
 
         inverse = change.inverse().change_ring(SageZZ)
         return tuple(change * block * inverse for block in stabilizer_of_first)
+
+    def _radical_stabilizer_of_frame(self, frame) -> tuple[Matrix_integer_dense, ...]:
+        r"""Complete generators of ``{D in GL_k(Z) : frame*D=frame}`` for a full-row-rank frame.
+
+        If ``U*frame*V = [diag(d_1,...,d_r),0]`` is Smith normal form,
+        then ``frame*D=frame`` is equivalent to
+        ``[I_r,0] (V^-1*D*V) = [I_r,0]``: all ``d_i`` are nonzero and Z has
+        no torsion. Thus the entire stabilizer consists exactly of
+        ``V * [[I_r,0],[B,E]] * V^-1`` where ``B`` is an arbitrary integral
+        ``(k-r) x r`` matrix and ``E in GL_(k-r)(Z)``. Elementary shears
+        generate ``B`` additively; the provider's complete owned generators
+        for ``GL_(k-r)(Z)`` supply ``E``. This remains exact for a nonprimitive
+        frame, with no finite-index saturation assumption or finite cutoff.
+        """
+        frame = matrix(SageZZ, frame)
+        rows, rank = frame.nrows(), frame.ncols()
+        if not 1 <= rows <= rank or frame.rank() != rows:
+            raise ValueError("the integral radical frame must have full row rank")
+        if rows == 1:
+            return self._radical_stabilizer_of_row(tuple(int(x) for x in frame.row(0)))
+        identity = identity_matrix(SageZZ, rank)
+        if rows == rank:
+            return (identity,)
+        _, _, change = frame.smith_form()
+        inverse = change.inverse().change_ring(SageZZ)
+        complement = rank - rows
+        blocks = []
+        for i in range(rows, rank):
+            for j in range(rows):
+                shear = identity_matrix(SageZZ, rank)
+                shear[i, j] = 1
+                blocks.append(shear)
+        larger = OwnedGroups().GL(complement, ZZ)
+        for generator in larger.group_generators():
+            block = identity_matrix(SageZZ, rank)
+            action = larger._to_engine(generator).matrix()
+            for i in range(complement):
+                for j in range(complement):
+                    block[rows + i, rows + j] = SageZZ(action[i, j])
+            blocks.append(block)
+        result = tuple(change * block * inverse for block in blocks)
+        if any(abs(int(g.det())) != 1 or frame * g != frame for g in result):
+            raise ArithmeticError("Smith-frame stabilizer generators do not fix the integral radical frame")
+        return result
 
     def _radical_blocks(self, lattice: Lattices.ParentMethods, vector: Lattices.ElementMethods) -> tuple[Matrix_integer_dense, ...]:
         r"""Row-matrix blocks of `Aut((L, v))` for `v = (0, r)` in a *reduced*, radical-last presentation.
@@ -1564,18 +4090,149 @@ class EichlerRecursion:
         exact description.
         """
         lattice = vector.parent()
+        if vector == lattice.zero():
+            # The zero vector imposes no stabilizer condition, including
+            # in the zero lattice and in degenerate ambient forms.
+            return self.orthogonal_group_generators(lattice)
+        # Stab(c*v) = Stab(v) for every nonzero integer c: the
+        # underlying free module is torsion-free.  In particular, do not
+        # pass an imprimitive isotropic vector to a primitive line action.
+        if int(vector.content()) > 1:
+            return self.pointed_automorphism_generators(vector.primitive_part())
         if self.vector_lies_in_radical(vector):
             return self._degenerate_radical_pointed_generators(vector)
+        if not lattice.is_nondegenerate() and vector.q() == lattice.base_ring().zero():
+            # Central -id_L reverses every nonzero line generator. Thus
+            # Stab(Zv) = Stab(v) x < -id_L >, and correcting each complete
+            # line generator by its sign yields a complete generating
+            # family for the pointwise stabilizer, without attempting a
+            # Witt extension across the ambient radical.
+            minus = _isometry_from_row_matrix(
+                lattice, lattice, -identity_matrix(SageZZ, int(lattice.rank()))
+            )
+            result = []
+            for generator in self.line_stabilizer_generators(vector):
+                image = generator(vector)
+                if image not in (vector, -vector):
+                    raise ArithmeticError("a claimed line stabilizer generator does not preserve the marked line")
+                result.append(generator if image == vector else minus * generator)
+            return tuple(result)
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
-        return tuple(lattice.integral_isometry(generator) for generator in action.stabilizer().group_generators())
+        return _integral_generator_set(lattice, action)
+
+    def _mixed_degenerate_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods, *, radical_action=None) -> LatticeIsometryMethods | None:
+        r"""Construct a mixed radical/shear transporter in the reduced split presentation.
+
+        For row coordinates ``(x,r)``, ``(y,s)`` on ``C+R``, every isometry
+        has block form ``[[A,B],[0,D]]``.  First solve ``xA=y`` in O(C),
+        then the exact finite-image congruence ``rD=s mod c``, where
+        ``c=content(x)``.  A Bezout column ``u`` with ``x*u=c`` gives
+        ``B=u*(s-rD)/c``.  The resulting matrix is integral unimodular,
+        and its full form and marked-vector action are verified.
+        """
+        source_lattice, target_lattice = source.parent(), target.parent()
+        if source_lattice is not target_lattice:
+            transport = self.isometry(source_lattice, target_lattice)
+            if transport is None:
+                return None
+            correction = self._mixed_degenerate_pointed_isometry(transport(source), target)
+            if correction is None:
+                return None
+            return correction * transport
+        lattice = source_lattice
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        gram = _gram_in_label_order(reduced)
+        n = int(gram.rank())
+        k = int(gram.nrows()) - n
+        if not k:
+            raise ArithmeticError("mixed radical transport requires a nonzero radical")
+        labels = tuple(reduced.module_generating_set())
+        inverse = reduction.isometry.inverse()
+        x = tuple(int(inverse(source).to_vector()(label)) for label in labels)
+        y = tuple(int(inverse(target).to_vector()(label)) for label in labels)
+        x_c, r = x[:n], x[n:]
+        y_c, t = y[:n], y[n:]
+        c = 0
+        for value in x_c:
+            c = gcd(c, value)
+        if not c:
+            return self._radical_pointed_isometry(source, target)
+        complement = reduced.lattice_category()([[int(gram[i, j]) for j in range(n)] for i in range(n)])
+        c_labels = tuple(complement.module_generating_set())
+        x_vector = complement.linear_combination({label: complement.base_ring()(value)
+            for label, value in zip(c_labels, x_c, strict=True) if value})
+        y_vector = complement.linear_combination({label: complement.base_ring()(value)
+            for label, value in zip(c_labels, y_c, strict=True) if value})
+        a_isometry = self.pointed_isometry(x_vector, y_vector)
+        if a_isometry is None:
+            return None
+        a = matrix(SageZZ, [[int(a_isometry(complement.module_generator(label)).to_vector()(key))
+            for key in c_labels] for label in c_labels])
+        d = (radical_action if radical_action is not None else
+             (self.radical_congruence_image(lattice, c).transporter(r, t)
+              if c > 1 else identity_matrix(SageZZ, k)))
+        if d is None:
+            return None
+        residual = matrix(SageZZ, [list(t)]) - matrix(SageZZ, [list(r)]) * d
+        if any(int(value) % c for value in residual.list()):
+            if radical_action is not None:
+                return None
+            raise ArithmeticError("the radical congruence witness does not satisfy its residue equation")
+        _, _, change = matrix(SageZZ, [list(x_c)]).smith_form()
+        bezout = change.column(0)
+        if sum(x_c[i] * int(bezout[i]) for i in range(n)) == -c:
+            bezout = -bezout
+        if sum(x_c[i] * int(bezout[i]) for i in range(n)) != c:
+            raise ArithmeticError("Smith form did not produce the required Bezout column")
+        block = identity_matrix(SageZZ, n + k)
+        for i in range(n):
+            for j in range(n):
+                block[i, j] = a[i, j]
+            for j in range(k):
+                block[i, n + j] = int(bezout[i]) * (int(residual[0, j]) // c)
+        for i in range(k):
+            for j in range(k):
+                block[n + i, n + j] = d[i, j]
+        witness = _conjugated(reduction.isometry, (_isometry_from_row_matrix(reduced, reduced, block),))[0]
+        if witness(source) != target:
+            raise ArithmeticError("the mixed radical/shear witness does not transport the marking")
+        return witness
 
     def pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An element of Isom((L, v), (M, w)), or None."""
         if VectorPrefilter.from_vector(source) != VectorPrefilter.from_vector(target):
             return None
+        # An integral isometry preserves content, and cancelling the
+        # common nonzero content is equivalent over torsion-free lattices.
+        source_content, target_content = int(source.content()), int(target.content())
+        if source_content != target_content:
+            return None
+        if source_content > 1:
+            return self.pointed_isometry(source.primitive_part(), target.primitive_part())
         source_lattice, target_lattice = source.parent(), target.parent()
+        if source == source_lattice.zero():
+            # Both vectors have content zero. Their pointed isometry
+            # problem is precisely the unmarked lattice isometry problem.
+            return self.isometry(source_lattice, target_lattice)
         if source_lattice is target_lattice and source == target:
             return source_lattice.O().identity()
+        if source_lattice is target_lattice:
+            # If q(x)=q(y), then for d=x-y one has
+            # 2 b(x,d)=q(d), hence s_d(x)=y whenever q(d)!=0.
+            # An integral reflection in the primitive line of d is
+            # therefore a complete transporter certificate.  Test it
+            # before constructing O(x^perp): in high-rank definite
+            # complements the latter can exhaust PARI's qfauto stack even
+            # when a single root reflection is already the answer.
+            difference = source - target
+            if difference.q() != source_lattice.base_ring().zero():
+                root = difference.primitive_part()
+                if root.is_integral_reflection_vector():
+                    reflection = source_lattice.reflection(root)
+                    if reflection(source) != target:
+                        raise ArithmeticError("the integral difference reflection failed to transport the marking")
+                    return reflection
         if source_lattice is not target_lattice and LatticePrefilter.from_lattice(source_lattice) != LatticePrefilter.from_lattice(target_lattice):
             return None
         if not source_lattice.is_nondegenerate() and self.vector_lies_in_radical(source):
@@ -1591,6 +4248,8 @@ class EichlerRecursion:
             # A proved obstruction: the radical residues cannot be matched modulo `content(x)`, so no isometry
             # carries one marking onto the other. Answering here is exact and skips the search below.
             return None
+        if not source_lattice.is_nondegenerate():
+            return self._mixed_degenerate_pointed_isometry(source, target)
         if source.q() == source_lattice.base_ring().zero():
             if source_lattice.is_even() and source.div() == source_lattice.base_ring().one():
                 return self._split_isotropic_isometry(source, target)
@@ -1621,7 +4280,7 @@ class EichlerRecursion:
         normalization of :1639-1641 is then the identity). Its extension is
         ``LORENTZ_ExtendOrthogonalIsotropicIsomorphism``.
         """
-        target_lattice = target[0].parent()
+        target_lattice = target_reduction.isotropic_embedding().codomain()
         source_quotient = source_reduction.quotient_lattice()
         target_quotient = target_reduction.quotient_lattice()
         source_labels = tuple(source_quotient.module_generating_set())
@@ -1640,6 +4299,68 @@ class EichlerRecursion:
         images = (*target, *(target_lift(reduced(source_quotient.module_generator(label))) for label in source_labels))
         rational_transport, _denominator = _extend_perpendicular_isometry(source_reduction, target_reduction, (*source, *source_lifts), images)
         return rational_transport
+
+    def isotropic_quotient_lift(
+        self, reduction, reduced: LatticeIsometryMethods,
+        *, radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...] | None = None,
+    ) -> LatticeIsometryMethods | None:
+        r"""An integral parabolic lift of a prescribed quotient isometry, or None.
+
+        Lorentzian.g:115-249 extends the integral map of the perpendicular.
+        CombinedAlgorithms.h:779-877 supplies its triangular correction group
+        with identity quotient action. The full GL(I), integral Hom(K,I)
+        and saturated pointwise-perpendicular kernel preserve the prescribed
+        reduction map throughout the finite integral-structure transporter.
+        Supplied radical images restrict the correction action on I; the
+        empty family gives pointwise lifts.
+        """
+        from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+        embedding = reduction.isotropic_embedding()
+        lattice = embedding.codomain()
+        isotropic = tuple(embedding(point) for point in embedding.domain().module_generators())
+        rational_transport = self._reduced_isotropic_extension(reduction, reduction, isotropic, isotropic, reduced)
+        if rational_transport.is_integral_on(lattice, lattice):
+            return lattice.integral_isometry(rational_transport)
+        if radical_images is None:
+            subspace = lattice.primitive_isotropic_subobject(*isotropic)
+            radical_images = IsotropicInduction.sublattice_action_images(subspace)
+        (denominator,) = tuple(rational_transport.denominator_ideal(lattice, lattice).ideal_generators())
+        correction_action = self.isotropic_stabilizer_action(
+            isotropic, radical_images,
+            quotient_generators=(), extension_denominator=_integer(denominator),
+        )
+        fraction_map = lattice.base_ring().fraction_field_map()
+        restriction = Modules(fraction_map.codomain()).restriction_of_scalars(fraction_map)
+        image = restriction(rational_transport) * ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+        correction = correction_action.transporter(image)
+        return None if correction is None else lattice.integral_isometry(correction.inverse() * rational_transport)
+
+    def isotropic_quotient_kernel_generators(
+        self, reduction, *, radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...] | None = None,
+    ) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Integral generators fixing the perpendicular quotient pointwise.
+
+        CombinedAlgorithms.h:779-877 with the trivial quotient group retains
+        GL(I), Hom(K,I) and the full pointwise-perpendicular kernel. The
+        source integral-structure stabilizer selects their integral subgroup.
+        A supplied radical action replaces GL(I); the empty family fixes I
+        pointwise and gives the joint unipotent kernel.
+        """
+        from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+        embedding = reduction.isotropic_embedding()
+        lattice = embedding.codomain()
+        isotropic = tuple(embedding(point) for point in embedding.domain().module_generators())
+        if not isotropic:
+            return ()
+        if radical_images is None:
+            subspace = lattice.primitive_isotropic_subobject(*isotropic)
+            radical_images = IsotropicInduction.sublattice_action_images(subspace)
+        action = self.isotropic_stabilizer_action(
+            isotropic, radical_images, quotient_generators=(),
+        )
+        return _integral_generator_set(lattice, action)
 
     def _isotropic_correction(
         self,
@@ -1717,8 +4438,8 @@ class EichlerRecursion:
             return target_lattice.integral_isometry(rational_transport, source=source_lattice)
 
         torsor = source_reduction.rational_lifts(target_reduction, reduced)
-        if torsor.integral_members().is_empty() is False:
-            integral = torsor.integral_base_point()
+        integral = torsor.integral_base_point_or_none()
+        if integral is not None:
             # The torsor fixes the reductions' chosen line generators; when one
             # is the negative of the supplied marking, the global sign of
             # IndefiniteForms.g:1639-1641 is applied against the actual vectors.
@@ -1751,6 +4472,465 @@ class EichlerRecursion:
         )
         return target_splitting.inverse() * split * source_splitting
 
+    def exact_vector_orbit_iterator(self, lattice: Lattices.ParentMethods, square: int, *, primitive_only: bool = False):
+        r"""Enumerate fixed-norm orbit representatives fairly without assuming finiteness.
+
+        Every integral vector occurs in one finite coordinate-height shell.
+        Exact pointed isometry decisions discard precisely those in an
+        earlier orbit.  The iterator may run forever after its last yield
+        when the orbit set is finite; it is not a finite-class certificate.
+        """
+        from itertools import count
+
+        # These are decidably empty or singleton fibres.  In particular,
+        # do not scan infinitely many nonzero vectors of an anisotropic
+        # lattice when the prescribed norm is zero.
+        if int(lattice.rank()) == 0:
+            if int(square) == 0 and not primitive_only:
+                yield lattice.zero()
+            return
+        if int(lattice.rank()) >= 3 and _gram_in_label_order(lattice).rank() == 1:
+            # For a rank-one nondegenerate quotient and radical rank >= 2,
+            # the reduced form is diag(a,0,...,0).  The full group is
+            # {+/-1} x GL(R) extended by every shear Hom(Z,R).
+            # For fixed |x|>0, the radical coordinates modulo |x| form
+            # GL(R)-orbits indexed exactly by gcd(|x|,y_1,...,y_k),
+            # i.e. the positive divisors of |x|.  When x=0 the radical
+            # content is the complete orbit invariant.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            coefficient = int(reduced_gram[0, 0])
+            if coefficient == 0 or any(reduced_gram[i, j] for i in range(int(lattice.rank()))
+                                         for j in range(int(lattice.rank())) if (i, j) != (0, 0)):
+                raise ArithmeticError("rank-one quotient reduction did not isolate the radical")
+            radical_zeros = (0,) * (int(lattice.rank()) - 2)
+            if int(square) == 0:
+                if primitive_only:
+                    yield reduction.isometry(_from_column(reduced, (0, 1, *radical_zeros)))
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield reduction.isometry(_from_column(reduced, (0, content, *radical_zeros)))
+                return
+            quotient = int(square) // coefficient if int(square) % coefficient == 0 else 0
+            if quotient <= 0 or isqrt(quotient) ** 2 != quotient:
+                return
+            x = isqrt(quotient)
+            # Divisor enumeration is output-sensitive: scanning 1..x is
+            # prohibitively expensive for a large represented square with
+            # only a few divisor classes (e.g. x a large prime).
+            for divisor in SageZZ(x).divisors():
+                if primitive_only and divisor != 1:
+                    continue
+                yield reduction.isometry(_from_column(reduced, (x, divisor, *radical_zeros)))
+            return
+        if int(lattice.rank()) == 2 and _gram_in_label_order(lattice).rank() == 1:
+            # In a reduced basis the form is diag(a,0), a != 0.  Its
+            # integral orthogonal group consists exactly of
+            # (x,y) -> (eps*x, b*x + delta*y), eps,delta=+/-1, b in ZZ.
+            # For x != 0, orbits are |x| together with y mod |x| up to
+            # sign; for x=0 they are |y|.  This gives a complete finite
+            # nonzero-norm classification and an ordered null-content stream.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            coefficient = int(reduced_gram[0, 0])
+            if coefficient == 0 or any(reduced_gram[i, j] for i in range(2) for j in range(2) if (i, j) != (0, 0)):
+                raise ArithmeticError("binary radical reduction did not produce diag(a,0)")
+
+            def original_point(x: int, y: int):
+                return reduction.isometry(_from_column(reduced, (x, y)))
+
+            if int(square) == 0:
+                if primitive_only:
+                    yield original_point(0, 1)
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield original_point(0, content)
+                return
+            quotient = int(square) // coefficient if int(square) % coefficient == 0 else 0
+            if quotient <= 0 or isqrt(quotient) ** 2 != quotient:
+                return
+            x = isqrt(quotient)
+            for residue in range(x // 2 + 1):
+                y = min(residue, (-residue) % x)
+                if primitive_only and gcd(x, y) != 1:
+                    continue
+                yield original_point(x, y)
+            return
+        if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
+            # The pinned binary factorization algorithm gives the complete
+            # finite primitive orbit set, including the two null rays.
+            # For nonprimitive vectors of nonzero square, content c obeys
+            # c^2 | square; each primitive class at square/c^2 scales to
+            # precisely one class of content c.  Null-vector contents are
+            # unbounded and are enumerated in increasing order.
+            from sage_indefinite_port.indefinite.lorentzian_cells import binary_split_primitive_vector_classes
+
+            if primitive_only:
+                yield from binary_split_primitive_vector_classes(lattice, int(square))
+                return
+            if int(square) == 0:
+                yield lattice.zero()
+                for content in count(1):
+                    for representative in binary_split_primitive_vector_classes(lattice, 0):
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                for representative in binary_split_primitive_vector_classes(lattice, int(square) // (content * content)):
+                    yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+            return
+        if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
+            # The maintained binary quadratic-form orbit set computes a
+            # *finite complete* transversal even for nonsplit indefinite
+            # binary forms (Pell arithmetic), including imprimitive
+            # vectors.  Unlike the generic coordinate walk, this branch
+            # terminates after its last orbit representative.  The null
+            # case was already decided by rational anisotropy above.
+            orbit_set = lattice.binary_fixed_norm_representatives(int(square))
+            section = orbit_set.section()
+            for orbit in orbit_set:
+                representative = section(orbit)
+                if not primitive_only or int(representative.content()) == 1:
+                    yield representative
+            return
+        profile = AttackProfile.from_lattice(lattice)
+        if (lattice.is_nondegenerate() and profile.positive_index == 1
+                and int(lattice.rank()) >= 3 and int(lattice.witt_index()) > 0
+                and profile.sign * int(square) >= 0):
+            # In the Lorentzian positive cone the perfect-cell algorithm
+            # returns the complete finite primitive norm-orbit set.  The
+            # null fibre is the induction algorithm's finite primitive
+            # line-class set.  Recover all nonprimitive classes by content:
+            # c^2 divides the norm, and scaling preserves orbit bijectively.
+            if int(square) == 0:
+                from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+                primitive = IsotropicInduction(self).isotropic_vector_classes(lattice)
+                if primitive_only:
+                    yield from primitive
+                    return
+                yield lattice.zero()
+                if not primitive:
+                    return
+                for content in count(1):
+                    for representative in primitive:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            from sage_indefinite_port.indefinite.lorentzian_cells import (
+                NONNEGATIVE_SQUARES,
+                MarkedCellOrbitAlgorithm,
+                perfect_complex,
+            )
+
+            reduction = indefinite_reduced_presentation(profile.signed_view)
+            signed_norm = profile.sign * int(square)
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                if primitive_only and content != 1:
+                    continue
+                primitive_norm = signed_norm // (content * content)
+                orbits = MarkedCellOrbitAlgorithm(
+                    perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES), primitive_norm
+                ).global_orbits()
+                for orbit in orbits:
+                    reduced_vector = orbit[0]
+                    transported = reduction.isometry(reduced_vector)
+                    coordinates = tuple(int(transported.to_vector()(label))
+                                         for label in lattice.module_generating_set())
+                    representative = _from_column(lattice, coordinates)
+                    if not primitive_only or int(representative.content()) == 1:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+            return
+        if (lattice.is_nondegenerate() and profile.positive_index >= 2
+                and int(lattice.witt_index()) >= 2):
+            # The higher-Witt Eichler covering model computes a complete
+            # finite transversal of primitive vector orbits at every
+            # represented norm.  Lift it to all vectors by the exact
+            # content decomposition: c^2 divides a nonzero norm, while
+            # isotropic contents are unbounded and are streamed in order.
+            if int(square) == 0:
+                primitive = tuple(
+                    vector_class.representative
+                    for vector_class in self.primitive_vector_classes(lattice, 0)
+                )
+                if primitive_only:
+                    yield from primitive
+                    return
+                yield lattice.zero()
+                if not primitive:
+                    return
+                for content in count(1):
+                    for representative in primitive:
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                if primitive_only and content != 1:
+                    continue
+                for vector_class in self.primitive_vector_classes(
+                    lattice, int(square) // (content * content)
+                ):
+                    yield lattice.scalar_multiple(
+                        lattice.base_ring()(content), vector_class.representative
+                    )
+            return
+        if int(square) == 0 and not lattice.is_nondegenerate():
+            # If the nondegenerate quotient C=L/rad(L) is anisotropic
+            # over Q, every integral null vector lies in rad(L).
+            # The radical is a primitive direct summand, and the full
+            # orthogonal group contains GL(rad(L)), so its primitive
+            # null vectors form exactly one orbit. Nonprimitive null
+            # vectors are classified by their positive content.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            quotient_rank = int(reduced_gram.rank())
+            if quotient_rank:
+                complement = lattice.lattice_category()(
+                    [[int(reduced_gram[i, j]) for j in range(quotient_rank)]
+                     for i in range(quotient_rank)]
+                )
+                if not complement.is_isotropic():
+                    radical = reduction.isometry(_from_column(
+                        reduced, (0,) * quotient_rank + (1,)
+                        + (0,) * (int(lattice.rank())-quotient_rank-1)
+                    ))
+                    if primitive_only:
+                        yield radical
+                        return
+                    yield lattice.zero()
+                    for content in count(1):
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), radical)
+                    return
+        if int(square) != 0 and not lattice.is_nondegenerate():
+            # For L=C (+) R with nondegenerate C and zero radical
+            # R, O(L) is the semidirect product of O(C) x GL(R) with
+            # Hom(C,R).  A shear changes the radical component of (v,r)
+            # by any multiple of content(v).  For rank(R)=1, residual
+            # classes are r mod c up to sign; for rank(R)>=2, GL(R)
+            # orbits of residual vectors are indexed by gcd(c,r), hence
+            # by divisors of c.  This produces a *terminating* complete
+            # norm-fibre classification whenever the quotient C admits
+            # the existing finite exact fixed-norm classification.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            quotient_rank = int(reduced_gram.rank())
+            radical_rank = int(lattice.rank()) - quotient_rank
+            if quotient_rank == 0:
+                # A zero bilinear form represents no nonzero square;
+                # constructing its rank-zero complement from [] would
+                # also violate the owned lattice-constructor contract.
+                return
+            if any(reduced_gram[i, j] for i in range(quotient_rank, int(lattice.rank()))
+                   for j in range(int(lattice.rank()))):
+                raise ArithmeticError("degenerate reduction did not isolate the radical")
+            quotient_gram = reduced_gram.matrix_from_rows_and_columns(
+                range(quotient_rank), range(quotient_rank)
+            )
+            complement = lattice.lattice_category()(
+                [[int(value) for value in row] for row in quotient_gram.rows()]
+            )
+            complement_profile = AttackProfile.from_lattice(complement)
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                quotient_square = int(square) // (content * content)
+                if complement.is_definite():
+                    quotient_classes = tuple(
+                        point for point in self.exact_vector_orbit_iterator(complement, quotient_square)
+                        if int(point.content()) == 1
+                    )
+                elif int(complement.witt_index()) == 0:
+                    # A real-indefinite but rationally anisotropic quotient
+                    # has no Eichler envelope.  Its primitive vector orbits
+                    # are primitive rank-one embeddings; use the exact
+                    # genus/gluing embedding classifier rather than the
+                    # approximate-model search or an unbounded coordinate
+                    # walk.
+                    source = lattice.lattice_category()([[quotient_square]])
+                    embeddings = source.Emb(complement).primitive_embedding_class_representatives(
+                        classification="emb"
+                    )
+                    source_generator = next(iter(source.module_generators()))
+                    quotient_classes = tuple(embedding(source_generator) for embedding in embeddings)
+                else:
+                    # The public lattice operation owns the full primitive
+                    # vector-class algorithm in every indefinite signature,
+                    # including rationally anisotropic higher-rank quotients.
+                    quotient_classes = tuple(
+                        complement.O().vector_orbit_representatives(quotient_square, content=1)
+                    )
+                for quotient_point in quotient_classes:
+                    coordinates = tuple(content * int(quotient_point.to_vector()(label))
+                                         for label in complement.module_generating_set())
+                    if radical_rank == 1:
+                        residues = range(content // 2 + 1)
+                    else:
+                        residues = SageZZ(content).divisors()
+                    for residue in residues:
+                        if primitive_only and gcd(content, int(residue)) != 1:
+                            continue
+                        yield reduction.isometry(_from_column(
+                            reduced, coordinates + (int(residue),) + (0,) * (radical_rank - 1)
+                        ))
+            return
+        # On a zero-form lattice every vector has norm zero, and GL_n(ZZ)
+        # acts transitively on primitive vectors: Bezout completion extends
+        # each primitive column to an integral unimodular basis.  Thus the
+        # primitive null fibre has exactly one orbit.  For arbitrary
+        # vectors, content c>=0 is a complete GL_n(ZZ)-orbit invariant:
+        # Bezout completion sends each vector to c times the first basis
+        # vector.  Enumerate those classes directly rather than repeatedly
+        # invoking the pointed transporter on an infinite coordinate walk.
+        if all(
+            lattice.b(x, y) == 0
+            for x in lattice.module_generators()
+            for y in lattice.module_generators()
+        ):
+            if int(square) != 0:
+                return
+            if primitive_only:
+                yield lattice.module_generator(next(iter(lattice.module_generating_set())))
+                return
+            basis_vector = lattice.module_generator(next(iter(lattice.module_generating_set())))
+            yield lattice.zero()
+            for content in count(1):
+                yield lattice.scalar_multiple(lattice.base_ring()(content), basis_vector)
+            return
+        if int(square) == 0 and not lattice.is_nondegenerate():
+            # If the nondegenerate quotient C is rationally anisotropic,
+            # every null vector lies in the radical R.  The exact
+            # degenerate group contains GL(R), which is transitive on
+            # vectors of each positive content, and fixes content.
+            # Thus the entire null orbit space is {0} union {c*r:c>=1}
+            # for one primitive radical generator r.  No infinite
+            # coordinate search or pointed equivalence test is needed.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            gram_reduced = _gram_in_label_order(reduced)
+            quotient_rank = int(gram_reduced.rank())
+            quotient_gram = gram_reduced.matrix_from_rows_and_columns(
+                range(quotient_rank), range(quotient_rank)
+            )
+            if any(gram_reduced[i, j] for i in range(quotient_rank, int(lattice.rank()))
+                   for j in range(int(lattice.rank()))):
+                raise ArithmeticError("degenerate reduction did not isolate the radical")
+            complement = lattice.lattice_category()(
+                [[int(value) for value in row] for row in quotient_gram.rows()]
+            )
+            if complement.is_definite() or not complement.is_isotropic():
+                radical_point = reduction.isometry(_from_column(
+                    reduced, (0,) * quotient_rank + (1,) + (0,) * (int(lattice.rank()) - quotient_rank - 1)
+                ))
+                if primitive_only:
+                    yield radical_point
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield lattice.scalar_multiple(lattice.base_ring()(content), radical_point)
+                return
+            # For L=C (+) R and q(v,r)=0, the quotient vector v has
+            # an invariant content c.  For c>0 the shears Hom(C,R)
+            # reduce r modulo cR, and GL(R) gives residue classes
+            # modulo sign when rank R=1, or gcd(c,r) when rank R>=2.
+            # For c=0, only the radical content survives.  Both c
+            # and the radical-only content are unbounded; interleave
+            # their finite strata to obtain a fair complete stream.
+            quotient_classes = tuple(
+                complement.O().vector_orbit_representatives(0, content=1)
+            )
+            radical_rank = int(lattice.rank()) - quotient_rank
+            radical_zeros = (0,) * (radical_rank - 1)
+            radical_point = reduction.isometry(_from_column(
+                reduced, (0,) * quotient_rank + (1,) + radical_zeros
+            ))
+            if not primitive_only:
+                yield lattice.zero()
+            for content in count(1):
+                if not primitive_only or content == 1:
+                    yield lattice.scalar_multiple(lattice.base_ring()(content), radical_point)
+                for quotient_point in quotient_classes:
+                    quotient_coordinates = tuple(int(quotient_point.to_vector()(label))
+                                                 for label in complement.module_generating_set())
+                    if radical_rank == 1:
+                        residues = range(content // 2 + 1)
+                    else:
+                        residues = SageZZ(content).divisors()
+                    for residue in residues:
+                        if primitive_only and gcd(content, int(residue)) != 1:
+                            continue
+                        yield reduction.isometry(_from_column(
+                            reduced,
+                            tuple(content * value for value in quotient_coordinates)
+                            + (int(residue),) + radical_zeros,
+                        ))
+            return
+        if int(square) == 0 and lattice.is_nondegenerate() and not lattice.is_isotropic():
+            if not primitive_only:
+                yield lattice.zero()
+            return
+        # For an integral symmetric Gram matrix G, the integer values of
+        # q(x)=xGx generate the ideal (G_ii, 2G_ij : i<j).  A requested
+        # square outside that ideal has no integral representatives, even
+        # when the real quadratic space is indefinite and isotropic.
+        gram = _gram_in_label_order(lattice)
+        if _norm_fibre_has_local_obstruction(gram, square, primitive=primitive_only):
+            return
+        # A definite quadratic form has a finite norm fibre.  Cauchy--
+        # Schwarz for the positive definite form H=+/-G gives
+        # x_i^2 <= |square|*(H^-1)_ii.  This provides an exact finite
+        # search bound, rather than an iterator which hangs after its last
+        # representative.  The bound is computed in QQ, without floats.
+        if lattice.is_definite():
+            sign = 1 if int(gram[0, 0]) > 0 else -1
+            if sign * int(square) < 0:
+                return
+            inverse = (sign * gram).inverse()
+            bounds = tuple(isqrt(int((abs(int(square)) * inverse[i, i]).floor()))
+                           for i in range(int(lattice.rank())))
+            # The finite group O(L) acts on the finite norm fibre.  Mark
+            # whole orbits using its exact generators instead of invoking
+            # a separate pointed-isometry decision for every pair of
+            # candidates (quadratically many expensive group problems).
+            from collections import deque
+
+            generators = tuple(_column_matrix(g) for g in lattice.O().group_generators())
+            seen: set[tuple[int, ...]] = set()
+            for coordinates in _rectangular_coordinate_box(bounds):
+                if coordinates in seen:
+                    continue
+                point = _from_column(lattice, coordinates)
+                if int(point.q()) != int(square) or (primitive_only and int(point.content()) != 1):
+                    continue
+                seen.add(coordinates)
+                frontier = deque((coordinates,))
+                while frontier:
+                    current = frontier.popleft()
+                    for generator in generators:
+                        image = tuple(int(value) for value in generator * vector(SageZZ, current))
+                        if image not in seen:
+                            seen.add(image)
+                            frontier.append(image)
+                yield point
+            return
+        seen = []
+        for height in count(0):
+            for coordinates in _coordinate_box(lattice, height):
+                point = _from_column(lattice, coordinates)
+                if int(point.q()) != int(square) or (primitive_only and int(point.content()) != 1):
+                    continue
+                if all(self.pointed_isometry(previous, point) is None for previous in seen):
+                    seen.append(point)
+                    yield point
+
     def primitive_vector_classes(self, lattice: Lattices.ParentMethods, square: int) -> tuple[VectorClass, ...]:
         r"""One class per O(L)-orbit of primitive vectors of the square, for L of positive index at least 2."""
         profile = AttackProfile.from_lattice(lattice)
@@ -1765,6 +4945,56 @@ class EichlerRecursion:
         # rational hyperbolic pairs of the Eichler envelope.
         if square == 0 and not lattice.is_isotropic():
             return ()
+        # Reject impossible integral norms before requesting an Eichler
+        # envelope.  In particular a rationally anisotropic rank-four
+        # lattice may have no two hyperbolic planes at all, yet its odd
+        # norm fibres can be certified empty by the integral value ideal.
+        gram = _gram_in_label_order(lattice)
+        if _norm_fibre_has_local_obstruction(gram, square, primitive=True):
+            return ()
+
+        # At rational Witt index zero there is *no* isotropic vector to
+        # initialize the Eichler two-plane envelope. The recognized (-1,3)
+        # quaternion norm lattice has a complete Voronoi reduction under
+        # its full integral orthogonal group (left/right order units,
+        # normalizer classes and conjugation). Transport its representative
+        # vectors to the supplied *original lattice* with an actual integral
+        # isometry. All other nonsingular rank>=3 Witt-zero forms are
+        # handled by the full Li--Margulis Theorems 1/2/4 finite bounds,
+        # rather than calling an inapplicable two-plane source model.
+        if int(lattice.witt_index()) == 0:
+            from sage_indefinite_port.indefinite.li_margulis import primitive_vector_orbits
+            from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi
+            from sage_indefinite_port.indefinite.fixed_norm_classes import fixed_norm_vector_classes
+
+            recognized = _witt_zero_model_isometry(lattice)
+            if recognized is not None:
+                model, transport = recognized
+                vectors = tuple(
+                    transport(point) for point in fixed_norm_vector_classes(
+                        model, QuaternionVoronoi(-1, 3),
+                        model.normalizer_classes_in_box(3), int(square), True,
+                    )
+                )
+            else:
+                vectors = primitive_vector_orbits(lattice, int(square))
+            return tuple(VectorClass(v, ()) for v in vectors)
+
+        # Rational Witt index one has no second hyperbolic pair for the
+        # Eichler envelope (#40). A recognized rank-four Hilbert model decides
+        # its classes, isotropic ones included, by the cusps of SL_2(O); every
+        # other Witt-index-one lattice uses the proved Li-Margulis box, whose
+        # isotropic orbits are its cusps.
+        if int(lattice.witt_index()) == 1:
+            from sage_indefinite_port.indefinite.li_margulis import primitive_vector_orbits
+            from sage_indefinite_port.indefinite.witt_one_fixed_norm_classes import witt_one_fixed_norm_vector_classes
+            from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_model
+
+            if int(lattice.module_rank()) == 4 and recognized_model(lattice) is not None:
+                vectors = witt_one_fixed_norm_vector_classes(lattice, int(square), True)
+            else:
+                vectors = primitive_vector_orbits(lattice, int(square))
+            return tuple(VectorClass(v, ()) for v in vectors)
         buckets: dict[VectorPrefilter, list[tuple[Lattices.ElementMethods, list[LatticeIsometryMethods]]]] = {}
         for candidate in self._model(profile.signed_view).primitive_covering_vectors(profile.sign * int(square)):
             bucket = buckets.setdefault(VectorPrefilter.from_vector(candidate), [])

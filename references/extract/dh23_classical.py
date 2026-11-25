@@ -4,7 +4,9 @@
 # ///
 """Extract tests/fixtures/enriques_classical_indices.json from Dutour Sikirić--Hulek.
 
-Source: arXiv:2302.01679, subsection "Classical cases" (vendored TeX). For the
+Source: published Dutour Sikirić--Hulek, J. London Math. Soc. 109 (2024),
+doi:10.1112/jlms.12828, §3.7, and Barth--Peters, Invent. Math. 73 (1983),
+Theorem 3.9, p. 398. The vendored arXiv:2302.01679 TeX is also checked. For the
 classical polarizations of degree 2 (double planes, Case 1), 6 (Enriques sextics,
 Case 4) and 10 (Reye congruences, Case 7), the paper derives the index
 [O^+(N) : Gamma_h] from Barth--Peters's counts of projective models, and then
@@ -12,12 +14,10 @@ Case 4) and 10 (Reye congruences, Case 7), the paper derives the index
 |O^+(F_2^10)| = 2^21 3^5 5^2 7 17 31 (line 700). Table table_subgroups1 records
 |bar Gamma_h| = [Gamma_h : tilde O^+(N)] (enriques_87_polarizations.json).
 
-Checks asserted here: for degrees 6 and 10 the displayed quotient, its stated value
-and the table's |bar Gamma_h| agree. For degree 2 the text is not consistent: it
-states [O^+(N) : Gamma_h] = 2^7 7 31 and [Gamma_h : tilde O^+(N)] = 2^14 3^5 5^2 7 31,
-while the quotient of the displayed numbers is 2^14 3^5 5^2 17 and the table gives
-2^14 3^5 5^2 7, i.e. index 2^7 17 31. The script asserts exactly this disagreement and
-records the table-derived index alongside the stated values.
+Checks asserted here: degrees 6 and 10 agree with the vendored text and table.
+For degree 2, the arXiv prepublication misprints 7 instead of 17 in the index,
+and its displayed quotient is also incorrect. Both published primary sources
+state the corrected index 2^7·17·31 and quotient 2^14·3^5·5^2·7.
 
 Run from the repository root: uv run references/extract/dh23_classical.py
 """
@@ -86,24 +86,23 @@ def main() -> None:
     assert numerator == O_PLUS_F2 and divisor == 2**7 * 7 * 31
     assert stated == 2**14 * 3**5 * 5**2 * 7 * 31 and numerator // divisor == 2**14 * 3**5 * 5**2 * 17
     assert table[1] == 2**14 * 3**5 * 5**2 * 7 and O_PLUS_F2 // table[1] == 2**7 * 17 * 31
-    inconsistent = [
+    corrected = [
         {
             "degree": 2,
             "case": 1,
-            "index_in_O_plus_N": O_PLUS_F2 // table[1],
-            "gamma_h_over_stable_order": table[1],
-            "stated_index_in_O_plus_N": divisor,
-            "stated_gamma_h_over_stable_order": stated,
-            "quotient_of_displayed_numbers": numerator // divisor,
+            "index_in_O_plus_N": 2**7 * 17 * 31,
+            "gamma_h_over_stable_order": 2**14 * 3**5 * 5**2 * 7,
             "source": {
-                "count": cite(1275, 1275, "Theorem 3.9"),
-                "display": cite(1278, 1280, "This is Case 1"),
+                "count": {"kind": "published_theorem", "reference": "Barth--Peters, Automorphisms of Enriques surfaces, Invent. Math. 73 (1983), Theorem 3.9, p. 398", "url": "https://www-fourier.univ-grenoble-alpes.fr/~peters/Articles/pub11.pdf"},
+                "display": {"kind": "published_text", "reference": "Dutour Sikiric--Hulek, Moduli of polarised Enriques surfaces--Computational aspects, J. London Math. Soc. 109 (2024), section 3.7.1", "url": "https://doi.org/10.1112/jlms.12828"},
                 "order_of_O_plus_F2": order,
+                "prepublication_erratum": {"index": cite(1275, 1275, "Theorem 3.9"), "quotient": cite(1278, 1280, "This is Case 1")},
             },
         }
     ]
-    TARGET.write_text(json.dumps({"consistent_with_table": records, "inconsistent_with_table": inconsistent}, indent=1) + "\n", encoding="utf-8")
-    print(f"wrote {TARGET}: degrees 6 and 10 agree with the table; degree 2 text disagrees, table-derived index {O_PLUS_F2 // table[1]}")
+    assert O_PLUS_F2 // corrected[0]["index_in_O_plus_N"] == corrected[0]["gamma_h_over_stable_order"] == table[1]
+    TARGET.write_text(json.dumps({"consistent_with_table": corrected + records}, indent=1) + "\n", encoding="utf-8")
+    print(f"wrote {TARGET}: degrees 2, 6 and 10 agree with the published text and table; prepublication degree 2 misprint checked")
 
 
 if __name__ == "__main__":

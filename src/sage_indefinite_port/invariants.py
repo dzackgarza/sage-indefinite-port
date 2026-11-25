@@ -33,6 +33,23 @@ class LatticePrefilter:
 
 
 @dataclass(frozen=True)
+class IsotropicFlagPrefilter:
+    r"""Structured fields of the pinned isotropic k-stuff invariant.
+
+    CombinedAlgorithms.h:1361-1395 combines the raw rank/ambient/quotient
+    invariant of IndefiniteFormFundamental.h:164-197 with the primes in
+    the denominators of the rational flag group. The pinned
+    MatrixGroupBasic.h:54-79 and GroupAction.g:14-30 compute that prime
+    set. Equal fields never decide equivalence.
+    """
+
+    dimensions: tuple[int, ...]
+    ambient: LatticePrefilter
+    quotient: LatticePrefilter
+    denominator_primes: tuple[int, ...]
+
+
+@dataclass(frozen=True)
 class AttackProfile:
     """L or L(-1), whichever has positive index min(n_+, n_-)."""
 

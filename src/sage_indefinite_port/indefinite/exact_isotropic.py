@@ -32,6 +32,8 @@ from sage.modules.free_module_element import vector
 from sage.quadratic_forms.quadratic_form import QuadraticForm
 from sage.rings.finite_rings.integer_mod import Mod
 from sage.rings.integer_ring import ZZ
+from random import Random
+
 from sage.rings.rational_field import QQ
 
 from sage_indefinite_port.indefinite.indefinite_reduction import _indefinite_reduction
@@ -489,7 +491,7 @@ def _positive_directions_eigen(form):
     return [list(vectors[i, :]) for i in range(form.nrows()) if values[i] > 0]
 
 
-def _positive_integral_vector(form):
+def _positive_integral_vector(form, rng: Random):
     r"""GetIntegralVector_allmeth with CritNorm 0 and a strict inequality (Positivity.h:399-480).
 
     A positive CritNorm-free search is not an isotropic one, so the form is
@@ -498,7 +500,7 @@ def _positive_integral_vector(form):
     """
     denominator = lcm(*(int(QQ(entry).denominator()) for entry in form.list()))
     integral = (form * denominator).change_ring(ZZ)
-    basis, reduced = _indefinite_reduction(integral)
+    basis, reduced = _indefinite_reduction(integral, rng)
     iterators = [_ApproxIterator(direction) for direction in _positive_directions_diagonal(reduced)]
     iterators += [_ApproxIterator(direction) for direction in _positive_directions_eigen(reduced)]
     while True:
@@ -508,7 +510,7 @@ def _positive_integral_vector(form):
                 return basis.transpose() * candidate
 
 
-def _fifth_basis(form):
+def _fifth_basis(form, rng: Random):
     r"""compute_fifth_basis (FifthAndHigherOrder.h:127-218): five vectors spanning a subspace with at most four squares of each sign."""
     form = form.change_ring(QQ)
     size = form.nrows()
@@ -538,7 +540,7 @@ def _fifth_basis(form):
         spanned = matrix(QQ, basis)
         perpendicular = (spanned * form).right_kernel_matrix()
         restricted = sign * perpendicular * form * perpendicular.transpose()
-        return perpendicular.transpose() * _positive_integral_vector(restricted)
+        return perpendicular.transpose() * _positive_integral_vector(restricted, rng)
 
     while len(basis) < 5:
         spanned = matrix(QQ, basis)
@@ -550,10 +552,10 @@ def _fifth_basis(form):
     return matrix(QQ, basis)
 
 
-def fifth_and_higher_order_isotropic_vector(form):
+def fifth_and_higher_order_isotropic_vector(form, rng: Random):
     r"""FifthAndHigherOrderIsotropicVector (FifthAndHigherOrder.h:250-315)."""
     form = form.change_ring(QQ)
-    basis = identity_matrix(QQ, 5) if form.nrows() == 5 else _fifth_basis(form)
+    basis = identity_matrix(QQ, 5) if form.nrows() == 5 else _fifth_basis(form, rng)
     restricted = basis * form * basis.transpose()
     if restricted.rank() < 5:
         return basis.transpose() * restricted.left_kernel().basis_matrix().row(0)
@@ -568,7 +570,7 @@ def fifth_and_higher_order_isotropic_vector(form):
 # ---------------------------------------------------------------------------
 
 
-def find_isotropic_exact(form):
+def find_isotropic_exact(form, rng: Random):
     r"""FindIsotropicExact (Isotropic.h:279-306): an isotropic rational vector of a nondegenerate form, or None."""
     form = form.change_ring(QQ)
     size = form.nrows()
@@ -588,7 +590,7 @@ def find_isotropic_exact(form):
         return ternary_isotropic_vector(form)
     if size == 4:
         return quaternary_isotropic_vector(form)
-    return fifth_and_higher_order_isotropic_vector(form)
+    return fifth_and_higher_order_isotropic_vector(form, rng)
 
 
 __all__ = ["find_isotropic_exact"]

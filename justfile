@@ -22,13 +22,31 @@ ambient:
 test-commit:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-commit
 
-# Run the full SageMath test suite before pushing.
+# Syntax checks on outgoing commits (not a full SageMath test run).
 test-push:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-push
 
 # Run CI acceptance QC through the central implementation.
 test-ci:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-ci
+
+# Inner mathematical feedback loop: run exactly one public regression node.
+# A bare file or -k selection is deliberately rejected: neither identifies
+# the smallest independently proved mathematical obligation.
+test-node node:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    node={{quote(node)}}
+    case "$node" in
+        tests/*::* ) ;;
+        *) echo "Expected one explicit test node: tests/path.py::test_claim[parameter]" >&2; exit 2 ;;
+    esac
+    # This Sage launcher is a container wrapper and does not forward
+    # arbitrary environment variables or additional argv. Serialize only
+    # the selected node as a quoted Python string literal.
+    node_literal="$(python3 -c 'import json, sys; print(json.dumps(sys.argv[1]))' "$node")"
+    export PYTHONPATH="$PWD/src:$PWD${PYTHONPATH:+:$PYTHONPATH}"
+    "${SAGE_BIN:-sage}" -c "import sage.all, sys; from ci.one_node import run; sys.exit(run($node_literal))"
 
 # Run the README example as a doctest; it is the smallest acceptance.
 readme-example:
@@ -64,7 +82,8 @@ ci-provision-sage:
     export MESONPY_EDITABLE_VERBOSE=1
     "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require(); from sage.interfaces.maxima_lib import maxima_lib; assert str(maxima_lib.eval("1+1")) == "2"'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz
+    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail "pytest-timeout>=2.4" "pytest-reportlog>=1.0" PyNormaliz "pycddlib>=3.0.2"
+    "$sage_python" -c 'import cdd.gmp'
     # The acceptance contract is against the shared-library revision declared in
     # pyproject.toml; read it from there so the packaging pin and the CI pin
     # cannot drift apart. The library is sage-extensions: the pre-move
@@ -101,20 +120,37 @@ ci-provision-julia:
     set -euo pipefail
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
-    julia --project="$env_dir" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+    # The worker sees both its JSON project and the shared Oscar project.
+    # Instantiate each selected manifest before exercising the same imports.
+    JULIA_PKG_PRECOMPILE_AUTO=0 julia --project="$env_dir" -e 'using Pkg; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); Pkg.instantiate(); Pkg.activate(dirname(bridge_project)); Pkg.instantiate(); using Oscar, JSON'
 
-# CI only: the cache key of the bridge's Julia environment (its Project; the
-# installed package ships no Manifest, so the julia job resolves one and the
-# cache carries it).
+# CI only: run one long true witness from witnesses/ against the pinned provider.
+ci-witness file test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    out={{ci_dir}}/results/{{test}}
+    mkdir -p "$out"
+    git rev-parse HEAD > "$out/commit"
+    git -C {{ci_dir}}/sage-extensions rev-parse HEAD > "$out/provider_commit"
+    sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
+    export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
+    export ACCEPTANCE_CORPUS=witness
+    "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
+        -p qc_sage_session "witnesses/{{file}}::{{test}}" -vv -rA --tb=long --instafail \
+        -p ci.test_budgets --timeout-method=signal --report-log="$out/report.jsonl" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
+    exit "${PIPESTATUS[0]}"
+
+# CI only: key Julia packages by the bridge project and shared image lock.
 ci-julia-key:
     #!/usr/bin/env bash
     set -euo pipefail
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
+    env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
+    julia --startup-file=no --project="$env_dir" -e 'using Pkg, SHA; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); shared_project = Base.active_project(); inputs = vcat(read(bridge_project), read(shared_project), read(joinpath(dirname(shared_project), "Manifest.toml"))); println("julia-depot-" * bytes2hex(sha256(inputs))[1:16])'
 
-# CI only: run one acceptance shard, or a required amended branch sample;
+# CI only: run job {{shard}} of the Acceptance plan for corpus {{selection}} (tier1, tier2, full or probe);
 # results land in .tmp/ci/results/<family>-<shard>.
-ci-acceptance family shard shards selection="":
+ci-acceptance family shard shards selection:
     #!/usr/bin/env bash
     set -euo pipefail
     out={{ci_dir}}/results/{{family}}-{{shard}}
@@ -144,148 +180,8 @@ ci-acceptance family shard shards selection="":
     printf '%s\n' "$provider_head" > "$out/research_commit"
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
-    # SIGINT before the job's hard limit, so pytest still writes the JUnit
-    # report for every case that finished.
-    case "{{selection}}" in
-      reflective)
-        tests=(
-            tests/acceptance/test_reflective.sage::test_edgewalk_branch_representative_sample
-            tests/acceptance/test_reflective.sage::test_edgewalk_period_action_matrix_uses_coordinate_label_order
-            tests/acceptance/test_reflective.sage::test_binary_cycle_coordinate_order_and_period_certificate
-            tests/acceptance/test_reflective.sage::test_vinberg_roots_match_oscars_chamber_up_to_isometry
-            tests/acceptance/test_reflective.sage::test_e10_simple_roots_match_dutour_sikiric_hulek
-        )
-        shard_args=()
-        ;;
-      orthogonal_group)
-        tests=(
-            tests/acceptance/test_orthogonal_group.sage::test_mertens_omega_and_minus_one_generate_o_l
-            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action
-            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_generates_rank_two_radical_action
-            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_embeds_non_diagonal_complement
-            tests/acceptance/test_orthogonal_group.sage::test_zero_form_orthogonal_group_is_the_full_general_linear_group
-            'tests/acceptance/test_orthogonal_group.sage::test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]'
-            tests/acceptance/test_orthogonal_group.sage::test_orthogonal_group_of_the_hyperbolic_plane_has_order_four
-            tests/acceptance/test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q
-            tests/acceptance/test_orthogonal_group.sage::test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q
-        )
-        shard_args=()
-        ;;
-      vector_stabilizers)
-        tests=(
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness
-            tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking
-            tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks
-            tests/acceptance/test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_2]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_3]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_4]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_6]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_8]'
-        )
-        shard_args=()
-        ;;
-      vector_orbits)
-        tests=(
-            tests/acceptance/test_vector_orbits.sage::test_anisotropic_binary_vector_classes_use_primitive_embeddings
-            'tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_2]'
-            'tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_30]'
-            'tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[0]'
-            'tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[2]'
-            'tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[4]'
-            'tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[6]'
-            'tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[8]'
-            'tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[10]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[2]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[4]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[6]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[8]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[10]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[12]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[14]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[16]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[18]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[20]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[22]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[24]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[26]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[28]'
-            'tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[30]'
-            tests/acceptance/test_vector_orbits.sage::test_i_2_10_is_transitive_on_norm_minus_one_vectors
-            'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[0]'
-            'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[-2]'
-            'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[2]'
-            'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[4]'
-            'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[-4]'
-        )
-        shard_args=()
-        ;;
-      isotropic_orbits)
-        tests=(
-            'tests/acceptance/test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_0]'
-            'tests/acceptance/test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_15]'
-            tests/acceptance/test_isotropic_orbits.sage::test_o_plus_n_has_two_line_and_two_plane_orbits
-            tests/acceptance/test_isotropic_orbits.sage::test_stable_o_plus_n_orbits_match_dutour_sikiric_hulek
-            tests/acceptance/test_isotropic_orbits.sage::test_o_n_maps_onto_o_of_the_discriminant_form
-            'tests/acceptance/test_isotropic_orbits.sage::test_published_representatives_lie_in_distinct_o_plus_orbits[rank0]'
-            'tests/acceptance/test_isotropic_orbits.sage::test_published_representatives_lie_in_distinct_o_plus_orbits[rank1]'
-            'tests/acceptance/test_isotropic_orbits.sage::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1]'
-            'tests/acceptance/test_isotropic_orbits.sage::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_2]'
-            'tests/acceptance/test_isotropic_orbits.sage::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_1]'
-            'tests/acceptance/test_isotropic_orbits.sage::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_2]'
-            'tests/acceptance/test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0-primitive_isotropic_vector_orbits]'
-            'tests/acceptance/test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank1-isotropic_plane_orbits]'
-        )
-        shard_args=()
-        ;;
-      boundaries)
-        tests=(
-            'tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable]'
-            'tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_minus2_minus6]'
-            'tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_L2_gamma2]'
-            'tests/acceptance/test_boundaries.sage::test_dawes_building_incidence_graph_is_the_published_figure[dawes_2U2_A2_stable]'
-            tests/acceptance/test_boundaries.sage::test_dawes_last_index_in_the_chain_is_the_discriminant_image_of_o_plus
-            'tests/acceptance/test_boundaries.sage::test_dtower_boundary_component_counts[N_3]'
-            'tests/acceptance/test_boundaries.sage::test_dtower_boundary_component_counts[N_4]'
-            'tests/acceptance/test_boundaries.sage::test_dtower_boundary_component_counts[N_9]'
-            'tests/acceptance/test_boundaries.sage::test_dtower_boundary_component_counts[N_20]'
-            'tests/acceptance/test_boundaries.sage::test_dtower_boundary_pictures[lambda_9]'
-            'tests/acceptance/test_boundaries.sage::test_dtower_boundary_pictures[lambda_10]'
-            'tests/acceptance/test_boundaries.sage::test_dtower_boundary_pictures[lambda_11]'
-            tests/acceptance/test_boundaries.sage::test_degree_two_k3_type_ii_components_and_root_types
-            tests/acceptance/test_boundaries.sage::test_degree_four_k3_has_nine_type_ii_components
-            'tests/acceptance/test_boundaries.sage::test_enriques_modular_groups_match_dutour_sikiric_hulek[case_1]'
-            'tests/acceptance/test_boundaries.sage::test_enriques_modular_groups_match_dutour_sikiric_hulek[case_87]'
-            'tests/acceptance/test_boundaries.sage::test_classical_polarization_indices[degree_2]'
-            'tests/acceptance/test_boundaries.sage::test_classical_polarization_indices[degree_10]'
-        )
-        shard_args=()
-        ;;
-      *)
-        tests=(tests/acceptance/test_{{family}}.sage)
-        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
-        ;;
-    esac
-    if [[ "{{family}}" == reflective && "{{selection}}" == "" ]]; then
-        timeout --signal=INT 345m "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" "${shard_args[@]}" 2>&1 | tee "$out/log"
-        exit "${PIPESTATUS[0]}"
-    fi
-    timeout --signal=INT 345m "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
-        -p qc_sage_session "${tests[@]}" --runxfail -rA --tb=long --instafail \
-        "${shard_args[@]}" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
+    export ACCEPTANCE_CORPUS={{selection}}
+    # ci/plan_acceptance.py packs the corpus's nodes into jobs by their derived budgets.
+    mapfile -t tests < <(python3 ci/plan_acceptance.py nodes {{selection}} {{shard}})
+    "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" 2>&1 | tee "$out/log"
+    exit "${PIPESTATUS[0]}"

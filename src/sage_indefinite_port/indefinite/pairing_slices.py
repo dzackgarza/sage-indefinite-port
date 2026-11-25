@@ -1,0 +1,1120 @@
+r"""Orbits of a pointwise stabilizer on vectors, by prescribed pairing slices (#53).
+
+For a fixed tuple `s` of vectors, `\Gamma = Stab_{O(L)}(s)` preserves every `b(s_i, x)` and
+`q(x)`. These invariants give exact negative decisions. On one slice, `x` and `y` are in one
+`\Gamma`-orbit exactly when the tuples `(s, x)` and `(s, y)` are `O(L)`-equivalent as
+markings of the same Gram lattice, which is a decision on coslice objects.
+
+For the centralizer `\Gamma = C_{O(L)}(F_1, \dots, F_s)` of arbitrary isometries, which has infinite
+index in general, :class:`CentralizerSubgroup` decides vector and tuple equivalence through the
+equivariant marked transporter of `(L, F, v)` (:class:`CentralizerTupleOrbit`, over #54).
+"""
+
+from itertools import count
+from math import isqrt
+
+from sage.matrix.constructor import identity_matrix, matrix
+from sage.modules.free_module_element import vector
+from sage.rings.integer_ring import ZZ
+from sage.rings.rational_field import QQ
+from sage_extensions.categories.lattices import Lattices
+from sage_indefinite_port.indefinite.equivariant_markings import CentralizerTupleOrbit
+from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+
+def _marking(lattice, vectors):
+    gram = [[lattice.b(left, right) for right in vectors] for left in vectors]
+    lattices = Lattices(lattice.base_ring())
+    source = lattices(gram)
+    labels = tuple(source.module_generating_set())
+    images = dict(zip(labels, vectors, strict=True))
+    category = lattices.CosliceUnder(source)
+    return category, category.object(lattices.Mor(source, lattice)(lambda label: images[label]))
+
+
+def _saturated_bases(lattice, source, target):
+    r"""Return bases of the saturation of the source span and its image, or ``None``.
+
+    A map fixing `source_i -> target_i` is rational-linear on the span, extends uniquely to
+    the saturation, and exists only when the relations match and the image is a saturated
+    integral basis, since an isometry carries a saturated sublattice to a saturated one.
+    """
+    rows = matrix(QQ, [[int(c) for c in v] for v in source])
+    images = matrix(QQ, [[int(c) for c in v] for v in target])
+    pivots = rows.pivot_rows()
+    independent = rows[list(pivots)]
+    transfer = independent.solve_left(rows)
+    if transfer * images[list(pivots)] != images:
+        return None
+    saturated = matrix(ZZ, independent.denominator() * independent).saturation().change_ring(QQ)
+    moved = independent.solve_left(saturated) * images[list(pivots)]
+    if moved.denominator() != 1 or any(d != 1 for d in matrix(ZZ, moved).elementary_divisors()):
+        return None
+    generators = tuple(lattice.module_generators())
+
+    def assemble(row):
+        return sum(
+            (lattice.scalar_multiple(int(c), g) for c, g in zip(row, generators, strict=True)),
+            lattice.zero(),
+        )
+
+    return tuple(assemble(r) for r in saturated.rows()), tuple(assemble(r) for r in moved.rows())
+
+
+def slice_invariant(lattice, fixed, vector):
+    r"""Return the pairings with the fixed tuple and the square of ``vector``."""
+    return tuple(lattice.b(s, vector) for s in fixed), lattice.q(vector)
+
+
+def _fixed_norm_candidate_coordinates(lattice, square):
+    r"""Exhaustive primitive-orbit candidates; finite for definite and split binary forms.
+
+    At zero norm in a split binary form, only primitive ray generators are
+    emitted, as both consuming orbit sets classify primitive vectors.
+    """
+    from sage_indefinite_port.indefinite.recursive import _coordinate_box, _rectangular_coordinate_box
+
+    if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
+        # For a rationally split binary form the entire fixed-norm fibre
+        # is finite: in the primitive isotropic ray basis (p,q),
+        # q(x)=2 b(p,q) u v. With D=det(p,q), the integers U=Du,V=Dv
+        # satisfy U V = square*D^2/(2b(p,q)). Enumerate signed divisors,
+        # recover x=(Up+Vq)/D, and check its integrality. At square zero
+        # only the four primitive signed rays survive. For a rationally
+        # anisotropic binary form the zero-norm fibre is empty.
+        from math import gcd
+
+        frame = tuple(lattice.module_generators())
+        gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        a, b, c = ZZ(gram[0, 0]), ZZ(gram[0, 1]), ZZ(gram[1, 1])
+        discriminant = b*b-a*c
+        if not discriminant.is_square():
+            if int(square) == 0:
+                return
+        else:
+            root = discriminant.sqrt()
+            rays = ((-b+root, a), (-b-root, a)) if a else ((1, 0), (-c, 2*b))
+            primitive = tuple((int(x)//gcd(int(x), int(y)), int(y)//gcd(int(x), int(y)))
+                              for x, y in rays)
+            if int(square) == 0:
+                seen = set()
+                for ray in primitive:
+                    for coordinates in (ray, tuple(-z for z in ray)):
+                        if coordinates not in seen:
+                            seen.add(coordinates)
+                            yield coordinates
+                return
+            rays_matrix = matrix(ZZ, primitive).transpose()
+            determinant = ZZ(rays_matrix.det())
+            pairing = 2 * rays_matrix.column(0).dot_product(gram * rays_matrix.column(1))
+            product_value = QQ(int(square) * determinant**2) / pairing
+            if product_value.denominator() != 1:
+                return
+            product_value = ZZ(product_value)
+            seen = set()
+            for divisor in ZZ(abs(product_value)).divisors():
+                for U in (divisor, -divisor):
+                    V = product_value // U
+                    coordinates = rays_matrix.change_ring(QQ) * vector(QQ, [U, V]) / determinant
+                    if all(c.denominator() == 1 for c in coordinates):
+                        point = tuple(int(c) for c in coordinates)
+                        if point not in seen:
+                            seen.add(point)
+                            yield point
+            return
+    if lattice.is_definite():
+        frame = tuple(lattice.module_generators())
+        if not frame:
+            if square == 0:
+                yield ()
+            return
+        gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        sign = 1 if gram[0, 0] > 0 else -1
+        if sign * int(square) < 0:
+            return
+        inverse = (sign*gram).inverse()
+        bounds = tuple(isqrt(int((abs(int(square))*inverse[i, i]).floor()))
+                       for i in range(len(frame)))
+        yield from _rectangular_coordinate_box(bounds)
+    else:
+        for height in count(0):
+            yield from _coordinate_box(lattice, height)
+
+
+def _anisotropic_quotient_primitive_radical(lattice):
+    r"""One primitive null representative when the nondegenerate quotient is anisotropic.
+
+    If `L=C (+) R` has anisotropic `C` over QQ, every null vector lies in
+    `R`. The integral radical is a primitive direct summand, and the full
+    orthogonal group contains GL(R), transitive on primitive radical
+    vectors. Return ``None`` when the quotient is isotropic or rank zero.
+    """
+    if lattice.is_nondegenerate() or int(lattice.rank()) == 0:
+        return None
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    frame = tuple(reduced.module_generators())
+    gram = matrix(ZZ, [[int(reduced.b(x, y)) for y in frame] for x in frame])
+    quotient_rank = gram.rank()
+    if quotient_rank:
+        complement = Lattices(lattice.base_ring())(
+            [[int(gram[i, j]) for j in range(quotient_rank)]
+             for i in range(quotient_rank)]
+        )
+        if complement.is_isotropic():
+            return None
+    return reduction.isometry(frame[quotient_rank])
+
+
+def marked_transporter(lattice, source, target):
+    r"""Return `g \in O(L)` with `g(source_i) = target_i` for tuples, or ``None``."""
+    source, target = tuple(source), tuple(target)
+    if len(source) != len(target):
+        return None
+    if any(v.parent() is not lattice for v in (*source, *target)):
+        raise ValueError("marked vectors must belong to the original lattice")
+    if not source or all(point == lattice.zero() for point in source):
+        # The empty marking has the entire orthogonal group as stabilizer;
+        # the all-zero marking has the same stabilizer, but cannot be sent
+        # to a tuple containing a nonzero vector.
+        return lattice.O().identity() if all(point == lattice.zero() for point in target) else None
+    gram = lambda vectors: [[lattice.b(x, y) for y in vectors] for x in vectors]
+    if gram(source) != gram(target):
+        return None
+    frame = tuple(lattice.module_generators())
+    zero_form = all(int(lattice.b(x, y)) == 0 for x in frame for y in frame)
+    nondegenerate_marking = (lattice.is_nondegenerate()
+                             and 0 < len(source) <= int(lattice.rank())
+                             and matrix(ZZ, [[int(lattice.b(x, y)) for y in source]
+                                             for x in source]).det() != 0)
+    if (len(source) == int(lattice.rank()) or int(lattice.rank()) <= 2
+            or zero_form or lattice.is_definite() or nondegenerate_marking):
+        columns = matrix(ZZ, [[int(c) for c in v] for v in source]).transpose()
+        if (int(lattice.rank()) <= 2 or zero_form or lattice.is_definite() or nondegenerate_marking
+                or (columns.ncols() == columns.nrows() and columns.det() != 0)):
+            # A full-rank marking, including a nonprimitive one, fixes a
+            # unique rational ambient map. Decide its integrality and
+            # isometry identities directly rather than invoking a marked
+            # category isomorphism search on a finite-index submodule.
+            # For ranks one and two, the complete low-rank arithmetic
+            # classification also decides non-full-rank markings.
+            from sage_indefinite_port.indefinite.effective_reduction import orthogonal_transporter
+
+            target_columns = matrix(ZZ, [[int(c) for c in v] for v in target]).transpose()
+            ambient_gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+            witness = orthogonal_transporter(ambient_gram, columns, target_columns)
+            if witness is None:
+                return None
+            images = tuple(sum(
+                (lattice.scalar_multiple(int(witness[j, i]), frame[j]) for j in range(len(frame))
+                 if witness[j, i]), lattice.zero()) for i in range(len(frame)))
+            return lattice.O()(images)
+    bases = _saturated_bases(lattice, source, target)
+    if bases is None:
+        return None
+    mixed = _mixed_marking_transporter(lattice, *bases)
+    if mixed is not NotImplemented:
+        if mixed is not None:
+            assert all(mixed(x) == y for x, y in zip(source, target, strict=True))
+        return mixed
+    category, marked_source = _marking(lattice, bases[0])
+    _category, marked_target = _marking(lattice, bases[1])
+    marked_target = category.object(_rebase(category, marked_target))
+    witness = isometry(category, marked_source, marked_target)
+    if witness is None:
+        return None
+    assert all(witness(x) == y for x, y in zip(source, target, strict=True))
+    return witness
+
+
+def _mixed_marking_transporter(lattice, source, target):
+    r"""Decide a marking whose span has a nonzero radical and a nonzero nondegenerate part.
+
+    Choose a nonsingular principal block `S` of the Gram matrix. An element of `O(L)` moves
+    the block of ``source`` to that of ``target``, and any solution differs from it by the
+    pointwise stabilizer of `S'`. When `L = S' + K`, that stabilizer is `O(K)`, and the
+    remaining vectors project to a totally isotropic tuple of `K`. Returns
+    ``NotImplemented`` when the marking is not mixed.
+    """
+    gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in source] for x in source])
+    rank = gram.rank()
+    if rank == 0 or rank == len(source):
+        return NotImplemented
+    pivots = tuple(gram.pivot_rows())
+    block = tuple(source[i] for i in pivots)
+    block_target = tuple(target[i] for i in pivots)
+    move = marked_transporter(lattice, block, block_target)
+    if move is None:
+        return None
+    frame = tuple(lattice.module_generators())
+    coordinates = lambda v: vector(ZZ, [int(c) for c in v])
+    ambient = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    block_matrix = matrix(ZZ, [coordinates(v) for v in block_target])
+    complement = (block_matrix * ambient).right_kernel().basis_matrix()
+    together = block_matrix.stack(complement)
+    if not together.is_square() or abs(together.det()) != 1:
+        # A primitive nondegenerate summand need not split off integrally.
+        # Its orthogonal complement can meet it in an overlattice with
+        # nontrivial discriminant glue (e.g. <e+f> in U has index two).
+        # The direct-product O(S) x O(S^perp) construction below is exact
+        # only at index one. Pass a genuinely glued marking to the full
+        # based Coslice Isom algorithm, which checks the integral gluing
+        # conditions rather than asserting or discarding the orbit.
+        return NotImplemented
+    assemble = lambda row: sum(
+        (lattice.scalar_multiple(int(c), g) for c, g in zip(row, frame, strict=True)), lattice.zero()
+    )
+    complement_vectors = tuple(assemble(r) for r in complement.rows())
+    inverse = together.change_ring(QQ).inverse()
+    tail = len(block_target)
+
+    def in_complement(v):
+        return vector(ZZ, list(coordinates(v) * inverse)[tail:])
+
+    rest_source = tuple(move(source[i]) for i in range(len(source)) if i not in pivots)
+    rest_target = tuple(target[i] for i in range(len(source)) if i not in pivots)
+    complement_lattice = Lattices(lattice.base_ring())(
+        [[int(lattice.b(x, y)) for y in complement_vectors] for x in complement_vectors]
+    )
+    complement_frame = tuple(complement_lattice.module_generators())
+    build = lambda row: sum(
+        (complement_lattice.scalar_multiple(int(c), g) for c, g in zip(row, complement_frame, strict=True)),
+        complement_lattice.zero(),
+    )
+    image_source = tuple(build(in_complement(v)) for v in rest_source)
+    image_target = tuple(build(in_complement(v)) for v in rest_target)
+    inner = marked_transporter(complement_lattice, image_source, image_target)
+    if inner is None:
+        return None
+    labels = tuple(lattice.module_generating_set())
+    images = {}
+    for label, generator in zip(labels, frame, strict=True):
+        parts = coordinates(generator) * inverse
+        head = sum((int(c) * together.row(i) for i, c in enumerate(parts[:tail])), vector(ZZ, len(frame)))
+        moved = inner(build(parts[tail:]))
+        body = sum(
+            (int(c) * complement.row(j) for j, c in enumerate(moved)),
+            vector(ZZ, len(frame)),
+        )
+        images[label] = assemble(head + body)
+    return lattice.O()(images) * move
+
+
+def pointwise_transporter(lattice, fixed, left, right):
+    r"""Return `g \in Stab_{O(L)}(fixed)` with `g(left) = right`, or ``None``.
+
+    ``left`` and ``right`` are vectors or tuples of vectors of equal length.
+    """
+    left = left if isinstance(left, tuple) else (left,)
+    right = right if isinstance(right, tuple) else (right,)
+    return marked_transporter(lattice, (*fixed, *left), (*fixed, *right))
+
+
+def line_transporter(lattice, generator, left, right):
+    r"""Return `g` in the setwise stabilizer of `Z generator` with `g(left) = right`, or ``None``.
+
+    `g` sends `generator` to its positive or its negative, so two markings decide.
+    """
+    for image in (generator, -generator):
+        witness = marked_transporter(lattice, (generator, left), (image, right))
+        if witness is not None:
+            return witness
+    return None
+
+
+def _full_radical_setwise_transporter(lattice, fixed, left, right):
+    r"""Exact setwise transporter when S=P+R contains R=rad(L), P nondegenerate.
+
+    The reduced lattice L=C+R is an integral direct sum of a nondegenerate
+    quotient and a free zero-form radical. Since S contains the whole
+    radical, its image P in C is a primitive sublattice and S=P+R;
+    it has no additional graph/gluing datum over R.
+
+    Every integral isometry has the unique row block form
+        [[A,B],[0,D]], A in O(C), B in Hom_Z(C,R), D in GL(R).
+    It preserves S precisely when A(P)=P. For x=(c,r), y=(c',s),
+    first decide c A=c' by the complete nondegenerate setwise
+    transporter of P. Then solve rD+cB=s. If c has content d>0,
+    the set of possible cB is exactly dR by Bezout, so a solution
+    exists iff the *actual* integral GL(R) image carries r mod d
+    to s mod d. The maintained RadicalCongruenceImage decides this
+    and returns an integral lift D; one Bezout column constructs B.
+    At d=0, the shear disappears and GL(R) must carry r exactly
+    to s, decided by the complete pure-radical pointed transporter.
+
+    Every decision is necessary and sufficient, and the constructed
+    map is checked on the original ambient lattice and marked span.
+    Return NotImplemented unless the full-radical, nondegenerate-P
+    hypothesis holds, so the caller may choose another valid route.
+    """
+    from math import gcd
+
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+    from sage_indefinite_port.indefinite.recursive import (
+        EichlerRecursion, _gram_in_label_order, _isometry_from_row_matrix,
+    )
+
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    gram = _gram_in_label_order(reduced)
+    size, n = int(gram.nrows()), int(gram.rank())
+    k = size - n
+    if not n or not k:
+        return NotImplemented
+    labels = tuple(reduced.module_generating_set())
+    inclusion = lattice.subobject_on(tuple(fixed)).inclusion()
+    radical = tuple(
+        reduction.isometry(reduced.module_generator(label))
+        for label in labels[n:]
+    )
+    if not inclusion.is_primitive() or not all(inclusion.is_in_image(point) for point in radical):
+        return NotImplemented
+
+    complement = Lattices(lattice.base_ring())([
+        [int(gram[i,j]) for j in range(n)] for i in range(n)
+    ])
+    c_labels = tuple(complement.module_generating_set())
+    inverse = ~reduction.isometry
+
+    def chart(point):
+        row = inverse(point).to_vector()
+        return tuple(int(row(label)) for label in labels)
+
+    def c_point(coords):
+        return complement.linear_combination({
+            label: complement.base_ring()(coefficient)
+            for label, coefficient in zip(c_labels, coords, strict=True) if coefficient
+        })
+
+    projected = tuple(c_point(chart(point)[:n]) for point in fixed)
+    plane = complement.subobject_on(projected)
+    if not plane.inclusion().is_primitive() or not plane.is_nondegenerate():
+        return NotImplemented
+    if int(plane.rank()) + k != int(inclusion.domain().rank()):
+        raise ArithmeticError("the marked full-radical lattice is not the pullback of its projected sublattice")
+
+    x, y = chart(left), chart(right)
+    c, c_target = x[:n], y[:n]
+    r, t = x[n:], y[n:]
+    if not any(c) and not any(c_target):
+        a = identity_matrix(ZZ, n)
+    else:
+        projected_basis = tuple(plane.inclusion()(point) for point in plane.module_generators())
+        a_witness = setwise_transporter(complement, projected_basis, c_point(c), c_point(c_target))
+        if a_witness is None:
+            return None
+        a = matrix(ZZ, [
+            [int(a_witness(point).to_vector()(label)) for label in c_labels]
+            for point in complement.module_generators()
+        ])
+
+    d = 0
+    for entry in c:
+        d = gcd(d, entry)
+    recursion = EichlerRecursion()
+    if d > 1:
+        D = recursion.radical_congruence_image(lattice, d).transporter(r, t)
+        if D is None:
+            return None
+    elif d == 1 or r == t:
+        D = identity_matrix(ZZ, k)
+    else:
+        pure_source = reduced.linear_combination({
+            labels[n+i]: reduced.base_ring()(entry)
+            for i, entry in enumerate(r) if entry
+        })
+        pure_target = reduced.linear_combination({
+            labels[n+i]: reduced.base_ring()(entry)
+            for i, entry in enumerate(t) if entry
+        })
+        radical_witness = recursion.pointed_isometry(pure_source, pure_target)
+        if radical_witness is None:
+            return None
+        D = matrix(ZZ, [
+            [int(radical_witness(reduced.module_generator(labels[n+i]))
+                 .to_vector()(labels[n+j])) for j in range(k)]
+            for i in range(k)
+        ])
+
+    residual = matrix(ZZ, [list(t)]) - matrix(ZZ, [list(r)]) * D
+    if d:
+        if any(int(entry) % d for entry in residual.list()):
+            raise ArithmeticError("the radical GL congruence lift violates the prescribed residue")
+        _, _, smith_right = matrix(ZZ, [list(c)]).smith_form()
+        bezout = smith_right.column(0)
+        if sum(c[i]*int(bezout[i]) for i in range(n)) == -d:
+            bezout = -bezout
+        if sum(c[i]*int(bezout[i]) for i in range(n)) != d:
+            raise ArithmeticError("the projected content lacks its integral Bezout column")
+        B = matrix(ZZ, n, k, lambda i,j: int(bezout[i])*int(residual[0,j])//d)
+    else:
+        if any(residual.list()):
+            return None
+        B = matrix(ZZ, n, k, 0)
+
+    block = identity_matrix(ZZ, size)
+    block[:n,:n] = a
+    block[:n,n:] = B
+    block[n:,n:] = D
+    reduced_witness = _isometry_from_row_matrix(reduced, reduced, block)
+    witness = reduction.isometry * reduced_witness * inverse
+    if witness(left) != right:
+        raise ArithmeticError("the mixed setwise transporter failed the prescribed vector equation")
+    if any(not inclusion.is_in_image(witness(point)) for point in fixed):
+        raise ArithmeticError("the mixed setwise transporter failed its marked lattice equation")
+    return witness
+
+
+def setwise_transporter(lattice, fixed, left, right):
+    r"""Return `g` preserving the span of ``fixed`` with `g(left) = right`, or ``None``.
+
+    The tuple ``fixed`` is a basis of a primitive nondegenerate sublattice `S`. For definite
+    `S`, restriction sends the setwise stabilizer into the finite group `O(S)`, so running over
+    `O(S)` decides. For indefinite `S`, the decision splits along `S + S^\perp`.
+    """
+    fixed = tuple(fixed)
+    if (left.parent() is not lattice or right.parent() is not lattice
+            or any(v.parent() is not lattice for v in fixed)):
+        raise ValueError("setwise markings must belong to the original lattice")
+    if not fixed or all(point == lattice.zero() for point in fixed):
+        # The zero submodule is invariant under every integral isometry.
+        # There is no nondegenerate marked lattice to construct here.
+        return marked_transporter(lattice, (left,), (right,))
+    if int(lattice.rank()) == 2:
+        frame = tuple(lattice.module_generators())
+        B = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        if B.rank() == 0:
+            # The full group is GL_2(Z). Given nonzero v,w of equal
+            # content, unimodular Bezout completions P_v,P_w identify
+            # every transporter as P_w [[1,k],[0,delta]] P_v^-1,
+            # k in Z, delta=+/-1. Preserve the *actual* marked module
+            # by solving the resulting affine linear/congruence equations.
+            from math import gcd
+            from sage.arith.misc import xgcd
+
+            v, w = vector(ZZ, left), vector(ZZ, right)
+            if not v:
+                return lattice.O().identity() if not w else None
+            dv, sv, tv = xgcd(v[0], v[1])
+            dw, sw, tw = xgcd(w[0], w[1])
+            if dv != dw:
+                return None
+            Pv = matrix(ZZ, [[v[0]//dv, -tv], [v[1]//dv, sv]])
+            Pw = matrix(ZZ, [[w[0]//dw, -tw], [w[1]//dw, sw]])
+            inverse = Pv.inverse()
+            H = matrix(ZZ, [list(z) for z in fixed]).row_module().basis_matrix()
+            for delta in (1, -1):
+                G0 = Pw*matrix(ZZ, [[1, 0], [0, delta]])*inverse
+                K = Pw*matrix(ZZ, [[0, 1], [0, 0]])*inverse
+                if H.nrows() == 1:
+                    h = H.row(0).column()
+                    candidates = []
+                    for sign in (1, -1):
+                        alpha = K*h
+                        beta = sign*h-G0*h
+                        pivot = next((j for j in range(2) if alpha[j, 0]), None)
+                        if pivot is None:
+                            if not beta:
+                                candidates.append(ZZ(0))
+                        else:
+                            value = QQ(beta[pivot, 0])/alpha[pivot, 0]
+                            if value.denominator() == 1 and alpha*ZZ(value) == beta:
+                                candidates.append(ZZ(value))
+                else:
+                    inverse_H = H.change_ring(QQ).inverse()
+                    C0 = H*G0.transpose()*inverse_H
+                    C1 = H*K.transpose()*inverse_H
+                    residue, modulus = 0, 1
+                    feasible = True
+                    for alpha, beta in zip(C1.list(), C0.list(), strict=True):
+                        D = int(alpha.denominator().lcm(beta.denominator()))
+                        a, c = int(D*alpha), int(-D*beta)
+                        divisor = gcd(a, D)
+                        if c % divisor:
+                            feasible = False
+                            break
+                        n = D//divisor
+                        if n == 1:
+                            continue
+                        target_residue = ((c//divisor)*pow(a//divisor, -1, n)) % n
+                        overlap = gcd(modulus, n)
+                        if (target_residue-residue) % overlap:
+                            feasible = False
+                            break
+                        quotient = n//overlap
+                        step = (((target_residue-residue)//overlap)
+                                * pow(modulus//overlap, -1, quotient)) % quotient if quotient > 1 else 0
+                        residue = (residue+modulus*step) % (modulus*quotient)
+                        modulus *= quotient
+                    candidates = (ZZ(residue),) if feasible else ()
+                for k in candidates:
+                    G = G0+k*K
+                    moved = matrix(ZZ, [[int(c) for c in G*vector(ZZ, z)] for z in fixed])
+                    if moved.row_module() != H.row_module():
+                        continue
+                    images = tuple(sum((lattice.scalar_multiple(int(G[j, i]), frame[j])
+                                        for j in range(2) if G[j, i]), lattice.zero())
+                                   for i in range(2))
+                    return lattice.O()(images)
+            return None
+        if B.rank() == 1:
+            # In a unimodular frame (u,r), r spanning the radical,
+            # O(diag(a,0),ZZ) consists of [[eps,0],[b,delta]].
+            # If the pointed vector is radical, its only images are +/-
+            # itself; +/-I preserve *every* submodule. Otherwise its
+            # nonzero quotient coordinate uniquely determines b for each
+            # of the four sign pairs. Check the actual, possibly
+            # nonprimitive, submodule for those finitely many candidates.
+            from sage.arith.misc import xgcd
+
+            radical = B.right_kernel_matrix().row(0)
+            d, s, t = xgcd(ZZ(radical[0]), ZZ(radical[1]))
+            radical = radical/d
+            P = matrix(ZZ, [[t, radical[0]], [-s, radical[1]]])
+            inverse = P.inverse()
+            x = inverse*vector(ZZ, left)
+            y = inverse*vector(ZZ, right)
+            if not x[0]:
+                if right == left:
+                    return lattice.O().identity()
+                if right == -left:
+                    return lattice.O()(tuple(-v for v in frame))
+                return None
+            source_module = matrix(ZZ, [list(v) for v in fixed]).row_module()
+            for epsilon in (1, -1):
+                if y[0] != epsilon*x[0]:
+                    continue
+                for delta in (1, -1):
+                    quotient = QQ(y[1]-delta*x[1])/x[0]
+                    if quotient.denominator() != 1:
+                        continue
+                    g = P*matrix(ZZ, [[epsilon, 0], [ZZ(quotient), delta]])*inverse
+                    moved = matrix(ZZ, [[int(c) for c in g*vector(ZZ, v)] for v in fixed])
+                    if moved.row_module() != source_module:
+                        continue
+                    images = tuple(sum((lattice.scalar_multiple(int(g[j, i]), frame[j])
+                                        for j in range(2) if g[j, i]), lattice.zero())
+                                   for i in range(2))
+                    return lattice.O()(images)
+            return None
+    if int(lattice.rank()) == 2 and lattice.is_nondegenerate():
+        # A binary nonisotropic pointed transporter has at most two
+        # rational candidates, independently of the size/index of the
+        # prescribed fixed submodule. Test *both* against its actual
+        # integral row module: preserving the primitive saturation alone
+        # is insufficient for a nonprimitive rank-two marking.
+        from sage_indefinite_port.indefinite.effective_reduction import orthogonal_transporter
+
+        frame = tuple(lattice.module_generators())
+        B = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+        v = matrix(ZZ, 2, 1, [int(c) for c in left])
+        w = matrix(ZZ, 2, 1, [int(c) for c in right])
+        source_rows = matrix(ZZ, [[int(c) for c in x] for x in fixed]).row_module()
+        if left == lattice.zero():
+            return lattice.O().identity() if right == lattice.zero() else None
+        candidates = []
+        if (v.transpose()*B*v)[0, 0]:
+            bv, bw = B*v, B*w
+            basis = matrix(ZZ, [[v[0, 0], bv[1, 0]], [v[1, 0], -bv[0, 0]]]).change_ring(QQ)
+            for sign in (1, -1):
+                image_basis = matrix(ZZ, [[w[0, 0], sign*bw[1, 0]],
+                                          [w[1, 0], -sign*bw[0, 0]]]).change_ring(QQ)
+                candidate = image_basis*basis.inverse()
+                if candidate.denominator() == 1:
+                    candidates.append(candidate.change_ring(ZZ))
+        else:
+            candidate = orthogonal_transporter(B, v, w)
+            if candidate is not None:
+                candidates.append(candidate)
+        for candidate in candidates:
+            if (abs(candidate.det()) != 1 or candidate.transpose()*B*candidate != B
+                    or candidate*v != w):
+                continue
+            moved = matrix(ZZ, [[int(c) for c in candidate*vector(ZZ, x)] for x in fixed])
+            if moved.row_module() == source_rows:
+                images = tuple(sum(
+                    (lattice.scalar_multiple(int(candidate[j, i]), frame[j]) for j in range(2)
+                     if candidate[j, i]), lattice.zero()) for i in range(2))
+                return lattice.O()(images)
+        return None
+    if len(fixed) == 1 and int(fixed[0].content()) > 1:
+        # For a nonzero vector v=c*v_0 in a torsion-free integral lattice,
+        # g(Zv)=Zv iff g(v_0)=+/-v_0. Thus the rank-one submodule and its
+        # primitive saturation have exactly the same setwise stabilizer.
+        fixed = (fixed[0].primitive_part(),)
+    gram = [[int(lattice.b(x, y)) for y in fixed] for x in fixed]
+    source = Lattices(lattice.base_ring())(gram)
+    if not source.is_nondegenerate():
+        found = _full_radical_setwise_transporter(lattice, fixed, left, right)
+        if found is NotImplemented:
+            raise NotImplementedError(
+                "setwise transport of a degenerate marking not containing the entire "
+                "ambient radical with nondegenerate quotient projection requires "
+                "the general equivariant gluing algorithm"
+            )
+        return found
+    if not source.is_definite():
+        return _glued_setwise_transporter(lattice, fixed, left, right)
+    frame = tuple(source.module_generators())
+    for automorphism in source.O():
+        images = tuple(
+            sum(
+                (lattice.scalar_multiple(int(c), f) for c, f in zip(automorphism(v), fixed, strict=True)),
+                lattice.zero(),
+            )
+            for v in frame
+        )
+        witness = marked_transporter(lattice, (*fixed, left), (*images, right))
+        if witness is not None:
+            return witness
+    return None
+
+
+def _glued_setwise_transporter(lattice, fixed, left, right):
+    r"""Decide the setwise transporter for a nondegenerate primitive sublattice `S`.
+
+    Let `K = S^\perp`. Then `S + K \subseteq L \subseteq S^\vee + K^\vee`, and `L` is the
+    graph of an anti-isometry of subgroups of `A_S` and `A_K` (Nikulin, *Integral symmetric
+    bilinear forms*, Prop. 1.5.1). An isometry `g` with `g(S) = S` also preserves `K`, so
+    `g = h + k` with `h \in O(S)` and `k \in O(K)`; conversely `h + k` lies in `O(L)` exactly
+    when it maps `L` into `L`. Write `x = a + c` with `a \in S^\vee_Q` and `c \in K^\vee_Q`.
+    Then `g(x) = y` exactly when `h(a) = a'` and `k(c) = c'`. The solutions `h` form a coset
+    `h_0 Stab_{O(S)}(a)`, and only its image on the finite group `S^\vee/S` affects whether
+    `h + k` preserves `L`. The same holds for `k`. So finitely many pairs of classes decide.
+
+    Matrices act on coefficient rows from the right: `p \mapsto p M`.
+    """
+    frame = tuple(lattice.module_generators())
+    coordinates = lambda v: vector(QQ, [int(c) for c in v])
+    ambient = matrix(QQ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    fixed_rows = matrix(QQ, [coordinates(v) for v in fixed])
+    complement_rows = matrix(ZZ, fixed_rows * ambient).right_kernel().basis_matrix().change_ring(QQ)
+    together = fixed_rows.stack(complement_rows)
+    inverse = together.inverse()
+    tail = fixed_rows.nrows()
+    left_parts = coordinates(left) * inverse
+    right_parts = coordinates(right) * inverse
+    cosets = []
+    for rows, source, target in (
+        (fixed_rows, left_parts[:tail], right_parts[:tail]),
+        (complement_rows, left_parts[tail:], right_parts[tail:]),
+    ):
+        if rows.nrows() == 0:
+            cosets.append((matrix(QQ, 0, 0),))
+            continue
+        coset = _dual_vector_coset(rows * ambient * rows.transpose(), source, target)
+        if coset is None:
+            return None
+        cosets.append(coset)
+    for first in cosets[0]:
+        for second in cosets[1]:
+            moved = inverse * matrix.block_diagonal([first, second], subdivide=False) * together
+            if moved.denominator() != 1:
+                continue
+            images = {
+                label: sum(
+                    (lattice.scalar_multiple(int(c), g) for c, g in zip(moved.row(i), frame, strict=True)),
+                    lattice.zero(),
+                )
+                for i, label in enumerate(lattice.module_generating_set())
+            }
+            witness = lattice.O()(images)
+            assert witness(left) == right
+            return witness
+    return None
+
+
+def _dual_vector_coset(gram, source, target):
+    r"""Return matrices of `\{h \in O(S) : h(a) = a'\}`, one for each class on `S^\vee/S`.
+
+    ``source`` and ``target`` are coefficient rows of `a, a' \in S^\vee_Q`. Returns ``None``
+    when no `h` exists. Two matrices `M_1, M_2` act equally on `S^\vee/S` exactly when
+    `G^{-1}(M_1 - M_2)` is integral, since the rows of `G^{-1}` span `S^\vee`.
+    """
+    if source.denominator() != target.denominator():
+        return None
+    abstract = Lattices(ZZ)([[int(c) for c in row] for row in gram])
+    generators = tuple(abstract.module_generators())
+    rank = len(generators)
+    scale = source.denominator()
+
+    def element(row):
+        return sum(
+            (abstract.scalar_multiple(int(c), g) for c, g in zip(scale * row, generators, strict=True)),
+            abstract.zero(),
+        )
+
+    def as_matrix(isometry):
+        return matrix(QQ, [[int(c) for c in isometry(g)] for g in generators])
+
+    group = abstract.O()
+    if source.is_zero():
+        if not target.is_zero():
+            return None
+        start = matrix.identity(QQ, rank)
+        stabilizer = tuple(group.group_generators())
+    else:
+        move = group.vector_equivalence_witness(element(source), element(target))
+        if move is None:
+            return None
+        start = as_matrix(move)
+        stabilizer = tuple(group.vector_stabilizer_generators(element(source)))
+    dual = gram.inverse()
+    key = lambda m: tuple(c - c.floor() for c in (dual * m).list())
+    steps = tuple(as_matrix(s) for s in stabilizer)
+    identity = matrix.identity(QQ, rank)
+    seen = {key(identity): identity}
+    frontier = [identity]
+    while frontier:
+        current = frontier.pop()
+        for step in steps:
+            following = current * step
+            if key(following) not in seen:
+                seen[key(following)] = following
+                frontier.append(following)
+    return tuple(m * start for m in seen.values())
+
+
+def _rebase(category, marked):
+    r"""Return the arrow of ``marked`` from the base object of ``category``."""
+    base = category.base_object()
+    arrow = marked.arrow()
+    lattice = arrow.codomain()
+    labels = tuple(arrow.domain().module_generating_set())
+    images = {label: arrow(arrow.domain().module_generator(label)) for label in labels}
+    return category.base_category().Mor(base, lattice)(lambda label: images[label])
+
+
+class PointwiseStabilizerOrbits:
+    r"""The orbit set of `Stab_{O(L)}(fixed)` on primitive vectors of a given square.
+
+    The set can be infinite, so it has no list of representatives. Iteration visits all
+    vectors by sup-norm height and yields the first vector of each orbit. Every primitive
+    vector of the square has a height, and the transporter decides equivalence, so the
+    stream is exhaustive and free of duplicates.
+    """
+
+    def __init__(self, lattice, fixed, square):
+        self.lattice = lattice
+        self.fixed = tuple(fixed)
+        self.square = square
+
+    def __contains__(self, vector):
+        # Owned ZZ elements deliberately do not compare equal to bare
+        # Python integers. Compare exact integral values, as in the
+        # SubgroupVectorOrbits membership contract below.
+        return (vector.parent() is self.lattice
+                and int(self.lattice.q(vector)) == int(self.square)
+                and int(vector.content()) == 1)
+
+    def equivalent(self, left, right):
+        return pointwise_transporter(self.lattice, self.fixed, left, right) is not None
+
+    def transporter(self, left, right):
+        return pointwise_transporter(self.lattice, self.fixed, left, right)
+
+    def _shell(self, height):
+        from sage_indefinite_port.indefinite.recursive import _coordinate_box
+
+        generators = tuple(self.lattice.module_generators())
+        for coordinates in _coordinate_box(self.lattice, height):
+            yield sum(
+                (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, generators, strict=True)),
+                self.lattice.zero(),
+            )
+
+    def __iter__(self):
+        if int(self.square) == 0 and all(v == self.lattice.zero() for v in self.fixed):
+            radical = _anisotropic_quotient_primitive_radical(self.lattice)
+            if radical is not None:
+                yield radical
+                return
+        frame = tuple(self.lattice.module_generators())
+        gram_rank = matrix(ZZ, [[int(self.lattice.b(x, y)) for y in frame] for x in frame]).rank()
+        if ((not self.lattice.is_nondegenerate()
+             and (int(self.square) != 0 or gram_rank <= 1 or int(self.lattice.rank()) <= 2))
+                and all(v == self.lattice.zero() for v in self.fixed)):
+            # The complete radical GL/shear classification already
+            # computes primitive full-group orbits for binary degenerate
+            # forms, including the zero form. Reuse its finite quotient.
+            from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+            yield from EichlerRecursion().exact_vector_orbit_iterator(
+                self.lattice, int(self.square), primitive_only=True)
+            return
+        if (int(self.lattice.rank()) == 2 and self.lattice.is_nondegenerate()
+                and not self.lattice.is_definite() and int(self.square) != 0
+                and all(v == self.lattice.zero() for v in self.fixed)):
+            # The pointwise stabilizer of the zero marking is the whole
+            # O(L). Its exact binary quadratic-form class set is finite
+            # even for Pell-type norm fibres containing infinitely many
+            # vectors. Do not leave this finite quotient as an infinite
+            # coordinate search.
+            classes = self.lattice.binary_fixed_norm_representatives(int(self.square))
+            section = classes.section()
+            for orbit in classes:
+                representative = section(orbit)
+                if int(representative.content()) == 1:
+                    yield representative
+            return
+        known = []
+        for coordinates in _fixed_norm_candidate_coordinates(self.lattice, self.square):
+            vector = sum(
+                (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, frame, strict=True)),
+                self.lattice.zero(),
+            )
+            if vector == self.lattice.zero() or vector not in self:
+                continue
+            if not any(self.equivalent(representative, vector) for representative in known):
+                known.append(vector)
+                yield vector
+
+
+class SubgroupVectorOrbits:
+    r"""The orbit set of a caller-fixed subgroup `\Gamma` on primitive vectors of a given square.
+
+    `\Gamma` needs a ``vector_equivalence_witness``, which is its exact decision. The stream visits
+    vectors by height and keeps the first of each orbit, so it is exhaustive and free of
+    duplicates, with no finiteness assumed.
+    """
+
+    def __init__(self, lattice, group, square):
+        self.lattice = lattice
+        self.group = group
+        self.square = square
+
+    def __contains__(self, vector):
+        return (vector.parent() is self.lattice
+                and int(self.lattice.q(vector)) == int(self.square)
+                and int(vector.content()) == 1)
+
+    def transporter(self, left, right):
+        if (left.parent() is not self.lattice or right.parent() is not self.lattice
+                or int(left.q()) != int(right.q())
+                or int(left.content()) != int(right.content())):
+            return None
+        if hasattr(self.group, "vector_equivalence_witness"):
+            return self.group.vector_equivalence_witness(left, right)
+        if self.group.is_finite() is True:
+            # Arbitrary finite owned subgroups need not expose a bespoke
+            # vector-orbit method. Their complete element enumeration is
+            # itself an exact transporter decision, including nonnormal
+            # and user-generated subgroups of O(L).
+            return next((g for g in self.group if g(left) == right), None)
+        raise NotImplementedError(
+            "an infinite subgroup requires an exact vector-equivalence decision"
+        )
+
+    def equivalent(self, left, right):
+        return self.transporter(left, right) is not None
+
+    def __iter__(self):
+        if self.group is self.lattice.O() and int(self.square) == 0:
+            radical = _anisotropic_quotient_primitive_radical(self.lattice)
+            if radical is not None:
+                yield radical
+                return
+        frame = tuple(self.lattice.module_generators())
+        gram_rank = matrix(ZZ, [[int(self.lattice.b(x, y)) for y in frame] for x in frame]).rank()
+        if (self.group is self.lattice.O()
+                and not self.lattice.is_nondegenerate()
+                and (int(self.square) != 0 or gram_rank <= 1 or int(self.lattice.rank()) <= 2)):
+            from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+            yield from EichlerRecursion().exact_vector_orbit_iterator(
+                self.lattice, int(self.square), primitive_only=True)
+            return
+        if (self.group is self.lattice.O() and int(self.lattice.rank()) == 2
+                and self.lattice.is_nondegenerate() and not self.lattice.is_definite()
+                and int(self.square) != 0):
+            classes = self.lattice.binary_fixed_norm_representatives(int(self.square))
+            section = classes.section()
+            for orbit in classes:
+                representative = section(orbit)
+                if int(representative.content()) == 1:
+                    yield representative
+            return
+        known = []
+        for coordinates in _fixed_norm_candidate_coordinates(self.lattice, self.square):
+            if not any(coordinates):
+                continue
+            vector = sum(
+                (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, frame, strict=True)),
+                self.lattice.zero(),
+            )
+            if vector in self and not any(self.equivalent(representative, vector) for representative in known):
+                known.append(vector)
+                yield vector
+
+
+
+class CentralizerSubgroup:
+    r"""`C_{O(L)}(F_1, \dots, F_s)` for isometries `F_i` of `L`, with its exact vector and sublattice decisions.
+
+    Elements are elements of ``lattice.O()``; internally an isometry is the integer matrix whose
+    columns are the coordinates of the images of the module generators.
+    """
+
+    def __init__(self, lattice, isometries):
+        self.lattice = lattice
+        self.frame = tuple(lattice.module_generators())
+        self.labels = tuple(lattice.module_generating_set())
+        self.gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in self.frame] for x in self.frame])
+        self.isometries = tuple(isometries)
+        if any(F.domain() is not lattice or F.codomain() is not lattice for F in self.isometries):
+            raise ValueError("centralizer actions must be integral automorphisms of the original lattice")
+        self.matrices = tuple(self._matrix(F) for F in self.isometries)
+
+    def _matrix(self, element):
+        return matrix(ZZ, [[int(c) for c in element(g)] for g in self.frame]).transpose()
+
+    def _columns(self, vectors):
+        return matrix(ZZ, [[int(c) for c in v] for v in vectors]).transpose()
+
+    def _element(self, columns):
+        images = {
+            label: sum(
+                (self.lattice.scalar_multiple(int(c), g) for c, g in zip(columns.column(j), self.frame, strict=True)),
+                self.lattice.zero(),
+            )
+            for j, label in enumerate(self.labels)
+        }
+        return self.lattice.O()(images)
+
+    def __contains__(self, element):
+        if element.domain() is not self.lattice or element.codomain() is not self.lattice:
+            return False
+        g = self._matrix(element)
+        return g.transpose() * self.gram * g == self.gram and all(g * F == F * g for F in self.matrices)
+
+    def _orbit(self, vectors):
+        return CentralizerTupleOrbit(self.gram, self.matrices, self._columns(vectors))
+
+    def _finite_elements(self):
+        r"""Complete owned enumeration when O(L) is finite, including split binary forms."""
+        from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
+
+        return iter_exact_integral_orthogonal_isometries(self.lattice)
+
+    def _whole_generators(self):
+        r"""Exact integral generators of the entire simultaneous centralizer."""
+        identity = identity_matrix(ZZ, len(self.frame))
+        if all(F == identity or F == -identity for F in self.matrices):
+            from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+            return EichlerRecursion().orthogonal_group_generators(self.lattice)
+        from sage_indefinite_port.indefinite.commutant_groups import centralizer_generators
+        from sage_extensions.algebras.isometry_commutant import IsometryCommutant
+
+        return tuple(self._element(g) for g in centralizer_generators(
+            IsometryCommutant(self.gram, self.matrices)))
+
+    def tuple_equivalence_witness(self, left, right):
+        r"""Return `g \in C` with `g(left_i) = right_i`, or ``None`` as a proof that none exists."""
+        left, right = tuple(left), tuple(right)
+        if len(left) != len(right):
+            return None
+        if any(v.parent() is not self.lattice for v in (*left, *right)):
+            raise ValueError("equivariant marked vectors must belong to the original lattice")
+        if all(x == self.lattice.zero() for x in left):
+            # The identity belongs to every simultaneous centralizer and
+            # fixes every zero marking, even when the centralizer is
+            # infinite and the equivariant-marking constructor requires
+            # a nonzero column span.
+            return (self.lattice.O().identity()
+                    if all(y == self.lattice.zero() for y in right) else None)
+        if any(self.lattice.b(x, y) != self.lattice.b(u, v)
+               for i, x in enumerate(left) for j, y in enumerate(left)
+               for u, v in ((right[i], right[j]),)):
+            return None
+        if self._columns(left).transpose().elementary_divisors() != self._columns(right).transpose().elementary_divisors():
+            return None
+        if self.lattice.O().is_finite() is True:
+            # Exhaust the entire finite integral orthogonal group, not a
+            # bounded approximation to its centralizer. This also decides
+            # dependent and degenerate equivariant markings exactly.
+            return next((g for g in self._finite_elements()
+                         if g in self and all(g(x) == y for x, y in zip(left, right))), None)
+        identity = identity_matrix(ZZ, len(self.frame))
+        if all(F == identity or F == -identity for F in self.matrices):
+            # Scalar commuting actions impose no restriction beyond O(L).
+            # The exact marked transporter handles nonprimitive, dependent
+            # and nondegenerate frames without constructing an equivariant
+            # orbit for an artificial nontrivial centralizer.
+            from sage_indefinite_port.indefinite.effective_reduction import orthogonal_transporter
+
+            found = orthogonal_transporter(self.gram, self._columns(left), self._columns(right))
+        else:
+            found = self._orbit(left).transporter(self._columns(right))
+        if found is None:
+            return None
+        witness = self._element(found)
+        assert all(witness(x) == y for x, y in zip(left, right, strict=True))
+        return witness
+
+    def vector_equivalence_witness(self, left, right):
+        r"""Return `g \in C` with `g(left) = right`, or ``None`` as a proof that none exists."""
+        return self.tuple_equivalence_witness((left,), (right,))
+
+    def vector_stabilizer_generators(self, vector):
+        if vector == self.lattice.zero():
+            return self._whole_generators()
+        if self.lattice.O().is_finite() is True:
+            return tuple(g for g in self._finite_elements() if g in self and g(vector) == vector)
+        return tuple(self._element(g) for g in self._orbit((vector,)).stabilizer_generators())
+
+    def pointwise_stabilizer_generators(self, vectors):
+        vectors = tuple(vectors)
+        if all(v == self.lattice.zero() for v in vectors):
+            return self._whole_generators()
+        if self.lattice.O().is_finite() is True:
+            return tuple(g for g in self._finite_elements()
+                         if g in self and all(g(v) == v for v in vectors))
+        # Central scalar actions impose no extra commutation equations.
+        identity = identity_matrix(ZZ, len(self.frame))
+        scalar_actions = all(F == identity or F == -identity for F in self.matrices)
+        if scalar_actions and self.lattice.is_nondegenerate():
+            # Fixing a possibly dependent/nonprimitive tuple is exactly
+            # fixing the primitive saturation of its rational span.
+            # When that span is nondegenerate, finite residue gluing of
+            # its orthogonal complement gives the complete *integral*
+            # stabilizer generators, including the infinite kernel.
+            X = self._columns(vectors).transpose().saturation().transpose()
+            if X.ncols() and (X.transpose()*self.gram*X).det() != 0:
+                from sage_indefinite_port.indefinite.effective_reduction import (
+                    orthogonal_marking_stabilizer_generators,
+                )
+
+                return tuple(self._element(g) for g in
+                             orthogonal_marking_stabilizer_generators(self.gram, X))
+        return tuple(self._element(g) for g in self._orbit(tuple(vectors)).stabilizer_generators())
+
+    def setwise_stabilizer_generators(self, basis):
+        r"""Return generators of `\{g \in C : g \Lambda = \Lambda\}` for the sublattice `\Lambda` with ``basis``."""
+        basis = tuple(basis)
+        if all(v == self.lattice.zero() for v in basis):
+            return self._whole_generators()
+        if self.lattice.O().is_finite() is True:
+            source = matrix(ZZ, [[int(c) for c in v] for v in basis]) if basis else matrix(ZZ, 0, len(self.frame))
+            module = source.row_module()
+            return tuple(g for g in self._finite_elements() if g in self and
+                         (matrix(ZZ, [[int(c) for c in g(v)] for v in basis])
+                          if basis else matrix(ZZ, 0, len(self.frame))).row_module() == module)
+        # Scalar actions ±I commute with every integral isometry, so their
+        # simultaneous centralizer is the entire O(L). In particular the
+        # complete finite-gluing construction applies without replacing
+        # the centralizer by a smaller, generator-filtered subgroup.
+        identity = identity_matrix(ZZ, len(self.frame))
+        scalar_actions = all(F == identity or F == -identity for F in self.matrices)
+        if scalar_actions and self.lattice.is_nondegenerate():
+            X = self._columns(basis)
+            if X.rank() and (X.transpose()*self.gram*X).rank() == X.rank():
+                from sage_indefinite_port.indefinite.effective_reduction import (
+                    orthogonal_marking_setwise_stabilizer_generators,
+                )
+
+                return tuple(self._element(g) for g in
+                             orthogonal_marking_setwise_stabilizer_generators(self.gram, X))
+        return tuple(self._element(g) for g in self._orbit(tuple(basis)).setwise_stabilizer_generators())

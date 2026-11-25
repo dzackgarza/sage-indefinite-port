@@ -96,12 +96,12 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Extraction**: `uv run references/extract/allcock_rank3.py`. It asserts that every simple root has positive norm and gives an integral reflection. It also checks that every Gram matrix appears in `reflective_forms_8821.json` with the same number of simple roots, which confirms that `ListReflect`'s rank-3 part is exactly this classification.
 
-### Generators of O^+(L) for a det -155 Lattice (Mertens)
+### Generators of the Negative-Cone Sheet Stabilizer for a det -155 Lattice (Mertens)
 
 - **File**: `tests/fixtures/mertens_generators.json`
 
 - **Source**: Mertens, arXiv:1303.3478, Example `exComplete` (vendored TeX). For
-  $A = \begin{pmatrix}-1&-3&-1\\-3&14&8\\-1&8&11\end{pmatrix}$ (det $-155$, signature (2,1)) the paper lists the stabilizers of its 9 $D$-perfect points (4 nontrivial) and 16 connecting elements. By its theorem (line 176) these generate $\Omega$, the stabilizer of the positive cone in $\operatorname{Aut}_{\mathbb Z}(A) = \{g : gAg^T = A\}$. So $\Omega = O^+(L)$ and $O(L) = \langle\Omega, -I\rangle$.
+  $A = \begin{pmatrix}-1&-3&-1\\-3&14&8\\-1&8&11\end{pmatrix}$ (det $-155$, signature (2,1)) the paper lists the stabilizers of its 9 $D$-perfect points (4 nontrivial) and 16 connecting elements. By its theorem (line 176), they generate $\Omega$, the stabilizer of a component of the **negative-norm** cone $\{v:vAv^T<0\}$ (source lines 259–269). Consequently $O(L)=\langle\Omega,-I\rangle$, but **$\Omega\ne L.O_\mathrm{plus}$** under the preamble's definition $O_\mathrm{plus}(L)=\ker\operatorname{sn}_{-b/2,\mathbb R}$: the published connecting element $c_{1,1}$ is reflection in $v=(30,-5,10)$ with $b(v,v)=50>0$, hence real-spinor sign $-1$, whereas $e_1$ and $e_1c_{1,1}$ have square $-1$ and mutual pairing $-26<0$, so $c_{1,1}$ preserves the negative-cone sheet. Conflating those distinct index-two groups would invalidate integral group-generation tests.
 
 - **Note**: the $D$-perfect points and neighbour counts are Mertens's construction. They are recorded as published, not as this port's perfect-domain counts.
 
@@ -219,9 +219,9 @@ This document records the exact provenance, source files, authors, publications,
 
 - **File**: `tests/fixtures/enriques_classical_indices.json`
 
-- **Source**: arXiv:2302.01679, subsection "Classical cases" (vendored TeX). The paper derives $[O^+(N):\Gamma_h]$ from Barth--Peters's counts of projective models for degree 2 (Case 1), 6 (Case 4) and 10 (Case 7), and then $[\Gamma_h:\tilde O^+(N)] = |O^+(\mathbb F_2^{10})|/[O^+(N):\Gamma_h]$.
+- **Source**: Barth--Peters, *Automorphisms of Enriques Surfaces*, Invent. Math. **73** (1983), Theorem 3.9, p. 398 (author-hosted primary PDF `https://www-fourier.univ-grenoble-alpes.fr/~peters/Articles/pub11.pdf`), and Dutour Sikirić--Hulek, *Moduli of polarised Enriques surfaces — Computational aspects*, J. London Math. Soc. **109** (2024), §3.7.1 (`https://doi.org/10.1112/jlms.12828`). The vendored arXiv:2302.01679 prepublication TeX is independently checked for its mismatch. The final publication derives $[O^+(N):\Gamma_h]$ from counts of projective models for degrees 2 (Case 1), 6 (Case 4), and 10 (Case 7), and then $[\Gamma_h:\tilde O^+(N)] = |O^+(\mathbb F_2^{10})|/[O^+(N):\Gamma_h]$.
 
-- **Consistency**: for degrees 6 and 10 the displayed quotient, its stated value and Table 1's $|\bar\Gamma_h|$ agree; the script asserts this. For degree 2 the text is not consistent. It states $[O^+(N):\Gamma_h] = 2^7\cdot7\cdot31$ and $[\Gamma_h:\tilde O^+(N)] = 2^{14}\cdot3^5\cdot5^2\cdot7\cdot31$, while the quotient of the displayed numbers is $2^{14}\cdot3^5\cdot5^2\cdot17$. Table 1 gives $2^{14}\cdot3^5\cdot5^2\cdot7$, i.e. index $2^7\cdot17\cdot31$. The record (`inconsistent_with_table`) carries the table-derived values unprefixed and the stated ones as `stated_*`.
+- **Resolved prepublication misprint**: the old arXiv TeX incorrectly gives degree-two index $2^7\cdot7\cdot31$ and also miscomputes its quotient. Barth--Peters's original Theorem 3.9 and Dutour Sikirić--Hulek's **final published version** both give the correct index $2^7\cdot17\cdot31$, with quotient $2^{14}\cdot3^5\cdot5^2\cdot7$ agreeing with Table 1. All three degree 2/6/10 records are now `consistent_with_table`; the degree-two record retains an explicit `prepublication_erratum` locator so that the old source discrepancy is not hidden or reused as an oracle.
 
 - **Extraction**: `uv run references/extract/dh23_classical.py`.
 
@@ -290,19 +290,20 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Replaced**: the previous `centralizer_involutions.json` held derived identities, not data.
 
-### Indefinite Isometry Pairs (Indefinite.jl and Hecke)
+### Indefinite Isometry Pairs (Hecke)
 
 - **File**: `tests/fixtures/indefinite_isometry_pairs.json`
 
-- **Sources**: `references/vendor/Indefinite.jl@374a5ebb/TestLor/` (three pairs that `test_gap.jl` tests for equivalence: $U\oplus3\langle-1\rangle$, $U\oplus E_8(-1)$, $U\oplus U(2)\oplus3\langle-2\rangle$), and `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl`, testset "isometry testing":
+- **Source**: `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl`, testset "isometry testing" (lines 712–744):
   - $U(2)\oplus A_2$ with the recorded witness $u$;
   - $U$ against $U(2)$ (non-isometric);
   - a recorded isometric $3\times3$ pair.
 
-- **Certificates** (checked by the extraction, independently of the port):
-  - a verified witness $W\,G_1\,W^T = G_2$;
-  - or equal genera with no spinor generators, which for indefinite rank $\ge 3$ means one isometry class (Eichler), computed with Sage's genus code;
+- **Certificates** (checked by extraction independently of the port):
+  - an explicitly recorded unimodular witness $W\,G_1\,W^T = G_2$;
   - or, for the non-isometric pair, different determinants.
+
+- **Excluded unsourced expectations**: `Indefinite.jl@374a5ebb/test_gap.jl` (lines 34–52) contains matrix pairs `U_I3`, `U_E8`, and `U_2U_2I3` with all three equivalence switches set to `false`. They are inputs, **not upstream assertions of isometry**. The former extraction invented `isometric: true` by performing a separate Sage genus computation and incorrectly represented those three derived conclusions as upstream test oracles. They are not accepted here; a new independent mathematical source and review would be required.
 
 - **Extraction**: `references/extract/isometry_pairs.py`, run under Sage's Python.
 

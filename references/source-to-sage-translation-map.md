@@ -1378,7 +1378,7 @@ R = L.reduced_presentation()
 
 No reduced Gram matrix should be detached from the isometry relating it to L.
 
-## 11.2 Do not expose `ApproxCanonicalIndefiniteForm`
+## 11.2 `ApproxCanonicalIndefiniteForm` is an approximate presentation
 
 `IndefApproxCanonical.h`:
 
@@ -1390,14 +1390,11 @@ No reduced Gram matrix should be detached from the isometry relating it to L.
 
 - orders blocks by coefficient-size heuristics.
 
-This is not a canonical form for integral-lattice isometry.
-Retain it only as a private cache-bucketing and matrix-size heuristic:
+This is not a canonical form for integral-lattice isometry. The public
+consumer is `L.approximate_canonical_presentation()`, which retains the
+isometry of its `LatticeReduction`.
 
-```python
-L.presentation_bucket_key()
-```
-
-An exact equivalence test is still mandatory after a key collision.
+Two different results do not certify nonisometry: an exact equivalence test is still mandatory.
 
 ## 11.3 Generalize `DatabaseResultEquiStab` to an isometry-groupoid cache
 
@@ -1717,9 +1714,9 @@ its general parameters, and record any demonstrated source defect at that
 routine. A source warning requires source analysis and mathematical evidence;
 it does not authorize a blanket rank restriction on the port's operations.
 
-Translate the general induction once. Use lines, planes, higher-rank subspaces
-and complete or partial flags to verify its branches. The current rank-two
-public limit leaves the source translation incomplete under #18/#44.
+Use the general rank-extension induction for all these operations. Verify
+lines, planes, higher-rank subspaces and complete or partial flags through
+their public marking categories under #18/#44.
 
 * * *
 

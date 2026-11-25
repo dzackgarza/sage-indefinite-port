@@ -182,8 +182,8 @@
     ]
   },
   "component_preserving_group": {
-    "internal_name": "O_component",
-    "construction": "kernel(component_character)",
+    "internal_name": "O_plus",
+    "construction": "kernel(normalized_real_spinor_character)",
     "source_notation": "O^+(N)",
     "counts": {
       "line_orbits": 2,
@@ -332,8 +332,8 @@
     }
   },
   "stable_component_preserving_group": {
-    "internal_name": "O_plus_component",
-    "construction": "intersection(kernel(discriminant_representation), kernel(component_character))",
+    "internal_name": "stable_O_plus",
+    "construction": "intersection(kernel(discriminant_representation), kernel(normalized_real_spinor_character))",
     "source_notation": "\\widetilde O^+(N)",
     "counts": {
       "line_orbits": 528,

@@ -35,7 +35,9 @@ from __future__ import annotations
 
 from math import gcd
 
-from sage.all import QQ, ZZ, matrix
+from sage.matrix.constructor import matrix
+from sage.rings.rational_field import QQ
+from sage.rings.integer_ring import ZZ
 
 __all__ = [
     "adjacent_incidences",
@@ -66,15 +68,23 @@ def incidence_rank_certificate(rows, wanted: int) -> tuple[tuple[int, ...], tupl
         return (), ()
     if len(rows) < wanted or not rows:
         return None
-    integer_matrix = matrix(ZZ, rows)
-    if integer_matrix.rank() < wanted:
-        return None
-    pivot_columns = tuple(int(column) for column in integer_matrix.pivots())[:wanted]
+    # A positive rank certificate needs only `wanted` independent rows,
+    # not a matrix containing every incident ray. Grow the exact prefix
+    # geometrically until its transposed pivots certify enough independent
+    # rows, or until every input row has been examined. Thus a negative
+    # answer still examines the complete incidence, without a search bound.
+    prefix = min(len(rows), max(wanted, 16))
+    while True:
+        integer_matrix = matrix(ZZ, rows[:prefix])
+        pivot_rows = tuple(int(row) for row in integer_matrix.transpose().pivots())[:wanted]
+        if len(pivot_rows) == wanted:
+            break
+        if prefix == len(rows):
+            return None
+        prefix = min(len(rows), 2 * prefix)
+    restricted = integer_matrix.matrix_from_rows(pivot_rows)
+    pivot_columns = tuple(int(column) for column in restricted.pivots())[:wanted]
     if len(pivot_columns) < wanted:
-        return None
-    restricted = integer_matrix.matrix_from_columns(pivot_columns)
-    pivot_rows = tuple(int(row) for row in restricted.transpose().pivots())[:wanted]
-    if len(pivot_rows) < wanted:
         return None
     square = integer_matrix.matrix_from_rows_and_columns(pivot_rows, pivot_columns)
     if square.det() == 0:
@@ -152,9 +162,23 @@ def is_facet_certificate(normal, incidence, ray_rows) -> bool:
     ``n - 1`` (the upper bound is free, so only the certified lower bound enters).
     """
     normal = tuple(int(entry) for entry in normal)
-    dimension = len(normal)
-    ray_rows = _integer_rows(ray_rows)
+    # Retain the ray sequence once. Pairings below convert every entry to
+    # an exact integer, and the incidence rank check converts its own rows;
+    # rebuilding every integer row first duplicates the full cone scan.
+    ray_rows = tuple(ray_rows)
     values = [sum(a * int(b) for a, b in zip(normal, row, strict=True)) for row in ray_rows]
+    return _is_facet_certificate_from_pairings(normal, incidence, ray_rows, values)
+
+
+def _is_facet_certificate_from_pairings(normal, incidence, ray_rows, values) -> bool:
+    r"""Certify using the exact pairings computed for these rows and this normal.
+
+    Both callers obtain the values by evaluating the normal on every ray.
+    The walk retains the result of ``orient_facet_normal``; the independent
+    public certificate computes it directly. Rank, content and the complete
+    zero set are checked here in both cases.
+    """
+    dimension = len(normal)
     zeros = frozenset(index for index, value in enumerate(values) if value == 0)
     if zeros != frozenset(int(index) for index in incidence):
         return False

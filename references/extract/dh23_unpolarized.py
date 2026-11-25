@@ -110,8 +110,13 @@ def main() -> None:
             "gram": gram,
         },
         "component_preserving_group": {
-            "internal_name": "O_component",
-            "construction": "kernel(component_character)",
+            # DH23, §1, source lines 301--302: O^+(N) preserves a connected
+            # component of the TYPE IV domain and is explicitly the kernel
+            # of the normalized real spinor sign. The positive vector cone
+            # itself is connected in signature (2,10); its Lorentzian
+            # component_character (defined only in (1,n)) does not exist.
+            "internal_name": "O_plus",
+            "construction": "kernel(normalized_real_spinor_character)",
             "source_notation": "O^+(N)",
             "counts": {"line_orbits": 2, "plane_orbits": 2},
             "line_representatives": [
@@ -139,8 +144,8 @@ def main() -> None:
             },
         },
         "stable_component_preserving_group": {
-            "internal_name": "O_plus_component",
-            "construction": "intersection(kernel(discriminant_representation), kernel(component_character))",
+            "internal_name": "stable_O_plus",
+            "construction": "intersection(kernel(discriminant_representation), kernel(normalized_real_spinor_character))",
             "source_notation": "\\widetilde O^+(N)",
             "counts": {"line_orbits": 528, "plane_orbits": 24242, "flag_orbits": 72199},
             "source": source("1168-1170; flag_orbits from table_subgroups2 case 87, line 814"),
