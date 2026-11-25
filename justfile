@@ -1,8 +1,3 @@
-# ai-review-ci SageMath QC delegation justfile.
-# The central implementation lives in ~/ai-review-ci/justfiles/sage.just.
-# Public recipes delegate to that central justfile while preserving this repo as the caller root.
-
-# ai-review-ci contract variables consumed by doctor and workflow installers.
 ai_review_ci_schema_version := "1"
 ai_review_ci_profile := "sage"
 ai_review_ci_ref := "main"
@@ -10,29 +5,27 @@ ai_review_ci_release_channel := "main"
 ai_review_ci_workflow_template_version := "1"
 ai_review_ci_local_delegation := "global-justfile"
 ai_review_ci_default_branch := "main"
-# List available recipes.
+[doc("List available recipes.")]
 default:
     @just --list
 
-# Run ambient SageMath QC through the central implementation.
+[doc("Run ambient SageMath QC through the central implementation.")]
 ambient:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . ambient
 
-# Run commit-tier SageMath QC through the central implementation.
+[doc("Run commit-tier SageMath QC through the central implementation.")]
 test-commit:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-commit
 
-# Syntax checks on outgoing commits (not a full SageMath test run).
+[doc("Syntax checks on outgoing commits (not a full SageMath test run).")]
 test-push:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-push
 
-# Run CI acceptance QC through the central implementation.
+[doc("Run CI acceptance QC through the central implementation.")]
 test-ci:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-ci
 
-# Inner mathematical feedback loop: run exactly one public regression node.
-# A bare file or -k selection is deliberately rejected: neither identifies
-# the smallest independently proved mathematical obligation.
+[doc("Inner mathematical feedback loop: run exactly one public regression node.")]
 test-node node:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -41,14 +34,11 @@ test-node node:
         tests/*::* ) ;;
         *) echo "Expected one explicit test node: tests/path.py::test_claim[parameter]" >&2; exit 2 ;;
     esac
-    # This Sage launcher is a container wrapper and does not forward
-    # arbitrary environment variables or additional argv. Serialize only
-    # the selected node as a quoted Python string literal.
     node_literal="$(python3 -c 'import json, sys; print(json.dumps(sys.argv[1]))' "$node")"
     export PYTHONPATH="$PWD/src:$PWD${PYTHONPATH:+:$PYTHONPATH}"
     "${SAGE_BIN:-sage}" -c "import sage.all, sys; from ci.one_node import run; sys.exit(run($node_literal))"
 
-# Run the README example as a doctest; it is the smallest acceptance.
+[doc("Run the README example as a doctest; it is the smallest acceptance.")]
 readme-example:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -59,36 +49,23 @@ readme-example:
     fi
     PYTHONPATH=src "$sage_python" -m doctest README.md
 
-# The acceptance workflow's jobs run inside the Sage image named in
-# .github/workflows/acceptance.yml; these recipes are its only steps.
 ci_dir := ".tmp/ci"
 
-# CI only: install the acceptance dependencies into the Sage image's interpreter.
+[doc("CI only: install the acceptance dependencies into the Sage image's interpreter.")]
 ci-provision-sage:
     #!/usr/bin/env bash
     set -euo pipefail
-    # The image's MAXIMA_PREFIX names the version root, but its installed
-    # Maxima packages live one level below that root in share/.  maxima_lib
-    # appends package names directly to MAXIMA_PREFIX, so correct the path
-    # before Sage initializes ECL and preserve it for later workflow steps.
     if [[ -n "${MAXIMA_PREFIX:-}" && -d "${MAXIMA_PREFIX}/share/to_poly_solve" && ! -d "${MAXIMA_PREFIX}/to_poly_solve" ]]; then
         export MAXIMA_PREFIX="${MAXIMA_PREFIX}/share"
     fi
     if [[ -n "${MAXIMA_PREFIX:-}" && -n "${GITHUB_ENV:-}" ]]; then
         printf 'MAXIMA_PREFIX=%s\n' "$MAXIMA_PREFIX" >> "$GITHUB_ENV"
     fi
-    # Sage is a meson-python editable install that rebuilds on import; print
-    # that rebuild, and fail here if Sage does not import.
     export MESONPY_EDITABLE_VERBOSE=1
     "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require(); from sage.interfaces.maxima_lib import maxima_lib; assert str(maxima_lib.eval("1+1")) == "2"'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail "pytest-timeout>=2.4" "pytest-reportlog>=1.0" PyNormaliz "pycddlib>=3.0.2"
     "$sage_python" -c 'import cdd.gmp'
-    # The acceptance contract is against the shared-library revision declared in
-    # pyproject.toml; read it from there so the packaging pin and the CI pin
-    # cannot drift apart. The library is sage-extensions: the pre-move
-    # dzack_research.preamble.categories modules no longer exist.
-    # Keep the clone shallow and fetch the exact provider commit explicitly.
     mkdir -p {{ci_dir}}
     git clone --quiet --depth 1 https://github.com/dzackgarza/sage-extensions {{ci_dir}}/sage-extensions
     provider_rev="$(sed -n 's|.*sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
@@ -98,33 +75,21 @@ ci-provision-sage:
     fi
     git -C {{ci_dir}}/sage-extensions fetch --quiet --depth 1 origin "$provider_rev"
     git -C {{ci_dir}}/sage-extensions -c advice.detachedHead=false checkout --quiet "$provider_rev"
-    # uv, not pip: sage-extensions declares tree-sitter-sage and sage-stubs only
-    # in [tool.uv.sources], which pip ignores.
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    # The image owns sage-julia-bridge and the other Sage projects, except that
-    # the bridge itself is not installed in this image. Install it separately:
-    # its only dependency is pydantic, and it does not re-resolve the image's
-    # conflicting tree-sitter-sage sources.
     uv pip install --quiet --python "$sage_python" "sage-julia-bridge @ git+https://github.com/dzackgarza/sage-julia-bridge"
-    # Installing the library with dependency resolution re-resolves the image's
-    # already-installed editable projects and rejects their different
-    # tree-sitter-sage source URLs. Install the exact provider checkout without
-    # replacing the image's dependency graph.
     uv pip install --quiet --python "$sage_python" --no-deps -e {{ci_dir}}/sage-extensions
     uv pip install --quiet --python "$sage_python" --no-deps -e .
     git clone --quiet --depth 1 https://github.com/dzackgarza/ai-review-ci {{ci_dir}}/ai-review-ci
 
-# CI only: the bridge's Julia environment, instantiated and precompiled into the default depot.
+[doc("CI only: the bridge's Julia environment, instantiated and precompiled into the default depot.")]
 ci-provision-julia:
     #!/usr/bin/env bash
     set -euo pipefail
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
-    # The worker sees both its JSON project and the shared Oscar project.
-    # Instantiate each selected manifest before exercising the same imports.
     JULIA_PKG_PRECOMPILE_AUTO=0 julia --project="$env_dir" -e 'using Pkg; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); Pkg.instantiate(); Pkg.activate(dirname(bridge_project)); Pkg.instantiate(); using Oscar, JSON'
 
-# CI only: run one long true witness from witnesses/ against the pinned provider.
+[doc("CI only: run one long true witness from witnesses/ against the pinned provider.")]
 ci-witness file test:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -140,7 +105,7 @@ ci-witness file test:
         -p ci.test_budgets --timeout-method=signal --report-log="$out/report.jsonl" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
     exit "${PIPESTATUS[0]}"
 
-# CI only: key Julia packages by the bridge project and shared image lock.
+[doc("CI only: key Julia packages by the bridge project and shared image lock.")]
 ci-julia-key:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -148,20 +113,13 @@ ci-julia-key:
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
     julia --startup-file=no --project="$env_dir" -e 'using Pkg, SHA; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); shared_project = Base.active_project(); inputs = vcat(read(bridge_project), read(shared_project), read(joinpath(dirname(shared_project), "Manifest.toml"))); println("julia-depot-" * bytes2hex(sha256(inputs))[1:16])'
 
-# CI only: run job {{shard}} of the Acceptance plan for corpus {{selection}} (tier1, tier2, full or probe);
-# results land in .tmp/ci/results/<family>-<shard>.
+[doc("CI only: run job {{shard}} of the Acceptance plan for corpus {{selection}} (tier1, tier2, full or probe);")]
 ci-acceptance family shard shards selection:
     #!/usr/bin/env bash
     set -euo pipefail
     out={{ci_dir}}/results/{{family}}-{{shard}}
     mkdir -p "$out"
     git rev-parse HEAD > "$out/commit"
-    # The provider checkout is created by `ci-provision-sage` at
-    # {{ci_dir}}/sage-extensions, at the revision pyproject.toml pins. The artifact keeps its
-    # historical name `research_commit` because ci/acceptance_summary.py and its tests read that
-    # file; only the path below is the live one. Record the revision actually checked out and
-    # refuse a checkout that drifted from the pin, so the provenance the summary reports is the
-    # provenance the tests ran against.
     provider_dir={{ci_dir}}/sage-extensions
     if [ ! -d "$provider_dir/.git" ]; then
         echo "ERROR: no provider checkout at $provider_dir; run 'just ci-provision-sage' first" >&2
@@ -181,7 +139,6 @@ ci-acceptance family shard shards selection:
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
     export ACCEPTANCE_CORPUS={{selection}}
-    # ci/plan_acceptance.py packs the corpus's nodes into jobs by their derived budgets.
     mapfile -t tests < <(python3 ci/plan_acceptance.py nodes {{selection}} {{shard}})
     "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" 2>&1 | tee "$out/log"
     exit "${PIPESTATUS[0]}"
