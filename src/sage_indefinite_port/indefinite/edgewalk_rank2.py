@@ -81,9 +81,12 @@ class _OrientedBinaryCycle:
             raise ValueError("Promised requires an M-supplement outside the future hyperbola's convex hull")
         while True:
             middle = right[0] + left[0], right[1] + left[1]
-            # Allcock's pinned Promised algorithm tests the pairing with
-            # the right endpoint. Testing the left endpoint can return a
-            # vector whose square exceeds the prescribed bound.
+            # The pinned C++ tests the pairing with the *right* endpoint
+            # (two_dim_lorentzian.h:124, scal_mr). Allcock's printed step
+            # [Go right?] (main.tex:1501) tests m.l instead, and that variant
+            # returns a vector above the prescribed bound on q = -3x^2-6xy-y^2,
+            # r0 = (-1,1), M = 2: it emits (-7,4) with q = 5. The C++ reading
+            # is the one the paper's own proof uses, so follow the source.
             if self.pairing(middle, middle) <= bound or self.pairing(middle, right) < 0:
                 left = middle
                 continue
@@ -93,7 +96,10 @@ class _OrientedBinaryCycle:
                 return left, (-right[0], -right[1])
             # Allcock, proof following Algorithm Promised and the
             # performance recurrence: the left sector has basis (m,l).
-            # The printed (m,r) in step [Go left] contradicts both.
+            # The printed (m,r) in step [Go left] (main.tex:1508) contradicts
+            # both the proof and the pinned C++ (two_dim_lorentzian.h:134,
+            # Promised(G, M, m, l)); with it the returned period has
+            # determinant -1 on the specimen above.
             right = middle
 
     def characteristic(self, right: _Point, left: _Point) -> tuple[int, int, int]:
