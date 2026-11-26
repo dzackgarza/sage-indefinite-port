@@ -1897,14 +1897,18 @@ class _Edgewalk:
             supplied = self.supplied_initial_vertex
             if supplied is None:
                 initial = self.initial_vertex()
-            elif isinstance(supplied, tuple):
-                point, roots = supplied
-                initial = _Vertex(point, tuple(roots))
             else:
-                if supplied.parent() is not self.lattice or self.norm(supplied) > 0:
+                # edgewalk.h:2100-2143 FileVertex / FileVertexRoots. A bare
+                # vertex has its simple cone computed by get_simple_cone,
+                # including the cusp route for a null ray and the check that
+                # the perpendicular roots are a full-rank corner (:1848-1873);
+                # a (vertex, roots) pair is taken as given, exactly as the
+                # source trusts FileVertexRoots (:2100-2110).
+                if not isinstance(supplied, tuple) and (
+                    supplied.parent() is not self.lattice or self.norm(supplied) > 0
+                ):
                     raise ValueError("the starting vertex must be a nonspacelike lattice vector")
-                initial = (self.initial_isotropic_vertex(supplied) if self.norm(supplied) == 0
-                           else _Vertex(supplied, self.ordinary_vertex_roots(supplied)))
+                initial = self.prescribed_vertex(supplied)
         if initial is not None and (
             initial.generator.parent() is not self.lattice
             or self.norm(initial.generator) > 0
