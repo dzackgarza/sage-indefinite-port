@@ -68,13 +68,6 @@ ci-provision-sage:
     "$sage_python" -c 'import cdd.gmp'
     mkdir -p {{ci_dir}}
     git clone --quiet --depth 1 https://github.com/dzackgarza/sage-extensions {{ci_dir}}/sage-extensions
-    provider_rev="$(sed -n 's|.*sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
-    if [ -z "$provider_rev" ]; then
-        echo "ERROR: pyproject.toml declares no sage-extensions revision to provision" >&2
-        exit 1
-    fi
-    git -C {{ci_dir}}/sage-extensions fetch --quiet --depth 1 origin "$provider_rev"
-    git -C {{ci_dir}}/sage-extensions -c advice.detachedHead=false checkout --quiet "$provider_rev"
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     uv pip install --quiet --python "$sage_python" "sage-julia-bridge @ git+https://github.com/dzackgarza/sage-julia-bridge"
     uv pip install --quiet --python "$sage_python" --no-deps -e {{ci_dir}}/sage-extensions
@@ -89,7 +82,7 @@ ci-provision-julia:
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
     JULIA_PKG_PRECOMPILE_AUTO=0 julia --project="$env_dir" -e 'using Pkg; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); Pkg.instantiate(); Pkg.activate(dirname(bridge_project)); Pkg.instantiate(); using Oscar, JSON'
 
-[doc("CI only: run one long true witness from witnesses/ against the pinned provider.")]
+[doc("CI only: run one long true witness from witnesses/ against the provider at the head of its main branch.")]
 ci-witness file test:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -126,15 +119,6 @@ ci-acceptance family shard shards selection:
         exit 1
     fi
     provider_head="$(git -C "$provider_dir" rev-parse HEAD)"
-    pinned_rev="$(sed -n 's|.*sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
-    if [ -z "$pinned_rev" ]; then
-        echo "ERROR: pyproject.toml declares no sage-extensions revision" >&2
-        exit 1
-    fi
-    if [ "$provider_head" != "$pinned_rev" ]; then
-        echo "ERROR: provider checkout $provider_head does not match the pyproject.toml pin $pinned_rev" >&2
-        exit 1
-    fi
     printf '%s\n' "$provider_head" > "$out/research_commit"
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"

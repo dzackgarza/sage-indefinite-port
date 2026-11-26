@@ -1047,7 +1047,7 @@ source = { git = "https://github.com/dzackgarza/sage-categories?subdirectory=nat
 [[package]]
 name = "sage-extensions"
 version = "0.1.0"
-source = { git = "https://github.com/dzackgarza/sage-extensions?rev=8bee22ac0c6934f4b09675286dd589d22fd18b0e#8bee22ac0c6934f4b09675286dd589d22fd18b0e" }
+source = { git = "https://github.com/dzackgarza/sage-extensions#e2803c36a8a316337071ba90551ce770d36b2b86" }
 dependencies = [
     { name = "networkx" },
     { name = "sage-categories" },
@@ -1080,7 +1080,7 @@ dev = [
 requires-dist = [
     { name = "pycddlib", specifier = ">=3.0.2" },
     { name = "pynormaliz" },
-    { name = "sage-extensions", git = "https://github.com/dzackgarza/sage-extensions?rev=8bee22ac0c6934f4b09675286dd589d22fd18b0e" },
+    { name = "sage-extensions", git = "https://github.com/dzackgarza/sage-extensions" },
 ]
 
 [package.metadata.requires-dev]
@@ -1096,7 +1096,7 @@ dev = [
 [[package]]
 name = "sage-julia-bridge"
 version = "0.1.0"
-source = { git = "https://github.com/dzackgarza/sage-julia-bridge#421f5be434c6072882bd540d575fdb46aa42fb48" }
+source = { git = "https://github.com/dzackgarza/sage-julia-bridge#d3984b6e8be32576c36da05fa1b78f2a9ef63998" }
 dependencies = [
     { name = "pydantic" },
 ]
@@ -1104,7 +1104,7 @@ dependencies = [
 [[package]]
 name = "sage-stubs"
 version = "10.7.0"
-source = { git = "https://github.com/dzackgarza/sage-stubs.git?rev=main#49780ceabc506ee15bd00a6b33f681731beec701" }
+source = { git = "https://github.com/dzackgarza/sage-stubs.git?rev=main#38ecb94244a45dbc041ea583629b48ea5be1e717" }
 
 [[package]]
 name = "scipy"
@@ -1269,7 +1269,7 @@ wheels = [
 [[package]]
 name = "tree-sitter-sage"
 version = "0.5.1"
-source = { git = "https://github.com/dzackgarza/tree-sitter-sage#9cc82919f6df30cce117c664a52e27fee233b016" }
+source = { git = "https://github.com/dzackgarza/tree-sitter-sage#a8febc1632b3fad8bc2ddb416a5e1ba8547a897c" }
 dependencies = [
     { name = "tree-sitter" },
 ]
@@ -1298,7 +1298,7 @@ wheels = [
 [[package]]
 name = "vinal"
 version = "0.1.0"
-source = { git = "https://github.com/dzackgarza/vinal#1b90f3141b329f914d5c85f1260522efe19794c6" }
+source = { git = "https://github.com/dzackgarza/vinal#282903b3223657564d0fe271268e6c4d1b5d92d8" }
 dependencies = [
     { name = "numpy" },
     { name = "scipy" },

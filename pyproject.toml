@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Port of indefinite lattices and orthogonal groups to SageMath."
 requires-python = ">=3.14"
 dependencies = [
-    "sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@8bee22ac0c6934f4b09675286dd589d22fd18b0e",
+    "sage-extensions @ git+https://github.com/dzackgarza/sage-extensions",
     "PyNormaliz",
     "pycddlib>=3.0.2",
 ]
@@ -33,8 +33,6 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-# `slow` marks work that exercises the costly non-integral correction branch of `pointed_isometry` (about a
-# minute per transport). Nothing is excluded by default; a rapid iteration can deselect with `-m "not slow"`.
 markers = [
     "slow: exercises the costly non-principal branch of pointed_isometry; deselect with -m 'not slow'",
 ]
