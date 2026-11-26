@@ -672,6 +672,14 @@ def _extensions(
     gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(QQ)
     pairings = coordinates * gram * coordinates.T
     root_norms = tuple(pairings[i, i] for i in range(len(roots)))
+    # The source's candidate computation forms w = ScalMatInv * l_scal
+    # (coxeter_dynkin.h:2268), so it has no value unless the roots' Gram
+    # matrix is invertible, and it labels a bond by scal^2/(q_i q_j)
+    # (coxeter_dynkin.h:2112-2126) while forcing the sign negative
+    # (coxeter_dynkin.h:2258). On the walk's domain the walls are simple
+    # roots of a chamber: positive definite with nonpositive pairings.
+    # Neither condition can reject an input on which the source has a
+    # defined value.
     if not pairings.is_positive_definite():
         raise ValueError(f"the roots {roots} span a form that is not positive definite: they are not the walls through a point of hyperbolic space")
     inverse = pairings.inverse()
