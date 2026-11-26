@@ -1950,8 +1950,12 @@ class _Edgewalk:
             fixed = self.common_fixed_space(invariant, action)
             if fixed is None:
                 nonreflective = True
-                if self.early_termination:
-                    nonreflective_reason = "The generated chamber-isometry group has no nonzero common fixed timelike vector"
+                # Record the exact certificate whether or not the walk stops
+                # here: with early_termination false the source keeps walking
+                # and prints no is_reflective field (edgewalk.h:1311-1316),
+                # but a report that returns no simple roots and no reason
+                # cannot distinguish "no roots" from "not computed".
+                nonreflective_reason = "The generated chamber-isometry group has no nonzero common fixed timelike vector"
                 return not self.early_termination
             invariant = fixed
             return True
