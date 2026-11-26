@@ -383,6 +383,11 @@ class _Edgewalk:
                       else tuple(int(norm) for norm in lattice.possible_root_lengths()))
         self.early_termination = bool(early_termination)
         self.supplied_initial_vertex = initial_vertex
+        # edgewalk.h:1985-1999 raise NonReflectivityException from
+        # get_simple_cone; StandardEdgewalkAnalysis (edgewalk.h:2175-2183)
+        # reports the reason. A starting corner that certifies nonreflectivity
+        # therefore has to carry that reason to the report.
+        self.initial_nonreflectivity_reason: str | None = None
         self.identity_key = tuple(_key(generator) for generator in coordinate_basis)
         # The congruence matrix and its homogeneous integral kernel in
         # Get_DataMapping depend on the root norm, not the affine coset.
@@ -533,13 +538,17 @@ class _Edgewalk:
                 projected_roots.append((projected, lifted))
 
         if not projected_roots:
-            # get_simple_cone: an empty projected root system certifies
-            # non-reflectivity, rather than an arithmetic failure.
+            # get_simple_cone raises NonReflectivityException here
+            # (edgewalk.h:1985-1988) and StandardEdgewalkAnalysis turns it
+            # into the report's reason (edgewalk.h:2175-2183): "The list of
+            # vectors is empty. Cannot be reflective."
+            self.initial_nonreflectivity_reason = "list of roots is empty"
             return None
         projected_rows = tuple(projected for projected, _root in projected_roots)
         if matrix(SageQQ, projected_rows).rank() != rank:
-            # edgewalk.h: the projected roots must span the rank-(n-2)
-            # quotient for a reflective cusp.
+            # edgewalk.h:1990-1999: rnk < G.rows() - 2 means the roots at the
+            # cusp cannot be a reflective cusp's simple system.
+            self.initial_nonreflectivity_reason = "the rank of the roots is too low"
             return None
 
         # GetFacetOneDomain_ListIdx (lorentzian_linalg.h:267–339):
@@ -1905,7 +1914,10 @@ class _Edgewalk:
         ):
             raise ValueError("the supplied starting vertex has invalid wall roots")
         if initial is None:
-            return self.report([], False, (), [])
+            # The corner search can end in the source's own nonreflectivity
+            # decision (edgewalk.h:1985-1999); report its reason rather than a
+            # negative verdict with no mathematical justification.
+            return self.report([], False, (), [], self.initial_nonreflectivity_reason)
         if visit is not None and visit(initial):
             return self.report([initial], False, (), [])
 
