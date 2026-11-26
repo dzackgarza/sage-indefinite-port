@@ -1328,7 +1328,10 @@ class _Edgewalk:
         """
         edge = self.edge_plane(roots, discarded, k, norm)
         form, scale = edge.form, edge.scale
-        cycle = anisotropic_cycle(form, scale * _rational(norm), edge.r0)
+        # edge.form is scale * Gwork and the bound is scale * N, while
+        # Anisotropic receives Gwork and res_norm itself (edgewalk.h:765-777);
+        # pass the factor so Canonical's floor is taken at the source's scale.
+        cycle = anisotropic_cycle(form, scale * _rational(norm), edge.r0, scale=scale)
         if cycle is None:
             return ()
         action, representatives = cycle

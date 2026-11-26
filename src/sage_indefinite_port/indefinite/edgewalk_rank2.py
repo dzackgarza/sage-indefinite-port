@@ -22,6 +22,8 @@ type _Pair = tuple[_Point, _Point]
 
 
 class _OrientedBinaryCycle:
+    scale = 1
+
     def __init__(self, lattice: Lattices.ParentMethods) -> None:
         if int(lattice.rank()) != 2 or tuple(int(index) for index in lattice.signature_pair()) != (1, 1) or lattice.is_isotropic():
             raise ValueError("an oriented binary cycle needs an anisotropic lattice of signature (1,1)")
@@ -60,8 +62,17 @@ class _OrientedBinaryCycle:
         radicand = rl * rl - rr * (ll - bound)
         if rr <= 0 or radicand < 0:
             raise ArithmeticError("canonical companion requires a positive right norm and real hyperbola intersection")
-        root = SageZZ(int(radicand)).isqrt()
-        multiple = (-rl + int(root)) // rr
+        # two_dim_lorentzian.h:153-168 Canonical: K = floor((-b + floor(sqrt(e)))/q(r))
+        # with e, b and q(r) read on the *unscaled* plane form and M = e_norm.
+        # This module scales that form and the bound by `scale` (edge.form =
+        # scale * Gwork, bound = scale * N), so radicand = scale^2 * e,
+        # rr = scale * q(r) and rl = scale * b. The C++ takes the floor of the
+        # square root *before* dividing by q(r); floor(sqrt(scale^2 e)/scale) =
+        # floor(floor(sqrt(scale^2 e))/scale), so dividing the integer square
+        # root by `scale` recovers floor(sqrt(e)), and the quotient must then
+        # be formed at the source's scale: (-rl + scale*floor(sqrt e)) / rr.
+        root = SageZZ(int(radicand)).isqrt() // self.scale
+        multiple = (-rl + self.scale * int(root)) // rr
         return left[0] + multiple * right[0], left[1] + multiple * right[1]
 
     def promised_step(self, bound: int, right: _Point, left: _Point) -> _Pair:
@@ -189,11 +200,18 @@ class _FormBinaryCycle(_OrientedBinaryCycle):
     result into the owned isometry and vectors.
     """
 
-    def __init__(self, form: tuple[int, int, int]) -> None:
+    def __init__(self, form: tuple[int, int, int], scale: int = 1) -> None:
         a, b, c = form
         if a * c - b * b >= 0 or SageZZ(b * b - a * c).is_square():
             raise ValueError("an oriented binary cycle needs an anisotropic form of signature (1,1)")
+        if scale < 1:
+            raise ValueError("an oriented binary cycle scale must be a positive integer")
         self.form = form
+        # `form` is `scale` times the plane Gram and the bound is `scale` times
+        # the root norm (edgewalk.h:765-777 passes Gwork and res_norm
+        # unscaled); Canonical's floor needs that ratio, see
+        # canonical_companion.
+        self.scale = scale
 
     def start_point(self, start: _Point) -> _Point:
         if SageZZ(start[0]).gcd(SageZZ(start[1])) != 1 or self.pairing(start, start) <= 0:
@@ -204,6 +222,11 @@ class _FormBinaryCycle(_OrientedBinaryCycle):
         return period, representatives
 
 
-def anisotropic_cycle(form: tuple[int, int, int], bound: Rational, start: _Point) -> tuple[Matrix_integer_dense, tuple[_Point, ...]] | None:
-    """The positive oriented period (integral row matrix) and all primitive representatives after start."""
-    return _FormBinaryCycle(form).cycle(int(_rational(bound).floor()), start)
+def anisotropic_cycle(form: tuple[int, int, int], bound: Rational, start: _Point, *, scale: int = 1) -> tuple[Matrix_integer_dense, tuple[_Point, ...]] | None:
+    """The positive oriented period (integral row matrix) and all primitive representatives after start.
+
+    ``form`` and ``bound`` are ``scale`` times the plane Gram and the root
+    norm the source passes to ``Anisotropic`` (edgewalk.h:777); ``scale`` only
+    enters Canonical's inner floor.
+    """
+    return _FormBinaryCycle(form, scale).cycle(int(_rational(bound).floor()), start)
