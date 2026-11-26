@@ -1630,6 +1630,15 @@ class _Edgewalk:
         # has no vertex in the projective closure, so the reflection chamber
         # cannot be a finite-volume fundamental polyhedron.  This is a
         # nonreflective terminal edge, not a failed cusp computation.
+        #
+        # Substitution, recorded deliberately: the source has no output for
+        # this configuration.  Its isotropic fallback returns an empty
+        # generator list on an anisotropic edge plane and it aborts with
+        # TerminalException{"Rethink needed"} (edgewalk.h:1117-1122), after
+        # which no verdict exists.  The negative verdict comes from Allcock's
+        # dichotomy instead (main.tex:1971-1985, 2082-2089): a finite-volume
+        # chamber has every edge shared with a neighbouring chamber, so a
+        # terminal anisotropic edge rules reflectivity out.
         if not self.edge_is_isotropic(roots, discarded, vertex.generator):
             return None
         return self.isotropic_next_vertex(roots, discarded, vertex.generator)
