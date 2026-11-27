@@ -182,39 +182,107 @@ source CVP order, computes the exact wall parameter, and repeats until the new
 shell contains the critical set and the selected vector (the stronger legacy
 condition).  No noncritical-substitute or norm-sorted first vector is allowed.
 
-Termination uses the actual bracket, not an appeal to the whole closed
-interval.  Write $f(s)=A+2Bs+Cs^2$, with $A>0$ and $C<0$, and let $s_+$ be
-its larger root.  When the trial square or pairing is nonpositive, the trial
-parameter lies beyond $s_+$ and `upper` alone moves down.  Otherwise the
-lower endpoint stays at or below $s_+$.  Every continued-fraction midpoint
-lies in the middle third of its bracket, so the width contracts by at least
-one third on every step.  Before any successful wall is found, the trial must
-therefore become a point below $s_+$; that root and all comparisons are
-computed exactly.
+**Termination and first-wall certificate.** Use the actual affine normals
+in `_kernel_flipping` (`lorentzian_cells.py:6730ff`). Write $x_s=u+sv$ for
+their Gram-dual directions and $m(s)=b(x_s,c)$ for any $c$ in the
+nonempty critical set $F$. Both affine normals vanish on the augmented
+critical rows, so $m(s)$ is independent of $c$. Let $D$ be the admitted
+future causal integral vectors of the selected mode, as in section 1.
+The proof applies equally before and after positive primitive rescaling of
+$x_s$ by `_source_remove_fraction`.
 
-A non-blind direction has a neighbouring perfect point by Opgenorth's
-Proposition 1.8.  It is enough to inspect the compact subsegment between this
-first successful trial and the first wall.  That subsegment lies in the open
-cone, where the face-to-face tessellation is locally finite, so the minimum
-shell can change at only finitely many cells.  No boundary accumulation is
-used.  At each point the candidate list is the minimum of finitely many
-affine pairings.  The midpoint is the first continued-fraction convergent in
-the middle third of the bracket midpoint.  The Stern--Brocot best-
-approximation property makes it the least-denominator rational there, so any
-fixed rational wall parameter left in the bracket must eventually be returned
-exactly.
+At $s=0$ the base shell is $D$-minimal. In the initial-cell construction
+$F$ is that whole shell. In an interior facet flip $F$ consists of all
+base-shell rows on the supporting facet. `flip_across` takes the unique
+homogeneous covector vanishing on that facet, oriented to be positive on
+an omitted row. All other omitted base-shell rows have strictly positive
+pairing with it because the facet is a supporting face and its full
+incidence set is retained. Thus for $d\in D\setminus F$ the affine
+function
 
-Each iteration therefore reaches, after finitely many steps, either a strict
-shell extension (the successful flip) or the first wall where the old
-critical set is no longer retained.  In the latter case scheme two starts at
-that wall.  Entry into scheme two requires a noncritical first candidate,
-equivalently a nonzero denominator; the source's enumerator order supplies
-this precondition and the code checks it rather than skipping the candidate.
-A new wall is then computed exactly from an integral expanded point.  Only
-finitely many walls can occur in the compact subsegment, and each is
-constructed rather than approached to within a tolerance, so that scheme
-terminates too.  Global quotient finiteness is not used as an excuse for any
-of these local loops.
+$$\delta_d(s)=b(x_s,d)-m(s)$$
+
+has $\delta_d(0)>0$, or $\delta_d(0)=0$ and positive slope. In particular,
+no previously omitted base-shell row can become a strictly smaller
+candidate at positive $s$.
+
+Put $s_*>0$ for the unique positive root of $b(x_s,x_s)$; its constant
+coefficient is positive and its leading coefficient negative, by the
+actual `_upper_bound` sign checks. For $0\le s<s_*$, $x_s$ lies in the
+same open sheet, so $m(s)>0$. The limiting point $x_{s_*}$ is nonzero:
+otherwise $u$ and $v$ would be dependent and, since both affine normals
+vanish on $F$, the augmented normals would be dependent as well. Also
+$m(s_*)>0$. Indeed, if it were zero, Lorentzian strict convexity would
+force $c$ and $x_{s_*}$ onto the same null ray. The affine constant would
+vanish at $s_*$, making this a rational root, since $m(0)>0$ and all
+normal coefficients are rational. `_upper_bound` rejects precisely this
+coincidence of its rational isotropic and affine-constant bounds. In an
+accepted direction the positive pairing therefore stays positive even
+at the null endpoint.
+
+By admissibility of $D$ (section 1, Mertens's definition preceding
+Theorem 2.1), some $d\in D$ satisfies $b(x_{s_*},d)<m(s_*)$. By continuity
+there is an $s_1<s_*$ with $\delta_d(s_1)<0$. On any compact parameter
+interval $J\subset[0,s_*)$ there is a **finite** set of possibly competing
+vectors: the continuous positive function $b(x_s,z)$ on the product of
+$J$ and the compact set of future causal unit vectors $z$ has a positive
+minimum $\eta_J$. Hence $b(x_s,d)\le m(s)$ implies
+$\|d\|\le\max_J m/\eta_J$. Intersecting this ball with the integral
+lattice gives finitely many vectors. This proves local finiteness of the
+actual shortest-shell candidates, without assuming the graph theorem or
+finiteness near the null boundary.
+
+Apply this bound on $[0,s_1]$. The first positive wall parameter $w$ is
+the minimum of the positive zeros of the finitely many affine
+$\delta_d$ that can become nonpositive there. It exists, is rational,
+and $0<w<s_*$, by the base-shell sign property and the strict inequality
+at $s_1$. Before $w$, the minimum shell is exactly $F$ (at positive
+parameters); at $w$ it strictly contains $F$; after $w$ at least one of
+the affine functions which first vanishes there is strictly negative.
+No other negative function can first appear without a zero.
+
+In scheme one the lower endpoint is updated only when the shell equals
+$F$, so remains below $w$; the upper endpoint is updated only at
+nonpositive square or pairing, so remains at or beyond $s_*$. The
+initial upper endpoint has this property by `_upper_bound`. Each midpoint
+lies in the closed middle third of the bracket, by `_source_mid_value`;
+its construction terminates since the full finite continued fraction
+represents the rational midpoint itself. Each update contracts the
+bracket by a factor at most $2/3$. Infinitely many updates would contradict
+its positive minimum width $s_*-w$. Thus a successful enlarged shell or
+a strictly smaller candidate must be found. No least-denominator or
+best-approximation property of the continued-fraction midpoint is
+needed.
+
+If scheme one enters scheme two at an interior parameter $s>w$, all
+critical vectors have the same pairing and none is minimal. The first
+source-ordered minimal vector $d$ therefore has $\delta_d(s)<0$ and
+$\delta_d(0)>0$ (the zero-at-base alternative has positive slope). Its
+slope is strictly negative. The denominator in the second scheme is
+exactly that slope, so is nonzero; the new parameter
+$t=-\delta_d(0)/\delta'_d$ satisfies $0<t<s<s_*$. At $t$ the vector $d$
+ties the entire critical set. If no vector has a smaller pairing, the
+new shell contains both $F$ and $d$, which is the stronger GAP exit
+condition used by the actual code. Otherwise every minimal vector has
+strictly smaller pairing than $m(t)$ and its corresponding zero lies
+strictly between $0$ and $t$. All subsequent candidates lie in the
+finite set from the compact interval $[0,s]$. Strict descent among their
+finitely many positive zeros proves termination, including the exact
+first-vector selection and absence of a division by zero. The returned
+parameter is exactly $w$.
+
+Finally the enlarged shell increases rank: if a new vector belonged to
+the linear span of $F$, say $d=\sum a_c c$, its pairing along the whole
+line would be $m(s)\sum a_c$. Equality at the positive interior exit
+would imply $\sum a_c=1$, so it would already be base-minimal. This is
+impossible in the initial-cell case, and impossible for an omitted
+base-shell row in the facet case since its slope difference is strictly
+positive. Thus the initial-cell loop increases rank at every flip, and
+an interior facet of rank $r-1$ leads to a full-rank neighbouring
+configuration. This verifies the local wall algorithm's mathematical
+termination and rank gain; the global group and traversal arguments
+still require the independent exact cell/stabilizer/facet hypotheses
+proved in their own sections.
 `flip_across` computes the unique facet normal and orients it with an outside
 ray.  The only totally isotropic exterior facet occurs in a Lorentzian plane;
 there it is a cone-boundary face and has no neighbour, so it returns `None`.
@@ -333,14 +401,87 @@ future component, filters exact norm zero and takes primitive representatives.
 `local_stabilizer_orbits` then computes all orbits under the complete cell
 stabilizer action.
 
-On an interior shared facet, the side pairing bijectively identifies the null
-marks incident to that facet with those of its image.  `transport_marks`
-checks that this identification exists uniquely.  Gluing all local orbits by
-all quotient adjacencies and taking connected components therefore identifies
-exactly primitive null vectors in the same $O(L)$-orbit.  No other
-identification is possible: every path from one local mark to another is a
-word in cell stabilizers and side pairings, and conversely every isometry
-carries cells and shared facets to cells and shared facets.
+**Coverage and connectedness of the null-mark star.** The open-cone
+Voronoi tessellation alone does not imply coverage or connectedness at
+a boundary ray. Here is the additional argument for an integral primitive
+future null vector $e$. It belongs to $D$ in either mode. For a future
+timelike vector $u$ and sufficiently small positive $\epsilon$, the
+interior point $e+\epsilon u$ has $e$ as its unique minimal vector:
+$b(e,d)$ is a positive integer for any nonparallel $d\in D$, hence at
+least one, whereas $b(e+\epsilon u,e)<1$. Parallel primitive future
+vectors coincide with $e$ (positive multiples cannot minimize even if
+nonprimitive vectors are included). Thus Mertens's cited Opgenorth
+Proposition 1.8 yields a perfect domain containing the ray of $e$.
+
+For connectedness, normalize all perfect points to $D$-minimum one, and
+consider the convex closed set
+
+$$P=\{x:b(x,d)\ge1\text{ for every }d\in D\},\qquad
+P_e=P\cap\{x:b(x,e)=1\}.$$
+
+Both sets are contained in the open future cone. Indeed admissibility
+excludes its boundary; outside the closed future cone, self-duality
+provides a future causal vector with strictly negative pairing. Such a
+vector is a positive sum of future null rays, so some null ray has
+negative pairing. Rational null rays are dense in the null directions
+by the rational parametrization in section 1.2 (in rank two the two
+rays are already rational). Its primitive integral representative in
+$D$ contradicts the inequalities. The set $P_e$ is a nonempty face of
+$P$, with nonemptiness already established by the unique-minimum
+construction. On every compact subset of the open cone, the same
+positive uniform lower bound on pairing with causal unit vectors as in
+section 3 shows that only finitely many $D$-inequalities can be active
+or violated there. In particular these sets are locally polyhedral.
+
+Given any two vertices of $P_e$, choose a future timelike $h$ and a
+constant $M$ strictly above both their values of $b(h,x)$. The cap
+$Q=P_e\cap\{b(h,x)\le M\}$ is compact: on the closed future cone,
+$b(h,x)$ bounds a positive multiple of the Euclidean norm. It is a
+polytope. To see this explicitly, cover the compact cap by finitely
+many open neighborhoods inside the positive cone on which finitely
+many $D$-inequalities suffice, and retain the union of those finite
+families together with the face and cap equations. The resulting
+finite polyhedron agrees with $Q$ near $Q$. If it had a point outside
+$Q$, the segment from a point of $Q$ to that point would exit $Q$
+through one of these neighborhoods while still satisfying the finite
+inequalities, a contradiction.
+
+Choose a generic linear objective sufficiently close to $b(h,-)$ to
+assign distinct values to the finitely many vertices of $Q$ and to
+assign every cap vertex a value greater than the two given vertices.
+The graph of the polytope admits a strictly decreasing edge path from
+each vertex to its unique minimizing vertex: at a nonminimizer the
+tangent cone is generated by its incident edge directions and contains
+a direction of strictly decreasing objective. Such paths from the
+two given vertices cannot use a cap vertex. Their edges are therefore
+actual edges of $P_e$, giving connectedness of its vertex graph. This
+argument works also when the face consists of just one vertex.
+
+Vertices of $P$ are exactly the normalized $D$-perfect points: the
+active integral rows span the full dual space exactly at a vertex,
+by the local polyhedral description. The vertices of $P_e$ are exactly
+those with $e$ active. An edge of $P_e$ is an edge of the face in $P$;
+its relative interior has common active rows of rank $r-1$. In the
+corresponding two Voronoi cones these common rows generate a shared
+facet: the difference of the endpoint perfect normals is nonnegative
+on one cone's generating rows, nonpositive on the other's, and zero
+exactly on the common active rows. Its zero face has rank $r-1$ and
+contains $e$. Thus all perfect cells containing the null ray are
+connected by facet adjacencies containing that ray, not just by
+arbitrary interior adjacencies.
+
+On such a shared facet, the actual side pairing bijectively identifies
+the incident primitive null marks with those of its image.
+`transport_marks` checks this identification exists uniquely. When
+the full cell stabilizers and all side pairings are retained, the
+connected components of the quotient marked graph are precisely the
+$O(L)$-orbits of primitive null vectors: any identification is an
+actual isometry word; conversely an isometry preserving the chosen
+sheet takes a containing cell to a containing cell, and connectedness
+of the mark's star identifies these occurrences after transport to
+representatives. Negation handles the opposite sheet. This establishes
+the missing boundary-star implication; it does not replace the actual
+integral transport and facet completeness checks.
 
 For the rank-13 and rank-17 specimens, the algorithm may stop earlier only
 under additional, independently verified hypotheses.  The five rank-15
@@ -364,16 +505,27 @@ normalized coefficients in the associated simplex are intrinsic, so two
 points are equivalent exactly when an element of the cell stabilizer carries
 one chain and its coefficients to the other.
 
-In signature $(1,n)$ the barycentre Gram entries of a simplicial piece have
-one sign.  A positive fixed square bounds every coefficient on a ray of
-positive square.  Descend to the support of the positive coefficients.  A
-distinct causal ray pairs strictly positively with a null ray, so if the
-null coefficient is nonzero then another supported coefficient is at least
-one; their nonnegative cross term bounds it.  Any other positive coefficient
-is likewise bounded by the fixed square.  `_simplicial_vectors_of_square`
-enumerates precisely the resulting finite integral coefficient set,
-including the saturation index of a nonsaturated simplicial sublattice, and
-certifies every reconstructed norm.
+In signature $(1,n)$ the barycentre Gram entries of a simplicial
+piece have one sign. In a basis of the saturation of the ray span,
+write $R$ for the integral matrix of its independent primitive rays,
+$N=|\det R|$, and $c$ for a lattice vector's nonnegative rational
+coefficients in the ray basis. Then $C=Nc$ is integral by the adjugate
+formula, and $N^2 q(v)=\sum_{ij}C_iC_j b_{ij}$. Thus a positive square
+bounds every scaled coefficient on a timelike ray by its diagonal
+term. A nonzero coefficient on a null ray requires at least one other
+nonzero scaled coefficient, which is **an integer** at least one; its
+positive cross term bounds the null coefficient. The original rational
+coefficient need not be at least one. `_simplicial_vectors_of_square`
+uses precisely these scaled bounds, the Smith residues of the ray
+sublattice in its saturation, and exact integer square checks. This
+proves finiteness of the local positive-square search, including
+nonsaturated ray spans. In the open cone the star of a fixed timelike
+point is connected along facets containing the point: a sufficiently
+small ball about it meets only finitely many cells and no cell faces
+not containing it, by local finiteness and closedness of the cells.
+Join interior points of any two of those cells inside that ball by a
+generic path avoiding codimension-two faces; each crossed facet
+contains the fixed point.
 The same construction on each adjacency facet, modulo the facet stabilizer,
 connects all local mark orbits.  Connected components are again exactly the
 global orbits.  Only primitive marks are retained.  A negative-square mark in
@@ -412,10 +564,10 @@ mutual generator membership against Mertens's complete $\Omega\cup\{-I\}$
 family and equal mod-3 image order 48.  These are inputs to the proof, not
 replacements for its completeness arguments.
 
-## 10. Measured public reflective-full-group defect
+## 10. Public reflective-full-group repair and exact historical regression
 
-The public boundary described in section 6 is not yet correct at provider
-`e2803c36`.  `_edgewalk_orthogonal_group_generators` returns only simple-root
+At the historical provider `e2803c36` the public boundary described in
+section 6 was not correct.  `_edgewalk_orthogonal_group_generators` returns only simple-root
 reflections and the reduced report's chamber symmetries, omitting $-I$.
 There is no legitimate substitution of this reduced family for public $O(L)$.
 
@@ -439,12 +591,28 @@ nonreflective Mertens det-$155$ public dispatch has equal generator-by-
 generator membership in both directions against Mertens's complete
 $\Omega\cup\{-I\}$ reference set.
 
-The provider must adjoin the actual `-L.Aut().identity()` to its public
-reflective generator family (duplicate generators are harmless).  It must not
-insert $-I$ into the reduced Allcock report, whose chamber-symmetry field has
-a different meaning.  For both defective stabilizer specimens, augmenting the
-public family by this exact element restores both directions of the original
-mod-3 membership test.  The port provides no falsified report and no
-dependency edit in its private runtime.  This omission blocks a completion
-claim for the public contract until the maintained provider boundary is
-repaired.
+Provider commit
+[`0044a702629469483234281087bc14453c4437c0`](https://github.com/dzackgarza/sage-extensions/commit/0044a702629469483234281087bc14453c4437c0)
+repairs the actual return tuple of `_edgewalk_orthogonal_group_generators`
+by adjoining the owned isometry `lattice.Aut()(lambda label:
+-lattice.module_generator(label))`. Unary negation of the identity
+morphism itself is not the owned isometry construction in this provider.
+The reduced Allcock report is unchanged. The exact normalizer proof of
+section 6 now applies to that dispatch whenever the chamber and its
+integral symmetry generators are complete: the sheet character is
+surjective because negation reverses sheets, and multiplication by
+negation reduces every reversing isometry to the preserving case.
+No finite image computation is being used to infer this group theorem.
+
+Independent rerun at exact port `fcf209b785978a3cc724eb4bee34882ad18fd5d3`
+and provider `0044a702629469483234281087bc14453c4437c0`, using the shared
+Sage 11.0.beta5 image and verified import paths, executed all seven
+previously failing unchanged nodes of `tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar`
+with IDs `from_sage_3`, `from_sage_10`, `from_sage_11`, `from_sage_12`,
+`from_sage_14`, `from_sage_24`, `from_sage_25`: **7 passed in 40.88 s**,
+exit zero. The implementation contributor separately reports the whole
+unchanged orthogonal-group file passed 32/32; the independent rerun here
+was precisely the seven original failures. No assertion or fixture was
+changed. The source proof and this execution establish the specific
+sheet-exchange repair; full #15 acceptance still requires the original
+complete implementation and branch review on the published pair.
