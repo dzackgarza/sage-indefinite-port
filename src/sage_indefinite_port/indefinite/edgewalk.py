@@ -19,6 +19,7 @@ from collections.abc import Callable
 
 from dataclasses import dataclass
 from functools import cache, cmp_to_key
+from random import Random
 
 from sage_extensions.all import ZZ, HyperbolicLattices, Lattices
 from sage_extensions.categories.definite_lattices import _ExactCVPEngine
@@ -48,7 +49,12 @@ from sage_indefinite_port.indefinite.edgewalk_extensions import (
 )
 from sage_indefinite_port.indefinite.edgewalk_rank2 import anisotropic_cycle
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
+from sage_indefinite_port.indefinite.indefinite_reduction import (
+    GENERATOR_SEED,
+    indefinite_reduced_presentation,
+)
 from sage_indefinite_port.indefinite.lorentzian_cells import (
+    _integral_positive_vector_allmeth,
     binary_split_form_vectors_of_square,
     binary_split_null_basis,
 )
@@ -88,40 +94,14 @@ def edgewalk_fundamental_domain(
     automatic selector (FileVertex or FileVertexRoots in the source).
     With ``apply_reduction=False``, the automatic corner search uses the
     original integral presentation (IndefiniteReduction_opt, Indefinite_LLL.h:934).
+    This option controls only the outer presentation change. GetV0_vector
+    still uses GetShortIntegralVector on the current Gram matrix. A reduced
+    initial ray is transported back before computing the initial simple cone
+    and walking in the original presentation (edgewalk.h:2070-2143).
     """
-    if initial_vertex is not None:
-        return _Edgewalk(lattice, option_norms=option_norms,
-                         early_termination=early_termination, compute_all_simple_roots=compute_all_simple_roots,
-                         option_initial_vertex=option_initial_vertex, initial_vertex=initial_vertex).walk()
-    if apply_reduction and (option_initial_vertex == "vinberg" or not lattice.is_isotropic()):
-        from sage_indefinite_port.indefinite.indefinite_reduction import (
-            indefinite_reduced_presentation,
-        )
-
-        reduction = indefinite_reduced_presentation(lattice)
-        result = _Edgewalk(reduction.reduced, option_norms=option_norms,
-                           early_termination=early_termination, compute_all_simple_roots=compute_all_simple_roots, option_initial_vertex=option_initial_vertex,
-                           initial_vertex=initial_vertex).walk()
-        inverse = reduction.isometry
-        cones = RationalPolyhedralCones(lattice)
-        return AllcockEdgewalkReport(
-            lattice,
-            reflective=result.is_reflective(),
-            simple_roots=tuple(inverse(root) for root in result.simple_roots()),
-            vertices=tuple(
-                cones.from_rays(
-                    tuple(inverse(ray) for ray in cone.primitive_rays()),
-                    wall_roots=tuple(inverse(root) for root in cone.wall_roots()),
-                )
-                for cone in result.vertices()
-            ),
-            isometry_generators=tuple(inverse * generator * inverse.inverse() for generator in result.polyhedron_isometry_generators()),
-            reason_non_reflective=result.reason_non_reflective(),
-            simple_roots_computed=result.has_computed_simple_roots(),
-        )
     return _Edgewalk(lattice, option_norms=option_norms,
                      early_termination=early_termination, compute_all_simple_roots=compute_all_simple_roots, option_initial_vertex=option_initial_vertex,
-                     initial_vertex=initial_vertex).walk()
+                     apply_reduction=apply_reduction, initial_vertex=initial_vertex).walk()
 
 
 def edgewalk_isometry(
@@ -371,6 +351,7 @@ class _Edgewalk:
                  option_norms: str = "all", early_termination: bool = True,
                  compute_all_simple_roots: bool = True,
                  option_initial_vertex: str = "isotropic_vinberg",
+                 apply_reduction: bool = True,
                  initial_vertex: _Vector | tuple[_Vector, _Roots] | None = None) -> None:
         positive, negative = lattice.signature_pair()
         if int(negative) != 1 or int(positive) + 1 != int(lattice.rank()):
@@ -384,6 +365,7 @@ class _Edgewalk:
         self.field = lattice.base_ring().fraction_field()
         if option_norms not in ("all", "K3"):
             raise ValueError(f"unsupported edgewalk root-norm option {option_norms!r}")
+        self.option_norms = option_norms
         self.norms = ((2,) if option_norms == "K3"
                       else tuple(int(norm) for norm in lattice.possible_root_lengths()))
         self.early_termination = bool(early_termination)
@@ -393,6 +375,7 @@ class _Edgewalk:
         if initial_vertex is not None and option_initial_vertex != "isotropic_vinberg":
             raise ValueError("a prescribed starting vertex replaces the automatic vertex search")
         self.option_initial_vertex = option_initial_vertex
+        self.apply_reduction = apply_reduction
         self.supplied_initial_vertex = initial_vertex
         self.initial_nonreflectivity_reason: str | None = None
         self.identity_key = tuple(_key(generator) for generator in coordinate_basis)
@@ -812,6 +795,20 @@ class _Edgewalk:
         """
         if self.option_initial_vertex == "isotropic_vinberg" and self.lattice.is_isotropic():
             return self.initial_isotropic_vertex()
+        if self.apply_reduction:
+            reduction = indefinite_reduced_presentation(self.lattice)
+            reduced_search = _Edgewalk(
+                reduction.reduced, option_initial_vertex="vinberg",
+                option_norms=self.option_norms,
+                early_termination=self.early_termination,
+                compute_all_simple_roots=self.compute_all_simple_roots,
+                apply_reduction=False,
+            )
+            vertex = reduced_search.initial_vertex()
+            if vertex is None:
+                self.initial_nonreflectivity_reason = reduced_search.initial_nonreflectivity_reason
+                return None
+            return self.prescribed_vertex(reduction.isometry(vertex.generator))
         from math import gcd
 
         norm_ideal = gcd(
@@ -823,12 +820,14 @@ class _Edgewalk:
                 f"The lattice norm ideal {norm_ideal}Z contains none of the allowed root norms"
             )
             return None
-        timelike = self.lattice.negative_vector()
+        timelike = self.element(_integral_positive_vector_allmeth(
+            -self.gram.change_ring(SageZZ), Random(GENERATOR_SEED)
+        ))
         roots = self.ordinary_vertex_roots(timelike)
         if self.span_rank(roots) == self.rank - 1:
             if len(roots) != self.rank - 1:
                 raise ArithmeticError("ordinary initial cone has incorrect simple-root count")
-            return _Vertex(timelike, roots)
+            return _Vertex(self.primitive(self.row(timelike)), roots)
         perpendicular = timelike.orthogonal_complement()
         perpendicular_inclusion = perpendicular.inclusion()
         perpendicular_generators = tuple(perpendicular_inclusion(generator) for generator in _coordinate_basis(perpendicular_inclusion.domain()))

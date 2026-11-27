@@ -27,11 +27,14 @@ def hyperbolic(rows):
 def test_unreduced_vinberg_start_retains_the_original_corner() -> None:
     r"""ApplyReduction=false is the identity presentation (Indefinite_LLL.h:934).
 
-    Allcock RK3_all line 13 has a corner of norm -6 at (1,2,2),
-    perpendicular to the first and third recorded simple roots. Put that
-    primitive vector first in the unimodular basis. In the unreduced
-    presentation it is the first negative diagonal direction. Verify the
-    entire chamber by an integral ambient transporter, not just the count.
+    GetV0_vector still calls GetShortIntegralVector, which reduces -G
+    internally (vinberg.h:307-311, Positivity.h:410-482,516-534).
+    With the port's fixed reduction seed the internal basis is
+    ((0,0,-1),(1,-2,-2),(0,-1,0)); the first positive diagonal direction
+    of the reduced -G is (1,0,1). Its normalized approximation rounds
+    both nonzero coordinates to 1 at the first step, yielding
+    (0,-1,-1) in the unreduced input. Verify the entire chamber by
+    an integral ambient transporter, not just the count.
     """
     from itertools import permutations
 
@@ -41,6 +44,12 @@ def test_unreduced_vinberg_start_retains_the_original_corner() -> None:
     basis_change = matrix(ZZ, [[1, 2, 2], [0, 1, 0], [0, 0, 1]])
     assert basis_change.det() == 1
     changed = basis_change * gram * basis_change.transpose()
+    inner = matrix(ZZ, [[0, 0, -1], [1, -2, -2], [0, -1, 0]])
+    assert abs(inner.det()) == 1
+    assert inner * (-changed) * inner.transpose() == matrix(ZZ, [[0, 0, 1], [0, -2, 0], [1, 0, 0]])
+    diagonalizer = matrix(ZZ, [[0, 1, 0], [1, 0, 1], [-1, 0, 1]])
+    assert diagonalizer * inner * (-changed) * inner.transpose() * diagonalizer.transpose() == matrix(ZZ, [[-2, 0, 0], [0, 2, 0], [0, 0, -2]])
+    assert tuple((diagonalizer * inner).row(1)) == (0, -1, -1)
     recorded = matrix(ZZ, case["simple_roots"]) * basis_change.inverse()
     for sign in (1, -1):
         L = hyperbolic((sign * changed).rows())
@@ -48,8 +57,8 @@ def test_unreduced_vinberg_start_retains_the_original_corner() -> None:
         assert report.is_reflective()
         assert report.has_computed_simple_roots()
         first = tuple(report.vertices()[0].primitive_rays())[0]
-        assert coordinates(first) == (1, 0, 0)
-        assert int(first.q()) == -6 * sign
+        assert coordinates(first) == (0, -1, -1)
+        assert int(first.q()) == -2 * sign
         actual = matrix(ZZ, [coordinates(root) for root in report.simple_roots()])
         assert actual.nrows() == recorded.nrows() == 3
         assert any(
@@ -60,6 +69,22 @@ def test_unreduced_vinberg_start_retains_the_original_corner() -> None:
                 recorded.inverse() * actual.matrix_from_rows(order)
                 for order in permutations(range(3))
             )
+        )
+        reduced_start = L.allcock_edgewalk(option_initial_vertex="vinberg")
+        assert reduced_start.is_reflective()
+        start = tuple(reduced_start.vertices()[0].primitive_rays())[0]
+        resumed = L.allcock_edgewalk(initial_vertex=start)
+        assert tuple(coordinates(r) for r in reduced_start.simple_roots()) == tuple(
+            coordinates(r) for r in resumed.simple_roots()
+        )
+        assert tuple(
+            (tuple(coordinates(r) for r in v.primitive_rays()),
+             tuple(coordinates(r) for r in v.wall_roots()))
+            for v in reduced_start.vertices()
+        ) == tuple(
+            (tuple(coordinates(r) for r in v.primitive_rays()),
+             tuple(coordinates(r) for r in v.wall_roots()))
+            for v in resumed.vertices()
         )
 
 
@@ -110,7 +135,7 @@ def test_anisotropic_binary_selector_uses_the_same_vinberg_branch() -> None:
             tuple(coordinates(r) for r in v.primitive_rays()) for v in fallback.vertices()
         )
         if not reduce:
-            assert coordinates(tuple(explicit.vertices()[0].primitive_rays())[0]) == (1, 0)
+            assert coordinates(tuple(explicit.vertices()[0].primitive_rays())[0]) == (-1, 0)
 
 
 def test_binary_file_vertex_and_file_vertex_roots() -> None:
