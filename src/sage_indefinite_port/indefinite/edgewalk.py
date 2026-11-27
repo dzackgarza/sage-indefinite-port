@@ -62,6 +62,7 @@ def edgewalk_fundamental_domain(
     *,
     option_norms: str = "all",
     early_termination: bool = True,
+    option_initial_vertex: str = "isotropic_vinberg",
     initial_vertex: _Vector | tuple[_Vector, _Roots] | None = None,
 ) -> AllcockEdgewalkReport:
     r"""Allcock's edgewalk on a hyperbolic lattice.
@@ -73,22 +74,27 @@ def edgewalk_fundamental_domain(
     edgewalk.h:55-67, :2100-2126. ``option_norms`` is ``"all"`` or ``"K3"``
     (norm-two roots only). With ``early_termination`` false the walk continues
     past an infinite polyhedron symmetry group and lists every vertex orbit.
-    ``initial_vertex`` is a vertex, or a vertex with its simple roots.
+    ``option_initial_vertex="vinberg"`` searches for a corner by Vinberg's
+    algorithm even for a rationally isotropic form; ``"isotropic_vinberg"``
+    first uses an integral null ray if one exists. A supplied ``initial_vertex``
+    is a vertex, or a vertex with its simple roots, and takes the place of the
+    automatic selector (FileVertex or FileVertexRoots in the source).
     """
     if initial_vertex is not None:
         # A prescribed corner belongs to the original presentation and must
         # be used as the start, including in the special rank-two cycle.
         return _Edgewalk(lattice, option_norms=option_norms,
                          early_termination=early_termination,
-                         initial_vertex=initial_vertex).walk()
-    if int(lattice.rank()) > 2 and not lattice.is_isotropic():
+                         option_initial_vertex=option_initial_vertex, initial_vertex=initial_vertex).walk()
+    if option_initial_vertex == "vinberg" or (int(lattice.rank()) > 2 and not lattice.is_isotropic()):
         from sage_indefinite_port.indefinite.indefinite_reduction import (
             indefinite_reduced_presentation,
         )
 
         reduction = indefinite_reduced_presentation(lattice)
         result = _Edgewalk(reduction.reduced, option_norms=option_norms,
-                           early_termination=early_termination, initial_vertex=initial_vertex).walk()
+                           early_termination=early_termination, option_initial_vertex=option_initial_vertex,
+                           initial_vertex=initial_vertex).walk()
         inverse = reduction.isometry
         cones = RationalPolyhedralCones(lattice)
         return AllcockEdgewalkReport(
@@ -106,7 +112,8 @@ def edgewalk_fundamental_domain(
             reason_non_reflective=result.reason_non_reflective(),
         )
     return _Edgewalk(lattice, option_norms=option_norms,
-                     early_termination=early_termination, initial_vertex=initial_vertex).walk()
+                     early_termination=early_termination, option_initial_vertex=option_initial_vertex,
+                     initial_vertex=initial_vertex).walk()
 
 
 def edgewalk_isometry(
@@ -366,6 +373,7 @@ class _EdgePlane:
 class _Edgewalk:
     def __init__(self, lattice: HyperbolicLattices.ParentMethods, *,
                  option_norms: str = "all", early_termination: bool = True,
+                 option_initial_vertex: str = "isotropic_vinberg",
                  initial_vertex: _Vector | tuple[_Vector, _Roots] | None = None) -> None:
         positive, negative = lattice.signature_pair()
         if int(negative) != 1 or int(positive) + 1 != int(lattice.rank()):
@@ -382,6 +390,11 @@ class _Edgewalk:
         self.norms = ((2,) if option_norms == "K3"
                       else tuple(int(norm) for norm in lattice.possible_root_lengths()))
         self.early_termination = bool(early_termination)
+        if option_initial_vertex not in ("vinberg", "isotropic_vinberg"):
+            raise ValueError(f"unsupported automatic edgewalk start option {option_initial_vertex!r}")
+        if initial_vertex is not None and option_initial_vertex != "isotropic_vinberg":
+            raise ValueError("a prescribed starting vertex replaces the automatic vertex search")
+        self.option_initial_vertex = option_initial_vertex
         self.supplied_initial_vertex = initial_vertex
         # edgewalk.h:1985-1999 raise NonReflectivityException from
         # get_simple_cone; StandardEdgewalkAnalysis (edgewalk.h:2175-2183)
@@ -874,7 +887,7 @@ class _Edgewalk:
         some chamber. Otherwise Vinberg's increasing prefixes locate a corner;
         no finite search bound is used as a nonexistence certificate.
         """
-        if self.lattice.is_isotropic():
+        if self.option_initial_vertex == "isotropic_vinberg" and self.lattice.is_isotropic():
             return self.initial_isotropic_vertex()
         timelike = self.lattice.negative_vector()
         roots = self.ordinary_vertex_roots(timelike)
@@ -1894,7 +1907,9 @@ class _Edgewalk:
             point = supplied[0] if isinstance(supplied, tuple) else supplied
             if point.parent() is not self.lattice or self.norm(point) > 0:
                 raise ValueError("the starting vertex must be a nonspacelike vector of the walking lattice")
-        if supplied is None and initial is None and self.lattice.is_isotropic():
+        if (supplied is None and initial is None
+                and self.option_initial_vertex == "isotropic_vinberg"
+                and self.lattice.is_isotropic()):
             # The DEFAULT isotropic_vinberg start is a null ray. In rank two
             # its perpendicular quotient is zero-dimensional, so the source's
             # get_simple_cone raises NonReflectivityException("list of roots
