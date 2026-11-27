@@ -6215,11 +6215,12 @@ class _PositiveVectorEnumerator:
         target = tuple(scalar * coordinate for coordinate in self.base_target_engine_coordinates)
         bound = (scalar**2) * SageQQ(self.base_bound)
         # Keep the same exact coordinate Gram, target, and squared-distance
-        # bound as close_vectors. Isotropic mode uses the dedicated exact-sphere
-        # recursion; total mode keeps PARI-backed bounded CVP and falls back to
-        # exact LDL pruning only when PARI's stack overflows. Both stay at the
-        # coordinate level without allocating owned lattice vectors or indexed
-        # families for intermediate shell candidates.
+        # bound as close_vectors. Both modes use the exact rational dual-LLL
+        # recursions. In particular, total mode must not depend on PARI qfcvp's
+        # documented floating-point input-size limitation: an overflow-free
+        # return is not an exact-completeness certificate over the source's
+        # unbounded integral input domain. The recursion stays at coordinate
+        # level without allocating owned lattice vectors or indexed families.
         if self.allowed_squares == ZERO_SQUARES:
             # The pinned solver.fixed_dist_vectors branch enumerates the
             # exact sphere, not the full ellipsoid followed by a norm filter.
@@ -6234,23 +6235,14 @@ class _PositiveVectorEnumerator:
                 ldl_factorization=self.fixed_distance_ldl_factorization,
             )
         else:
-            try:
-                distances = self.cvp_engine.close_vector_coordinates(target, bound)
-            except PariError as error:
-                # Keep the pinned PARI CVP as the normal path. Its default
-                # stack overflows on several published E10 vector-orbit cases;
-                # only that specific failure falls back to exact bounded LDL
-                # enumeration in the same dual-LLL frame and source order.
-                if "stack overflows" not in str(error):
-                    raise
-                distances = _bounded_distance_dual_lll_solutions(
-                    self.cvp_engine.engine_gram_q,
-                    self.cvp_engine._engine_target_coordinates(target),
-                    self.cvp_engine._engine_scalar(bound),
-                    self.enumeration_transform,
-                    self.enumeration_order_transform,
-                    ldl_factorization=self.fixed_distance_ldl_factorization,
-                )
+            distances = _bounded_distance_dual_lll_solutions(
+                self.cvp_engine.engine_gram_q,
+                self.cvp_engine._engine_target_coordinates(target),
+                self.cvp_engine._engine_scalar(bound),
+                self.enumeration_transform,
+                self.enumeration_order_transform,
+                ldl_factorization=self.fixed_distance_ldl_factorization,
+            )
             # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
             # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
             distances = _dual_lll_ordered_solutions(distances, self.enumeration_order_transform)
