@@ -24,13 +24,100 @@ def hyperbolic(rows):
     return HyperbolicLattices(PreambleZZ)(lattice(rows))
 
 
+def test_unreduced_vinberg_start_retains_the_original_corner() -> None:
+    r"""ApplyReduction=false is the identity presentation (Indefinite_LLL.h:934).
+
+    Allcock RK3_all line 13 has a corner of norm -6 at (1,2,2),
+    perpendicular to the first and third recorded simple roots. Put that
+    primitive vector first in the unimodular basis. In the unreduced
+    presentation it is the first negative diagonal direction. Verify the
+    entire chamber by an integral ambient transporter, not just the count.
+    """
+    from itertools import permutations
+
+    case = next(case for case in load_allcock_rank3_reflective()
+                if case["source"]["line"] == 13)
+    gram = matrix(ZZ, case["gram"])
+    basis_change = matrix(ZZ, [[1, 2, 2], [0, 1, 0], [0, 0, 1]])
+    assert basis_change.det() == 1
+    changed = basis_change * gram * basis_change.transpose()
+    recorded = matrix(ZZ, case["simple_roots"]) * basis_change.inverse()
+    for sign in (1, -1):
+        L = hyperbolic((sign * changed).rows())
+        report = L.allcock_edgewalk(option_initial_vertex="vinberg", apply_reduction=False)
+        assert report.is_reflective()
+        assert report.has_computed_simple_roots()
+        first = tuple(report.vertices()[0].primitive_rays())[0]
+        assert coordinates(first) == (1, 0, 0)
+        assert int(first.q()) == -6 * sign
+        actual = matrix(ZZ, [coordinates(root) for root in report.simple_roots()])
+        assert actual.nrows() == recorded.nrows() == 3
+        assert any(
+            all(x in ZZ for x in transport.list())
+            and abs(transport.det()) == 1
+            and transport * changed * transport.transpose() == changed
+            for transport in (
+                recorded.inverse() * actual.matrix_from_rows(order)
+                for order in permutations(range(3))
+            )
+        )
+
+
+def test_anisotropic_binary_selector_uses_the_same_vinberg_branch() -> None:
+    r"""For q=2*x^2-y^2, the chamber in y>0 lies between x=0 and x=-y/2.
+
+    The walls (1,0), (-1,1) have squares 2 and 1 and are reflective.
+    An integral primitive reflective root (a,b) has positive square
+    dividing 4 (twice the exponent of the discriminant group). Square
+    4 forces both coordinates even, so the possible squares are 1,2.
+    A wall strictly between these endpoints would have 0<|b|<|a|,
+    hence square >a^2, impossible for |a|>=2, and no integral b exists
+    for |a|=1. Thus these are adjacent walls of the chamber.
+
+    The isotropic_vinberg selector must fall back to precisely the same
+    Vinberg branch when the form is anisotropic (edgewalk.h:2119-2126).
+    The shear makes bypassing pre-reduction observable.
+    """
+    from itertools import permutations
+
+    gram = matrix(ZZ, [[2, 0], [0, -1]])
+    change = matrix(ZZ, [[2, 3], [1, 2]])
+    assert change.det() == 1
+    changed = change * gram * change.transpose()
+    expected = matrix(ZZ, [[1, 0], [-1, 1]]) * change.inverse()
+    L = hyperbolic(changed.rows())
+    assert not L.is_isotropic()
+    for reduce in (True, False):
+        explicit = L.allcock_edgewalk(option_initial_vertex="vinberg", apply_reduction=reduce)
+        fallback = L.allcock_edgewalk(option_initial_vertex="isotropic_vinberg", apply_reduction=reduce)
+        for report in (explicit, fallback):
+            assert report.is_reflective()
+            actual = matrix(ZZ, [coordinates(root) for root in report.simple_roots()])
+            assert actual.nrows() == 2
+            assert any(
+                all(x in ZZ for x in transport.list())
+                and abs(transport.det()) == 1
+                and transport * changed * transport.transpose() == changed
+                for transport in (
+                    expected.inverse() * actual.matrix_from_rows(order)
+                    for order in permutations(range(2))
+                )
+            )
+        assert tuple(coordinates(r) for r in explicit.simple_roots()) == tuple(
+            coordinates(r) for r in fallback.simple_roots()
+        )
+        assert tuple(tuple(coordinates(r) for r in v.primitive_rays()) for v in explicit.vertices()) == tuple(
+            tuple(coordinates(r) for r in v.primitive_rays()) for v in fallback.vertices()
+        )
+        if not reduce:
+            assert coordinates(tuple(explicit.vertices()[0].primitive_rays())[0]) == (1, 0)
+
+
 def test_binary_file_vertex_and_file_vertex_roots() -> None:
     L = hyperbolic([[0, 1], [1, 0]])
     k, r = element(L, (1, -1)), element(L, (1, 1))
     assert tuple(int(value) for value in (k.q(), r.q(), L.b(k, r))) == (-2, 2, 0)
 
-    # The displayed root is reflective on the integral lattice: reflection is
-    # -1 on r=e0+e1 and +1 on k=e0-e1, so it maps (e0,e1) to (-e1,-e0).
     assert r - L.b(r, r) * r == -r
     assert k - L.b(k, r) * r == k
 
@@ -39,10 +126,6 @@ def test_binary_file_vertex_and_file_vertex_roots() -> None:
     assert len(default.vertices()) == 0
     assert default.reason_non_reflective() == "list of roots is empty"
 
-    # FileVertex and FileVertexRoots must not be confused with the default
-    # isotropic_vinberg start. O(U) is finite (its null-line scalings are
-    # integral units), so the exact nonreflective verdict has infinite
-    # covolume, not a fictitious empty wall list at the prescribed finite k.
     for prescribed in (k, 2 * k, -3 * k, (k, (r,)), (2 * k, (r,)), (-3 * k, (r,))):
         report = L.allcock_edgewalk(initial_vertex=prescribed)
         assert not report.is_reflective()
@@ -53,16 +136,12 @@ def test_binary_file_vertex_and_file_vertex_roots() -> None:
         assert all(int(ray.content()) == 1 for ray in rays)
         assert any(int(ray.q()) == -2 for ray in rays)
 
-    # A bare null FileVertex follows get_simple_cone, including ray
-    # normalisation, and returns the source's cusp nonreflectivity report.
     for null in (element(L, (0, 1)), element(L, (0, 2)), element(L, (0, -3))):
         report = L.allcock_edgewalk(initial_vertex=null)
         assert not report.is_reflective()
         assert len(report.vertices()) == 0
         assert report.reason_non_reflective() == "list of roots is empty"
 
-    # The empty-wall isotropic fallback used above must not accept bad roots
-    # merely because the ambient binary lattice is isotropic.
     with pytest.raises(ValueError, match="invalid wall roots"):
         L.allcock_edgewalk(initial_vertex=(k, (element(L, (1, 0)),)))
 
@@ -84,9 +163,6 @@ def test_exhaustive_mode_skips_early_finiteness_and_preserves_chamber(monkeypatc
     assert report.reason_non_reflective() is None
     computed = [coordinates(root) for root in report.simple_roots()]
     assert len(computed) == 3
-    # The transporter is explicit, so this checks the ENTIRE integral root
-    # multiset and its lattice gluing rather than merely a Coxeter graph.
-    # It is a signed swap of the last two coordinates, with determinant -1.
     gram = matrix(ZZ, case["gram"])
     recorded = matrix(ZZ, case["simple_roots"])
     transport = matrix(ZZ, [[1, 0, 0], [0, 0, -1], [0, -1, 0]])
@@ -104,8 +180,6 @@ def test_default_mode_retains_the_exact_nonreflectivity_certificate() -> None:
 
 
 def test_anisotropic_cycle_period_and_input_guards() -> None:
-    # For q=2*x^2-y^2, P sends (e0,e1) to (3,4),(2,3). Direct evaluation
-    # gives q(3,4)=2, q(2,3)=-1 and b((3,4),(2,3))=0; det(P)=1.
     result = anisotropic_cycle((2, 0, -1), 2, (1, 0))
     assert result is not None
     period, representatives = result
@@ -117,9 +191,9 @@ def test_anisotropic_cycle_period_and_input_guards() -> None:
     assert [int(vector(ZZ, row) * gram * vector(ZZ, row)) for row in representatives] == [1, 2]
 
     with pytest.raises(ValueError, match="anisotropic form"):
-        anisotropic_cycle((1, 0, -1), 1, (1, 0))  # split: discriminant one
+        anisotropic_cycle((1, 0, -1), 1, (1, 0))
     with pytest.raises(ValueError, match="signature"):
-        anisotropic_cycle((1, 0, 1), 1, (1, 0))  # not Lorentzian
+        anisotropic_cycle((1, 0, 1), 1, (1, 0))
     with pytest.raises(ValueError, match="primitive positive"):
         anisotropic_cycle((2, 0, -1), 2, (2, 0))
     with pytest.raises(ValueError, match="primitive positive"):
