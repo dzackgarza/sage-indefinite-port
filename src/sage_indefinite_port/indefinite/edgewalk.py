@@ -62,6 +62,7 @@ def edgewalk_fundamental_domain(
     *,
     option_norms: str = "all",
     early_termination: bool = True,
+    compute_all_simple_roots: bool = True,
     option_initial_vertex: str = "isotropic_vinberg",
     initial_vertex: _Vector | tuple[_Vector, _Roots] | None = None,
 ) -> AllcockEdgewalkReport:
@@ -73,7 +74,10 @@ def edgewalk_fundamental_domain(
 
     edgewalk.h:55-67, :2100-2126. ``option_norms`` is ``"all"`` or ``"K3"``
     (norm-two roots only). With ``early_termination`` false the walk continues
-    past an infinite polyhedron symmetry group and lists every vertex orbit.
+    past an infinite polyhedron symmetry group and lists every reachable
+    vertex orbit. ``compute_all_simple_roots=False`` selects the source's
+    vertex-orbit output without enumerating the wall orbits. If nonreflectivity
+    is proved, the finite report does not attempt an infinite wall enumeration.
     ``option_initial_vertex="vinberg"`` searches for a corner by Vinberg's
     algorithm even for a rationally isotropic form; ``"isotropic_vinberg"``
     first uses an integral null ray if one exists. A supplied ``initial_vertex``
@@ -84,7 +88,7 @@ def edgewalk_fundamental_domain(
         # A prescribed corner belongs to the original presentation and must
         # be used as the start, including in the special rank-two cycle.
         return _Edgewalk(lattice, option_norms=option_norms,
-                         early_termination=early_termination,
+                         early_termination=early_termination, compute_all_simple_roots=compute_all_simple_roots,
                          option_initial_vertex=option_initial_vertex, initial_vertex=initial_vertex).walk()
     if option_initial_vertex == "vinberg" or (int(lattice.rank()) > 2 and not lattice.is_isotropic()):
         from sage_indefinite_port.indefinite.indefinite_reduction import (
@@ -93,7 +97,7 @@ def edgewalk_fundamental_domain(
 
         reduction = indefinite_reduced_presentation(lattice)
         result = _Edgewalk(reduction.reduced, option_norms=option_norms,
-                           early_termination=early_termination, option_initial_vertex=option_initial_vertex,
+                           early_termination=early_termination, compute_all_simple_roots=compute_all_simple_roots, option_initial_vertex=option_initial_vertex,
                            initial_vertex=initial_vertex).walk()
         inverse = reduction.isometry
         cones = RationalPolyhedralCones(lattice)
@@ -110,9 +114,10 @@ def edgewalk_fundamental_domain(
             ),
             isometry_generators=tuple(inverse * generator * inverse.inverse() for generator in result.polyhedron_isometry_generators()),
             reason_non_reflective=result.reason_non_reflective(),
+            simple_roots_computed=result.has_computed_simple_roots(),
         )
     return _Edgewalk(lattice, option_norms=option_norms,
-                     early_termination=early_termination, option_initial_vertex=option_initial_vertex,
+                     early_termination=early_termination, compute_all_simple_roots=compute_all_simple_roots, option_initial_vertex=option_initial_vertex,
                      initial_vertex=initial_vertex).walk()
 
 
@@ -373,6 +378,7 @@ class _EdgePlane:
 class _Edgewalk:
     def __init__(self, lattice: HyperbolicLattices.ParentMethods, *,
                  option_norms: str = "all", early_termination: bool = True,
+                 compute_all_simple_roots: bool = True,
                  option_initial_vertex: str = "isotropic_vinberg",
                  initial_vertex: _Vector | tuple[_Vector, _Roots] | None = None) -> None:
         positive, negative = lattice.signature_pair()
@@ -390,6 +396,7 @@ class _Edgewalk:
         self.norms = ((2,) if option_norms == "K3"
                       else tuple(int(norm) for norm in lattice.possible_root_lengths()))
         self.early_termination = bool(early_termination)
+        self.compute_all_simple_roots = bool(compute_all_simple_roots)
         if option_initial_vertex not in ("vinberg", "isotropic_vinberg"):
             raise ValueError(f"unsupported automatic edgewalk start option {option_initial_vertex!r}")
         if initial_vertex is not None and option_initial_vertex != "isotropic_vinberg":
@@ -889,6 +896,17 @@ class _Edgewalk:
         """
         if self.option_initial_vertex == "isotropic_vinberg" and self.lattice.is_isotropic():
             return self.initial_isotropic_vertex()
+        from math import gcd
+
+        norm_ideal = gcd(
+            *(int(self.gram[i, i]) for i in range(self.rank)),
+            *(int(2 * self.gram[i, j]) for i in range(self.rank) for j in range(i)),
+        )
+        if not any(norm % norm_ideal == 0 for norm in self.norms):
+            self.initial_nonreflectivity_reason = (
+                f"The lattice norm ideal {norm_ideal}Z contains none of the allowed root norms"
+            )
+            return None
         timelike = self.lattice.negative_vector()
         roots = self.ordinary_vertex_roots(timelike)
         if self.span_rank(roots) == self.rank - 1:
@@ -1849,7 +1867,8 @@ class _Edgewalk:
         return AllcockEdgewalkReport(
             self.lattice,
             reflective=reflective,
-            simple_roots=simple_roots,
+            simple_roots=simple_roots if self.compute_all_simple_roots and reflective else (),
+            simple_roots_computed=self.compute_all_simple_roots and reflective,
             vertices=tuple(cones.from_rays([vertex.generator], wall_roots=vertex.roots) for vertex in vertices),
             isometry_generators=tuple(isometries),
             reason_non_reflective=reason_non_reflective,
@@ -2025,20 +2044,13 @@ class _Edgewalk:
             isometries.append(isometry)
             action = matrix(SageZZ, key)
             isometry_matrices.append(action)
-            if not self.early_termination:
-                # edgewalk.h:1764-1774 calls group_tester.GeneratorUpdate and
-                # asks for its finiteness status ONLY inside this branch. The
-                # non-terminating source mode continues collecting every
-                # vertex orbit and does not manufacture a nonreflectivity
-                # reason from the generators it happens to have found.
-                return True
             if nonreflective:
-                return True
+                return not self.early_termination
             fixed = self.common_fixed_space(invariant, action)
             if fixed is None:
                 nonreflective = True
                 nonreflective_reason = "The generated chamber-isometry group has no nonzero common fixed timelike vector"
-                return False
+                return not self.early_termination
             invariant = fixed
             return True
 
@@ -2076,7 +2088,7 @@ class _Edgewalk:
             # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate tests the dual
             # description only when the closed root orbit has grown.
             nonlocal certified_root_count
-            if nonreflective:
+            if nonreflective or not self.early_termination or not self.compute_all_simple_roots:
                 return None
             roots = certified_roots()
             if len(roots) <= certified_root_count:
@@ -2108,10 +2120,13 @@ class _Edgewalk:
             for roots, discarded in self.edge_orbits(vertex, local_generators):
                 neighbour = self.edge_step(vertex, roots, discarded)
                 if neighbour is None:
-                    return self.report(
-                        vertices, False, (), isometries,
-                        "An anisotropic chamber edge has no finite root extension or rational ideal endpoint",
+                    nonreflective = True
+                    nonreflective_reason = (
+                        "An anisotropic chamber edge has no finite root extension or rational ideal endpoint"
                     )
+                    if self.early_termination:
+                        return self.report(vertices, False, (), isometries, nonreflective_reason)
+                    continue
                 neighbour_configuration = self.vertex_configuration(neighbour)
                 invariant_of_neighbour = self.configuration_invariant(neighbour)
                 isometries_to_neighbour = (
@@ -2141,14 +2156,18 @@ class _Edgewalk:
                             return certificate
             position += 1
 
-        # Early detection would already have returned above. In the source's
-        # non-terminating mode no group-finiteness verdict is made; closing
-        # the roots (or discovering that this closure does not terminate) is
-        # intentionally left to the same dual-description computation as the
-        # pinned implementation (edgewalk.h:1311-1316,1700-1747).
-        simple_roots = () if nonreflective else certified_roots()
-        return self.report(vertices, not nonreflective and self.root_chamber_certificate(simple_roots),
-                           simple_roots, isometries, nonreflective_reason)
+        if nonreflective:
+            return self.report(vertices, False, (), isometries, nonreflective_reason)
+        if not self.compute_all_simple_roots:
+            # Allcock, Theorem (ComputesChamber): the complete corner walk
+            # terminates exactly in finite volume. The closed quotient graph
+            # and finite chamber-symmetry group unfold to finitely many
+            # corners with every edge treated. No wall orbit is needed here.
+            return self.report(vertices, True, (), isometries)
+        simple_roots = certified_roots()
+        if not self.root_chamber_certificate(simple_roots):
+            raise ArithmeticError("the completed finite vertex-orbit walk does not certify its chamber")
+        return self.report(vertices, True, simple_roots, isometries)
 
 
 __all__ = ["edgewalk_fundamental_domain", "edgewalk_isometry"]
