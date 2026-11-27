@@ -1930,13 +1930,15 @@ class _Edgewalk:
         symmetry = self.lattice.O().transporter(self.vertex_configuration(initial), self.vertex_configuration(neighbor))
         vertices = [initial] if symmetry is not None else [initial, neighbor]
         if self.lattice.is_isotropic():
-            # In a hyperbolic basis an integral isometry maps each of the two
-            # rational null lines to itself or the other. Its image on a null
-            # basis consequently has diagonal or antidiagonal entries a,d
-            # with a*d = 1, hence a,d are units in either case. O(L) is
-            # therefore FINITE. A finite group acting on H^1 = R has quotient
-            # R or a half-line, both of infinite
-            # length, so no reflection subgroup can be reflective. This exact
+            # Choose primitive INTEGRAL generators e,f of the two saturated
+            # rational null lines. An integral isometry maps each line to
+            # itself or the other, so its matrix is diagonal or antidiagonal
+            # with multipliers a,d in Z (ge lies in the target rank-one
+            # saturated submodule), and preserving b(e,f) != 0 gives a*d = 1.
+            # Hence a,d = +-1 and O(L) is FINITE. A
+            # finite group acting on H^1 = R has quotient R or a half-line,
+            # both of infinite length, so no reflection subgroup can be
+            # reflective. This exact
             # arithmetic argument covers prescribed starts too; unlike the
             # default null start it does not pretend that their wall list was
             # empty. In particular an ideal neighbour has no wall root and
