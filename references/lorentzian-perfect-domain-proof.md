@@ -109,6 +109,83 @@ the reconstructed norm and pairing for every candidate.  Admissible input
 ensures $d\ne0$; an arbitrary smaller pairing bound may legitimately return
 the empty set.
 
+**Source-defined LLL basis and enumeration order.** The ordered shell is
+not determined by the reduced Gram congruence alone. The pinned
+`ClassicLLL.h:40–245` uses the reduction coefficient obtained from
+`UniversalNearestScalarInteger` when $|2\mu_{kl}|>1$. The pinned
+`basic_common_cpp@995fd625b08e85c29f775dde574a478ba91d2b1f`,
+`src_number/TypeConversionFinal.h:98–101` and
+`src_number/NumberTheoryGmp.h:869–877,930–950`, choose the lower integer
+at an exact half tie, namely $q=\lceil\mu_{kl}-1/2\rceil$.
+The installed GAP reduction uses a different tie convention, and its
+unimodular certificate does not repair this discrepancy.
+
+For the integral positive definite input $G$, let $H$ be the current
+row transform, $A=HGH^t$, $B_i$ the squared norms of the orthogonalized
+rows $h_i^*$, and $\mu_{ij}$ the coefficients of $h_i$ in those rows.
+`_source_classic_lll` in `indefinite_reduction.py` translates the
+positive definite branch of the source, where the radical index
+is always $-1$. When first reaching row $k$, it computes
+$a_j=A_{kj}-\sum_{i<j}\mu_{ji}a_i$ and
+$\mu_{kj}=a_j/B_j$, then $B_k=A_{kk}-\sum_{j<k}\mu_{kj}a_j$.
+These identities follow by taking the pairing with each $h_j^*$.
+Size reduction replaces $h_k$ by $h_k-qh_l$; it leaves all $B_i$
+unchanged and replaces $\mu_{kl}$ by $\mu_{kl}-q$ and
+$\mu_{ki}$ by $\mu_{ki}-q\mu_{li}$ for $i<l$. The stored lower
+triangle of $A$ is updated by the corresponding row and column
+operation.
+
+For an adjacent interchange with $\mu=\mu_{k,k-1}$, put
+$T=B_k+\mu^2 B_{k-1}$. Orthogonalizing the two interchanged rows in
+the plane of their old orthogonal components gives
+$B'_{k-1}=T$, $B'_k=B_kB_{k-1}/T$, and
+$\mu'_{k,k-1}=\mu B_{k-1}/T$. Indeed the new first orthogonal
+component is $h_k^*+\mu h_{k-1}^*$, and the new second is
+$h_{k-1}^*-\mu'(h_k^*+\mu h_{k-1}^*)$.
+Expressing each later row in these two new orthogonal components
+therefore gives $\mu'_{ik}=\mu_{i,k-1}-\mu\mu_{ik}$ and
+$\mu'_{i,k-1}=\mu_{ik}+\mu'_{k,k-1}\mu'_{ik}$.
+This proves the update formulas, including the later rows already
+initialized before backtracking. Induction on RED and SWAP operations
+preserves the exact Gram/Gram-Schmidt invariant. The schedule is
+identical to `ClassicLLL.h`: reduce against $k-1$, backtrack while
+$B_k<(99/100-\mu_{k,k-1}^2)B_{k-1}$, then reduce against the remaining
+preceding rows in descending order. For termination, each swap
+strictly decreases the positive integer product of all leading
+principal Gram determinants: only the determinant of the first $k$
+rows (zero-based row index $k$) changes, by the factor $T/B_{k-1}<99/100$.
+A size reduction preserves every leading determinant. There are
+therefore finitely many swaps, and between them the loop advances
+its row index after finitely many reductions. The recurrence thus
+returns the same ordered integral transform as the pinned positive
+definite algorithm, not merely some LLL-reduced basis. The definite
+pre-reduction and both former copies of sublattice basis reduction
+now share this operation. For sublattice reduction its outer
+alternating direct/dual steps strictly decrease the integer entrywise
+ambient $L^1$ norm whenever a step is accepted, proving termination.
+For dual LLL the original Gram is reduced using $P\operatorname{adj}(G)P^t$
+and $Q=P^{-t}$ as in `ClassicLLL.h:256–285`; the enumerator retains
+$P$ for the recursive coordinate order, rather than $Q$.
+
+A concrete independently identified discrepancy before the repair is
+$G_L=\operatorname{diag}(2,-H)$ with
+$H=\left(\begin{smallmatrix}6&3\\3&2\end{smallmatrix}\right)$,
+$t=(1,0,0)$ and pairing bound 2. The integral kernel has its two
+standard rows, its Gram is $H$, and the affine CVP center is zero.
+On $\operatorname{adj}(H)$ the first Gram-Schmidt coefficient is
+$-3/2$, so the pinned reduction uses $q=-2$ and
+$P=\left(\begin{smallmatrix}1&0\\2&1\end{smallmatrix}\right)$;
+$B_1=2$, $B_2=3/2$ in one-based indices, so the Lovasz test makes
+no interchange. GAP previously used $q=-1$. The exact shell is
+obtained from $6x^2+6xy+2y^2\le2$ (equality for the null mode),
+which has $x\in\{-1,0,1\}$. Ordering the finite solutions by the
+reversed coordinates of $P(x,y)^t$ gives first vector $(1,-1,1)$
+in both modes, rather than GAP's $(1,0,-1)$. This is precisely the
+first-vector input to the second flipping scheme. The corrected
+actual enumerator was checked against the entire independently derived
+ordered list in both modes, with no fixture alteration. This
+implementation diagnostic is distinct from independent acceptance.
+
 Both modes use exact rational recursions, not a floating-point CVP decision.
 The dual transforms are integral and inverse-transposes.  An exact LDL
 factorization is certified before enumeration.  On a definite form, every

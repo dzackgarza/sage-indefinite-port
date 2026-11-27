@@ -70,6 +70,8 @@ from sage_indefinite_port.indefinite.indefinite_reduction import (
     GENERATOR_SEED,
     _compute_indefinite_reduction,
     _indefinite_reduction,
+    _source_classic_lll,
+    _source_sublattice_basis_reduction,
 )
 from sage_indefinite_port.invariants import AttackProfile
 
@@ -5896,57 +5898,6 @@ def _dual_lll_ordered_solutions(
     return tuple(solutions[row] for row in sorted(range(len(solutions)), key=keys.__getitem__))
 
 
-def _pinned_sublattice_basis_reduction(basis: Matrix_integer_dense) -> Matrix_integer_dense:
-    r"""Reproduce ``SublatticeBasisReductionKernel`` from pinned ClassicLLL.h.
-
-    Alternate direct and dual LLL on the row Gram matrix, accepting a
-    unimodular row transform only when the ambient basis's entrywise L1 norm
-    strictly decreases. This stopping rule fixes the basis used by CVP.
-    """
-    reduced_basis = matrix(SageZZ, basis)
-    norm = sum(abs(entry) for entry in reduced_basis.list())
-    while reduced_basis.nrows() > 1:
-        changed = False
-        for dual in (False, True):
-            basis_gram = reduced_basis * reduced_basis.transpose()
-            gram = basis_gram.adjugate() if dual else basis_gram
-            reduction = libgap.LLLReducedGramMat(
-                [[int(gram[i, j]) for j in range(gram.ncols())] for i in range(gram.nrows())],
-                libgap(99) / libgap(100),
-            )
-            transform = matrix(
-                SageZZ,
-                [[SageZZ(int(entry)) for entry in row] for row in reduction["transformation"]],
-            )
-            reduced_gram = matrix(
-                SageZZ,
-                [[SageZZ(int(entry)) for entry in row] for row in reduction["remainder"]],
-            )
-            if abs(int(transform.det())) != 1:
-                raise ArithmeticError("the pinned sublattice LLL transform is not unimodular")
-            if transform * gram * transform.transpose() != reduced_gram:
-                raise ArithmeticError("the pinned sublattice LLL transform misses its reduced Gram")
-            if dual:
-                # The GAP call above reduces adj(G) directly and returns P
-                # with P*adj(G)*P^T=R. ClassicLLL.h's dual basis transform is
-                # Q=P^{-T}, giving Q*G*Q^T=det(G)*R^{-1}. Preserve Q over ZZ.
-                transform = matrix(SageZZ, transform.inverse().transpose())
-                expected_candidate_gram = basis_gram.det() * reduced_gram.inverse()
-            else:
-                expected_candidate_gram = reduced_gram
-            candidate = transform * reduced_basis
-            if candidate * candidate.transpose() != expected_candidate_gram:
-                raise ArithmeticError("the pinned sublattice transform misses its exact reduced Gram identity")
-            candidate_norm = sum(abs(entry) for entry in candidate.list())
-            if candidate_norm < norm:
-                reduced_basis = candidate
-                norm = candidate_norm
-                changed = True
-        if not changed:
-            break
-    return reduced_basis
-
-
 def _pinned_integer_covector_kernel(covector: tuple[int, ...]) -> Matrix_integer_dense:
     r"""Reproduce ``basic_common_cpp::NullspaceIntVect`` for an integral row.
 
@@ -6076,7 +6027,7 @@ class _PositiveVectorEnumerator:
         # The pinned C++ consumer immediately applies SublatticeBasisReduction
         # to NullspaceIntVect's ordered kernel basis. Its alternating direct/
         # dual LLL and strict ambient-L1 stopping rule control the subsequent CVP.
-        kernel_rows = _pinned_sublattice_basis_reduction(kernel_rows)
+        kernel_rows = _source_sublattice_basis_reduction(kernel_rows)
         self.inclusion_rows = kernel_rows
         # Lorentzian.g:337-343 defines GramMat = -Ubasis*LorMat*Ubasis^T,
         # the positive-definite form used by ClosestAtDistanceVallentinProgram.
@@ -6087,42 +6038,11 @@ class _PositiveVectorEnumerator:
             kernel_gram.ncols(),
             [SageZZ(kernel_gram[i, j]) for i in range(kernel_gram.nrows()) for j in range(kernel_gram.ncols())],
         )
-        # LATT_near's CVPSolver applies LLLreducedBasisDual. Its vendored
-        # ClassicLLL.h implementation is adapted from GAP's
-        # LLLReducedGramMat, which returns the exact integral row transform
-        # as ``transformation``. Use that same algorithm on adj(G): Sage's
-        # LLL_gram may choose a different reduced basis and therefore a
-        # different first shortest vector.
         if kernel_gram_integer.nrows() > 1:
             adjugate_gram = kernel_gram_integer.adjugate()
-            gap_gram = [
-                [int(adjugate_gram[row, column]) for column in range(adjugate_gram.ncols())]
-                for row in range(adjugate_gram.nrows())
-            ]
-            # ClassicLLL.h fixes the Lovasz parameter at y=99/100; GAP's
-            # default is 3/4, so pass the pinned value explicitly.
-            gap_reduction = libgap.LLLReducedGramMat(gap_gram, libgap(99) / libgap(100))
-            gap_transform = gap_reduction["transformation"]
-            direct_transform = matrix(
-                SageZZ,
-                [[SageZZ(int(entry)) for entry in row] for row in gap_transform],
-            )
-            if abs(int(direct_transform.det())) != 1:
-                raise ArithmeticError("GAP's dual-LLL source transform is not unimodular")
-            # CVPSolver calls LLLreducedBasisDual, not LLLreducedBasis on
-            # adj(G) directly. ClassicLLL.h returns Q=P^{-T}; its reduced-Gram
-            # identity uses Q G Q^T = det(G) R^{-1}, where R=P adj(G) P^T.
-            # The CVP enumerator then reconstructs original columns x=P^{-1}y,
-            # so its recursive coordinates are y=P*x. Keep Q for the Gram
-            # identity and P separately for ordering the returned candidates.
+            direct_transform, reduced_adjugate = _source_classic_lll(adjugate_gram)
             self.enumeration_transform = direct_transform.inverse().transpose()
             self.enumeration_order_transform = direct_transform
-            reduced_adjugate = matrix(
-                SageZZ,
-                [[SageZZ(int(entry)) for entry in row] for row in gap_reduction["remainder"]],
-            )
-            if direct_transform * adjugate_gram * direct_transform.transpose() != reduced_adjugate:
-                raise ArithmeticError("GAP's dual-LLL source transform does not reproduce its returned reduced adjugate")
             if self.enumeration_transform * kernel_gram_integer * self.enumeration_transform.transpose() != kernel_gram_integer.det() * reduced_adjugate.inverse():
                 raise ArithmeticError("the dual-LLL enumeration transform does not reproduce the dual-reduced Gram")
         else:

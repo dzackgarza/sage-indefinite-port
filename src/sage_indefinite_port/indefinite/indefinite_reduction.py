@@ -390,24 +390,99 @@ def _approximate_indefinite_reduction(gram, rng: Random):
     return basis, basis * gram * basis.transpose()
 
 
-def _definite_lll(gram, *, dual, lll_gram=None):
-    """ClassicLLL.h:40-284 via Sage's exact Gram LLL.
+def _source_classic_lll(gram):
+    r"""Positive-definite specialization of pinned ClassicLLL.h:40–245.
 
-    Sage's LLL_gram returns column coordinates U with U^T G U reduced,
-    whereas ClassicLLL uses row coordinates P with P G P^T reduced.
-    Dual LLL reduces the integral adjugate and applies P^(-T) to the
-    original Gram, as in ClassicLLL.h:246-284.
+    Return the integral row transform and reduced Gram matrix, preserving
+    every RED/SWAP choice and the source's lower-integer half-tie rule.
+    The congruence, size reduction and Lovasz conditions are exact.
     """
+    original = matrix(SageZZ, gram)
+    n = original.nrows()
+    if original.ncols() != n or original != original.transpose():
+        raise ValueError("ClassicLLL requires a symmetric square Gram matrix")
+    if n == 0:
+        return identity_matrix(SageZZ, 0), original
+    if original[0, 0] <= 0:
+        raise ValueError("ClassicLLL requires a positive-definite Gram matrix")
+    lower = [list(row) for row in original.rows()]
+    transform = [list(row) for row in identity_matrix(SageZZ, n).rows()]
+    mu = [[SageQQ.zero() for _ in range(n)] for _ in range(n)]
+    norms = [SageQQ.zero() for _ in range(n)]
+    norms[0] = SageQQ(lower[0][0])
+    delta = SageQQ(99) / 100
+    k = 1
+    kmax = 0
+
+    def reduce_row(k, l):
+        if abs(2 * mu[k][l]) <= 1:
+            return
+        q = _source_nearest_integer(mu[k][l])
+        lower[k][k] -= q * lower[k][l]
+        for i in range(l + 1):
+            lower[k][i] -= q * lower[l][i]
+        for i in range(l + 1, k + 1):
+            lower[k][i] -= q * lower[i][l]
+        for i in range(k + 1, n):
+            lower[i][k] -= q * lower[i][l]
+        mu[k][l] -= q
+        for i in range(l):
+            mu[k][i] -= q * mu[l][i]
+        transform[k] = [a - q * b for a, b in zip(transform[k], transform[l], strict=True)]
+
+    while k < n:
+        if k > kmax:
+            kmax = k
+            norms[k] = SageQQ(lower[k][k])
+            projections = []
+            for j in range(k):
+                projection = SageQQ(lower[k][j]) - sum(mu[j][i] * projections[i] for i in range(j))
+                projections.append(projection)
+                mu[k][j] = projection / norms[j]
+                norms[k] -= mu[k][j] * projection
+            if norms[k] <= 0:
+                raise ValueError("ClassicLLL requires a positive-definite Gram matrix")
+        reduce_row(k, k - 1)
+        while norms[k] < (delta - mu[k][k - 1] ** 2) * norms[k - 1]:
+            transform[k], transform[k - 1] = transform[k - 1], transform[k]
+            for j in range(k - 1):
+                lower[k][j], lower[k - 1][j] = lower[k - 1][j], lower[k][j]
+                mu[k][j], mu[k - 1][j] = mu[k - 1][j], mu[k][j]
+            for j in range(k + 1, n):
+                lower[j][k], lower[j][k - 1] = lower[j][k - 1], lower[j][k]
+            lower[k][k], lower[k - 1][k - 1] = lower[k - 1][k - 1], lower[k][k]
+            old_mu = mu[k][k - 1]
+            new_norm = norms[k] + old_mu ** 2 * norms[k - 1]
+            ratio = norms[k - 1] / new_norm
+            mu[k][k - 1] = old_mu * ratio
+            norms[k] *= ratio
+            norms[k - 1] = new_norm
+            for i in range(k + 1, kmax + 1):
+                old = mu[i][k]
+                mu[i][k] = mu[i][k - 1] - old_mu * old
+                mu[i][k - 1] = old + mu[k][k - 1] * mu[i][k]
+            k = max(1, k - 1)
+            reduce_row(k, k - 1)
+        for l in range(k - 2, -1, -1):
+            reduce_row(k, l)
+        k += 1
+    reduced = matrix(SageZZ, n, n, [lower[max(i, j)][min(i, j)] for i in range(n) for j in range(n)])
+    row_transform = matrix(SageZZ, transform)
+    if abs(row_transform.det()) != 1 or row_transform * original * row_transform.transpose() != reduced:
+        raise ArithmeticError("ClassicLLL lost its exact unimodular Gram congruence")
+    if any(abs(2 * mu[i][j]) > 1 for i in range(n) for j in range(i)) or any(
+        norms[i] < (delta - mu[i][i - 1] ** 2) * norms[i - 1] for i in range(1, n)
+    ):
+        raise ArithmeticError("ClassicLLL lost its reduced Gram-Schmidt conditions")
+    return row_transform, reduced
+
+
+def _definite_lll(gram, *, dual):
+    r"""Pinned ClassicLLL direct or dual reduction of a definite Gram form."""
     positive = gram if gram.is_positive_definite() else -gram
-    if lll_gram is None:
-        lll_gram = lambda form: form.LLL_gram()
+    transform, _ = _source_classic_lll(positive.adjugate() if dual else positive)
     if dual:
-        # Sage returns U with U^T adj(G) U reduced. The source row transform
-        # is P=U^T; ClassicLLL returns Q=P^-T=U^-1 for the original Gram.
-        transform = lll_gram(positive.adjugate()).inverse()
-    else:
-        transform = lll_gram(positive).transpose()
-    transform = transform.change_ring(SageZZ)
+        transform = transform.inverse().transpose().change_ring(SageZZ)
     return transform, transform * gram * transform.transpose()
 
 
@@ -472,14 +547,7 @@ def _source_sublattice_basis_reduction(basis):
         for dual in (False, True):
             row_gram = reduced_basis * reduced_basis.transpose()
             gram = row_gram.adjugate() if dual else row_gram
-            reduction = libgap.LLLReducedGramMat(
-                [[int(gram[i, j]) for j in range(gram.ncols())] for i in range(gram.nrows())],
-                libgap(99) / libgap(100),
-            )
-            transform = matrix(SageZZ, [[SageZZ(int(entry)) for entry in row] for row in reduction["transformation"]])
-            reduced_gram = matrix(SageZZ, [[SageZZ(int(entry)) for entry in row] for row in reduction["remainder"]])
-            if abs(transform.det()) != 1:
-                raise ArithmeticError("sublattice LLL returned a nonunimodular transform")
+            transform, reduced_gram = _source_classic_lll(gram)
             if dual:
                 # ClassicLLL's dual transform is P^{-T} for P reducing adj(G).
                 transform = transform.inverse().transpose()
