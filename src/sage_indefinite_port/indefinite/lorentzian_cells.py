@@ -1329,7 +1329,7 @@ class LorentzianPerfectLocalBackend:
             # Normalizing only the span basis globally changes the source's
             # candidate rows and therefore its negative-vector search order.
             directions = _outside_ray_directions(nullspace, gram)
-            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal, rng)
+            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
             direction_covector = gram * outside_direction.column()
             critical_row = vector(SageQQ, critical[0])
             direction_scalar = (critical_row * direction_covector)[0]
@@ -6648,59 +6648,25 @@ def _negative_direction_in_span(
     spanning_rows: Matrix_rational_dense,
     critical: tuple[tuple[int, ...], ...],
     base_normal: FreeModuleElement[Rational],
-    rng: Random,
-    excluded_directions: list[FreeModuleElement[Rational]] | None = None,
 ) -> FreeModuleElement[Rational]:
-    r"""The negative direction accepted by Lorentzian.g's GetOneOutsideRay.
+    r"""Choose an admissible orientation of the source's negative direction.
 
-    The source perturbs the basis until GetUpperBound does not report its
-    inadmissible isotropic endpoint. A single arbitrary negative vector is
-    insufficient for that algorithm.
+    See references/lorentzian-perfect-domain-proof.md, section 3.
     """
     gram = _gram_matrix(lattice).change_ring(SageQQ)
-    dimension = spanning_rows.nrows()
-    if dimension == 1 and excluded_directions:
-        raise ArithmeticError("a rejected outside ray spans the entire one-dimensional negative space")
-
-    def projective_key(row: FreeModuleElement[Rational]) -> tuple[int, ...]:
-        primitive = tuple(int(entry) for entry in _source_remove_fraction(row))
-        first = next((entry for entry in primitive if entry), 0)
-        return tuple(-entry for entry in primitive) if first < 0 else primitive
-
-    excluded_keys = {projective_key(direction) for direction in (excluded_directions or [])}
-    # Keep the exact perturbation over QQ, matching the rational span basis.
-    # Mixed ZZ/QQ matrix multiplication dispatches through the generic Sage
-    # coercion graph on every random trial; embedding these unimodular entries
-    # once preserves the source transformations without that repeated dispatch.
-    perturbation = identity_matrix(SageQQ, dimension)
-    while True:
-        rows = perturbation * spanning_rows
-        restricted = rows * gram * rows.transpose()
-        negative_row = vector(SageQQ, _source_some_negative_vector(restricted))
-        direction = negative_row * rows
-        covector = gram * direction.column()
+    restricted = spanning_rows * gram * spanning_rows.transpose()
+    negative_row = vector(SageQQ, _source_some_negative_vector(restricted))
+    direction = negative_row * spanning_rows
+    for oriented in (direction, -direction):
+        covector = gram * oriented.column()
         scalars = {(vector(SageQQ, row) * covector)[0] for row in critical}
         if len(scalars) != 1:
             raise ArithmeticError("the GetOneOutsideRay direction must pair equally with every critical vector")
         (scalar,) = scalars
         normal = vector(SageQQ, [-scalar, *covector.column(0)])
-        if projective_key(direction) not in excluded_keys and _upper_bound(gram, base_normal, normal) is not None:
-            return direction
-        # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
-        # Match GetRandomMatrixPerturbation verbatim: the selected entry is
-        # overwritten by +/-1, including when it is diagonal. Both the signed
-        # permutation and identity-with-one-entry branches are unimodular.
-        if rng.choice((1, 2)) == 1:
-            permutation = list(range(dimension))
-            rng.shuffle(permutation)
-            signs = tuple(rng.choice((-1, 1)) for _ in range(dimension))
-            modification = _source_permutation_sign_matrix(permutation, signs)
-        else:
-            index = rng.randrange(dimension)
-            image = rng.randrange(dimension)
-            sign = rng.choice((-1, 1))
-            modification = _source_elementary_perturbation(dimension, index, image, sign)
-        perturbation *= modification
+        if _upper_bound(gram, base_normal, normal) is not None:
+            return oriented
+    raise ArithmeticError("both orientations of an outside ray end at a forbidden isotropic boundary")
 
 
 def _source_permutation_sign_matrix(

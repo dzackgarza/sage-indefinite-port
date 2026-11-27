@@ -161,6 +161,51 @@ $eNSPdir^2<0$, checked in `_upper_bound` before either flipping scheme.  A
 hand-built `LorentzianPerfectCell` is not covered by that theorem and will
 instead fail loudly if these sign conditions are absent.
 
+**Initial outside-ray selection.** Let $F$ be the complete current
+minimal shell at the future timelike point $u$, of common positive
+pairing $m=b(u,c)$ for $c\in F$. If $F$ has rank $k<r$, then the
+differences $c-c_0$ have rank $k-1$: they lie in $u^\perp$ whereas
+$c_0$ does not, and together with $c_0$ they span $F$. The space $S$
+of vectors pairing equally with all of $F$ is their perpendicular;
+it contains $u$ and its intersection with $u^\perp$ has dimension
+$r-k\ge1$. The latter space is negative definite. The affine-nullspace
+basis mapped by the inverse Gram matrix in `_outside_ray_directions`
+is a basis of $S$: the constant term is uniquely determined by the
+pairing with $c_0$. Individual nonzero rational rescalings preserve
+this basis. Thus the restricted form in `_source_some_negative_vector`
+has a negative direction. Its rational diagonalization terminates:
+the radical is split by extending its basis, and on a nondegenerate
+orthogonal complement some basis vector or sum of two basis vectors
+has nonzero square (otherwise polarization makes its form zero).
+At each step this nonisotropic vector splits off an orthogonal line.
+At least one resulting rational diagonal direction has negative square.
+The source normalizes it by its maximum absolute coordinate and rounds
+integer multiples coordinatewise; dividing these rounded vectors by
+the multiplier converges to the normalized direction, so eventually
+the square is negative by continuity. The actual increasing multiplier
+scan therefore terminates.
+
+The two orientations of the resulting spacelike vector $v\in S$ suffice.
+The quadratic $b(u+sv,u+sv)$ has two real roots $s_-<0<s_+$, and the
+open interval between them lies in the chosen timelike sheet. At both
+endpoints $b(u+sv,c_0)\ge0$ by closure of the sheet. These two endpoint
+values cannot both vanish: the pairing is affine in $s$ and its value
+at zero is $m>0$. For the orientation whose forward endpoint has
+positive pairing, the affine-constant bound cannot coincide with the
+null bound, and cannot occur before it either. The doubling and rational
+isotropy checks of `_upper_bound` then supply a valid bound. For the
+other orientation the same checks either supply a bound or return
+`None` exactly at the forbidden coincidence. Consequently
+`_negative_direction_in_span` first uses the source's unperturbed
+negative direction, and, only if it is inadmissible, reverses its sign.
+There is no random retry or unstated probability-one termination
+hypothesis. Both choices are admitted by the source's outside-ray
+conditions (`lorentzian_perfect.h:850–922`); negating a span basis is a
+permitted signed perturbation. The sole production caller does not
+exclude any directions. The first-wall proof below applies to every
+admitted choice, so the initial construction does not depend on one
+particular random perturbation history.
+
 For independent affine normals $B,D$ write $N(s)=B+sD$ and let $u,v$ be their
 Gram-dual directions.  `GetUpperBound` uses three possible exits:
 
