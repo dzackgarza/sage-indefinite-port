@@ -829,15 +829,28 @@ class _Edgewalk:
             roots.append(self.element(tuple(row)))
         return tuple(roots)
 
-    def prescribed_vertex(self, initial: _Vector | tuple[_Vector, _Roots]) -> _Vertex:
-        r"""The vertex given by edgewalk.h:2100-2115 FileVertexRoots or FileVertex."""
+    def prescribed_vertex(self, initial: _Vector | tuple[_Vector, _Roots]) -> _Vertex | None:
+        r"""The vertex given by edgewalk.h:2100-2115 FileVertexRoots or FileVertex.
+
+        A bare vertex has its simple cone computed, as get_simple_cone does
+        (edgewalk.h:1848-2049): a null ray goes through the cusp construction
+        and a timelike one through the corner root system. When that
+        construction certifies nonreflectivity (edgewalk.h:1985-1999) the
+        caller must report the source's reason instead of raising
+        (StandardEdgewalkAnalysis catches it at edgewalk.h:2175-2183), so None
+        is returned and ``initial_nonreflectivity_reason`` carries the text.
+        A prescribed ray is a ray: its primitive part is the same vertex, and
+        RemoveFractionVector at edgewalk.h:2107/2143 is the source's own sign
+        that the caller's scaling is not part of the vertex.
+        """
         if isinstance(initial, tuple):
             generator, roots = initial
             return _Vertex(generator, tuple(roots))
         if self.norm(initial) == 0:
-            vertex = self.initial_isotropic_vertex(initial)
+            ray = self.primitive(self.row(initial))
+            vertex = self.initial_isotropic_vertex(ray)
             if vertex is None:
-                raise ValueError(f"the null vector {initial} is not a vertex of a chamber")
+                return None
             return vertex
         roots = self.ordinary_vertex_roots(initial)
         if self.span_rank(roots) != self.rank - 1:
