@@ -3292,8 +3292,11 @@ class LorentzianPerfectComplex:
         r"""Generators of the full integral sheet stabilizer O^Omega(L).
 
         Completeness is the graph-of-groups consequence of the exact quotient
-        traversal, not a finite-image comparison.  Let Omega be one sheet of
-        the open Lorentzian cone.  The perfect cells form a locally finite
+        traversal, not a finite-image comparison.  Admissibility and
+        finiteness for both total and null-only cells, the related public
+        orbits, and the public dispatch boundary are proved in
+        ``references/lorentzian-perfect-domain-proof.md``.  Let Omega be one
+        sheet of the open Lorentzian cone.  The perfect cells form a locally finite
         polyhedral tessellation of Omega, invariant under O^Omega(L).  For any
         such isometry g, join an interior point of the base cell to its image
         by a path in Omega.  A generic perturbation makes the path cross only
