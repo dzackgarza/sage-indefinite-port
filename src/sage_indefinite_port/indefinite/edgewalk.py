@@ -845,17 +845,27 @@ class _Edgewalk:
         """
         if isinstance(initial, tuple):
             generator, roots = initial
-            return _Vertex(generator, tuple(roots))
-        if self.norm(initial) == 0:
-            ray = self.primitive(self.row(initial))
+        else:
+            generator, roots = initial, None
+        if generator.parent() is not self.lattice or self.norm(generator) > 0:
+            raise ValueError("the starting vertex must be a nonspacelike vector of the walking lattice")
+        if not any(self.key(generator)):
+            raise ValueError("the zero vector does not prescribe a vertex ray")
+        # Both FileVertexRoots (:2107) and the FileVertex/common return
+        # (:2143) apply RemoveFractionVector. The roots of FileVertexRoots are
+        # data and are not primitive-normalised with the generator.
+        ray = self.primitive(self.row(generator))
+        if roots is not None:
+            return _Vertex(ray, tuple(roots))
+        if self.norm(ray) == 0:
             vertex = self.initial_isotropic_vertex(ray)
             if vertex is None:
                 return None
             return vertex
-        roots = self.ordinary_vertex_roots(initial)
-        if self.span_rank(roots) != self.rank - 1:
-            raise ValueError(f"{initial} is not a vertex: its perpendicular roots have rank {self.span_rank(roots)}")
-        return _Vertex(initial, roots)
+        simple_roots = self.ordinary_vertex_roots(ray)
+        if self.span_rank(simple_roots) != self.rank - 1:
+            raise ValueError(f"{generator} is not a vertex: its perpendicular roots have rank {self.span_rank(simple_roots)}")
+        return _Vertex(ray, simple_roots)
 
     def initial_vertex(self) -> _Vertex | None:
         r"""Find a corner, first checking the finite root system at a timelike point.
@@ -1596,7 +1606,11 @@ class _Edgewalk:
         # P is the integral left kernel of G R^T (R the rows of the walls),
         # and each line is primitive in L cap P, which is saturated in L.
         gram = self.gram.change_ring(SageZZ)
-        walls = matrix(SageZZ, [self.key(root) for root in roots])
+        # A binary edge has no retained wall roots (l_ui = []). Preserve the
+        # ambient column count explicitly: matrix([]) is 0 x 0, not the
+        # 0 x rank wall matrix whose transpose multiplies G.
+        walls = matrix(SageZZ, len(roots), self.rank,
+                       [entry for root in roots for entry in self.key(root)])
         plane_rows = (gram * walls.transpose()).left_kernel_matrix(algorithm="pari").echelon_form()
         plane_gram = plane_rows * gram * plane_rows.transpose()
         choices: dict[_Key, _Vector] = {}
@@ -1880,19 +1894,23 @@ class _Edgewalk:
             point = supplied[0] if isinstance(supplied, tuple) else supplied
             if point.parent() is not self.lattice or self.norm(point) > 0:
                 raise ValueError("the starting vertex must be a nonspacelike vector of the walking lattice")
-        if self.lattice.is_isotropic():
-            # In rank two an isotropic starting ray has zero-dimensional
-            # perpendicular quotient. The source's get_simple_cone raises
-            # NonReflectivityException("list of roots is empty").
+        if supplied is None and initial is None and self.lattice.is_isotropic():
+            # The DEFAULT isotropic_vinberg start is a null ray. In rank two
+            # its perpendicular quotient is zero-dimensional, so the source's
+            # get_simple_cone raises NonReflectivityException("list of roots
+            # is empty"). A FileVertex/FileVertexRoots start takes the other
+            # branch of get_initial_vertex and must not be intercepted here.
             return self.report([], False, (), [], "list of roots is empty")
         if initial is None:
             if supplied is None:
                 initial = self.initial_vertex()
-            elif isinstance(supplied, tuple):
-                point, roots = supplied
-                initial = _Vertex(point, tuple(roots))
             else:
-                initial = _Vertex(supplied, self.ordinary_vertex_roots(supplied))
+                # As in the higher-rank walk, a bare vertex has its simple
+                # cone computed while a (vertex, roots) pair is taken as
+                # given and checked below (edgewalk.h:2100-2115).
+                initial = self.prescribed_vertex(supplied)
+        if initial is None:
+            return self.report([], False, (), [], self.initial_nonreflectivity_reason)
         if initial is not None and (initial.generator.parent() is not self.lattice
                                    or self.norm(initial.generator) > 0
                                    or any(root.parent() is not self.lattice
@@ -1909,9 +1927,25 @@ class _Edgewalk:
                 [initial], False, (), [],
                 "An anisotropic binary edge has no finite root extension or rational ideal endpoint",
             )
-        (neighbor_root,) = neighbor.roots
         symmetry = self.lattice.O().transporter(self.vertex_configuration(initial), self.vertex_configuration(neighbor))
         vertices = [initial] if symmetry is not None else [initial, neighbor]
+        if self.lattice.is_isotropic():
+            # In a hyperbolic basis an integral isometry maps each of the two
+            # rational null lines to itself or the other. Its image on a null
+            # basis consequently has diagonal or antidiagonal entries a,d
+            # with a*d = 1, hence a,d are units in either case. O(L) is
+            # therefore FINITE. A finite group acting on H^1 = R has quotient
+            # R or a half-line, both of infinite
+            # length, so no reflection subgroup can be reflective. This exact
+            # arithmetic argument covers prescribed starts too; unlike the
+            # default null start it does not pretend that their wall list was
+            # empty. In particular an ideal neighbour has no wall root and
+            # must not be unpacked as another reflective endpoint.
+            return self.report(
+                vertices, False, (), [] if symmetry is None else [symmetry],
+                "An isotropic binary lattice has finite integral orthogonal group, so its reflection group has infinite covolume",
+            )
+        (neighbor_root,) = neighbor.roots
         return self.report(vertices, True, (root, neighbor_root), [] if symmetry is None else [symmetry])
 
     def walk(self, initial: _Vertex | None = None, visit: Callable[[_Vertex], bool] | None = None) -> AllcockEdgewalkReport:
@@ -1974,18 +2008,20 @@ class _Edgewalk:
             isometries.append(isometry)
             action = matrix(SageZZ, key)
             isometry_matrices.append(action)
+            if not self.early_termination:
+                # edgewalk.h:1764-1774 calls group_tester.GeneratorUpdate and
+                # asks for its finiteness status ONLY inside this branch. The
+                # non-terminating source mode continues collecting every
+                # vertex orbit and does not manufacture a nonreflectivity
+                # reason from the generators it happens to have found.
+                return True
             if nonreflective:
                 return True
             fixed = self.common_fixed_space(invariant, action)
             if fixed is None:
                 nonreflective = True
-                # Record the exact certificate whether or not the walk stops
-                # here: with early_termination false the source keeps walking
-                # and prints no is_reflective field (edgewalk.h:1311-1316),
-                # but a report that returns no simple roots and no reason
-                # cannot distinguish "no roots" from "not computed".
                 nonreflective_reason = "The generated chamber-isometry group has no nonzero common fixed timelike vector"
-                return not self.early_termination
+                return False
             invariant = fixed
             return True
 
@@ -2088,10 +2124,11 @@ class _Edgewalk:
                             return certificate
             position += 1
 
-        # Once the chamber symmetry group has no nonzero common fixed
-        # vector, it is not finite. A finite-orbit closure of its roots
-        # is therefore not a valid operation; the exhaustive walk still
-        # returns its vertices and a negative reflectivity certificate.
+        # Early detection would already have returned above. In the source's
+        # non-terminating mode no group-finiteness verdict is made; closing
+        # the roots (or discovering that this closure does not terminate) is
+        # intentionally left to the same dual-description computation as the
+        # pinned implementation (edgewalk.h:1311-1316,1700-1747).
         simple_roots = () if nonreflective else certified_roots()
         return self.report(vertices, not nonreflective and self.root_chamber_certificate(simple_roots),
                            simple_roots, isometries, nonreflective_reason)
